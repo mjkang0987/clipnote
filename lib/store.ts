@@ -1,10 +1,12 @@
 // 클립 저장소
 //
-// ⚠️ 현재는 메모리 구현(MemoryStore) — 서버가 켜져 있는 동안만 유지된다.
-//    서버 재시작/서버리스 환경에서는 데이터가 사라진다. Supabase 연동 시
-//    이 ClipStore 인터페이스를 구현한 SupabaseStore 로 교체하면 된다.
+// 환경변수(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)가 있으면 Supabase 사용,
+// 없으면 메모리 저장소로 폴백한다.
+// ⚠️ 메모리 저장소는 서버 재시작/서버리스에서 데이터가 사라진다(개발·임시용).
 
 import { generateSlug } from "./slug";
+import { hasSupabaseEnv } from "./supabase";
+import { createSupabaseStore } from "./store-supabase";
 
 export type Clip = {
   slug: string;
@@ -65,7 +67,12 @@ function createMemoryStore(): ClipStore {
   };
 }
 
+function createStore(): ClipStore {
+  if (hasSupabaseEnv()) return createSupabaseStore();
+  return createMemoryStore();
+}
+
 // 개발 모드 HMR 에서도 데이터가 유지되도록 globalThis 에 싱글톤 보관.
 const globalForStore = globalThis as unknown as { __clipStore?: ClipStore };
 export const clipStore: ClipStore =
-  globalForStore.__clipStore ?? (globalForStore.__clipStore = createMemoryStore());
+  globalForStore.__clipStore ?? (globalForStore.__clipStore = createStore());

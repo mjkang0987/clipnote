@@ -1,0 +1,37 @@
+-- ClipNote — Supabase 스키마
+-- Supabase 대시보드 → SQL Editor 에 붙여넣고 실행.
+
+create table if not exists public.clips (
+  id          uuid primary key default gen_random_uuid(),
+  slug        text unique not null,
+  url         text not null,
+  title       text not null,
+  description text,
+  image       text,
+  site_name   text,
+  gradient    text not null default 'grape',
+  tags        text[] not null default '{}',
+  view_count  integer not null default 0,
+  created_at  timestamptz not null default now(),
+  expires_at  timestamptz            -- 보존기간(수익화) — 향후 사용
+);
+
+create index if not exists clips_created_at_idx on public.clips (created_at desc);
+
+-- 조회수 원자적 증가 함수
+create or replace function public.increment_clip_view(target_slug text)
+returns void
+language sql
+as $$
+  update public.clips set view_count = view_count + 1 where slug = target_slug;
+$$;
+
+-- RLS: 서버(service_role)만 접근. 익명/공개 클라이언트 직접 접근 차단.
+-- (앱은 서버 라우트에서 service_role 키로만 접근하므로 정책 없이 RLS 활성화로 충분)
+alter table public.clips enable row level security;
+
+-- service_role(서버 전용)에 권한 명시 부여.
+-- "새 테이블 자동 노출"을 끄면 자동 GRANT 가 안 되므로 직접 부여한다.
+-- (anon/authenticated 에는 부여하지 않아 공개 클라이언트 직접 접근은 차단 유지)
+grant all privileges on table public.clips to service_role;
+grant execute on function public.increment_clip_view(text) to service_role;
