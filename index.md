@@ -40,6 +40,9 @@ clipnote/
 │       ├── clip/      # 클립 생성 POST → slug (구현됨)
 │       └── og/        # 동적 OG 이미지 (구현됨)
 ├── middleware.ts      # Supabase 세션 갱신 (auth)
+├── app/robots.ts      # /robots.txt (SEO)
+├── app/sitemap.ts     # /sitemap.xml (SEO)
+├── public/llms.txt    # 생성형 AI 크롤러용 사이트 설명 (GEO)
 ├── supabase/schema.sql # clips 테이블(user_id 포함)·함수·RLS·GRANT
 ├── .env.example       # 환경변수 예시 (서버 키 + NEXT_PUBLIC anon 키)
 ├── app/
@@ -79,6 +82,7 @@ clipnote/
 - 2026-06-18: 메타 파싱 구현 — `lib/metadata.ts`(OG→HTML 폴백, 8초 타임아웃, 512KB 제한), `GET /api/metadata`, 폼에서 "내용 가져오기" → 제목·설명·대표이미지 미리보기. GitHub URL로 파서 검증 완료.
 - 2026-06-18: 네이버 카페 어댑터(`lib/adapters/naver-cafe.ts`) — 내부 article API로 게시글 subject 추출, 어댑터→OG→HTML 순 폴백. Mac에서 실제 게시글 제목 정상 추출 확인. (비공식 API·멤버 전용 글은 한계)
 - 2026-06-18: 인스타그램 어댑터(`lib/adapters/instagram.ts`) — 크롤러 UA(facebookexternalhit)로 og 추출 best-effort. Mac에서 릴 동작 확인. (로그인 벽·비공개는 한계)
+- 2026-06-18: SEO/GEO(`feat/seo-geo`) — metadataBase env화(`lib/site.ts`), 홈 메타·OG·트위터, robots.ts, sitemap.ts, 전역 JSON-LD(WebSite/WebApplication)+홈 FAQPage, 공유 페이지 noindex, public/llms.txt, 홈 소개·기능·FAQ 콘텐츠. 빌드·스모크 검증.
 - 2026-06-18: 동적 OG 이미지(`/api/og`, next/og) — 그라디언트+제목+설명 카드, Pretendard woff 서브셋 번들(한글 렌더 확인). 슬러그(`lib/slug.ts`)·메모리 저장소(`lib/store.ts`)·생성 API(`/api/clip`)·공유 페이지(`/[slug]`, OG 주입+스마트 리다이렉트) 구현. E2E(생성→공유→OG메타→404) 검증 완료.
   - ⚠️ 저장소가 메모리라 서버 재시작 시 클립 사라짐 → Supabase 연동 시 교체 필요.
   - ⚠️ og:image 가 metadataBase(clipnote.co.kr) 기준 절대 URL → 로컬에선 이미지 미리보기는 `/api/og` 직접 호출로 확인.
