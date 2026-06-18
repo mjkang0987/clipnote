@@ -12,8 +12,10 @@
 
 ## 현재 상태
 
-- 단계: **Supabase 영구 저장 연동·검증 완료(서버 재시작 후 클립 영속). `feat/supabase-store` push 대기(토큰 필요)**
+- 단계: **로그인(Google·Kakao)/비로그인 분기 코드 완료(`feat/auth-google-kakao`). OAuth 앱 등록 후 테스트 가능.**
+  - 로그인 → 공유 링크(DB, user_id). 비로그인 → 브라우저 localStorage 저장(공유 X).
 - 브랜치 전략: 작업은 `feat/*` 브랜치 → push. 이슈/PR 은 환경상 GitHub API 차단으로 plan.md 작업보드에서 추적.
+- 미해결: Naver 로그인은 Supabase 미지원 → 별도 커스텀 브랜치 예정.
 - 저장소: 클론 완료, 리모트 연결됨 (아직 커밋/푸시 전 — Mac에서 수행 필요, plan.md 참고)
 - 문서: `plan.md`, `index.md`, `design-guide.md` 작성 완료
 - 코드: Next.js 16 + TS + Tailwind v4. 디자인 토큰(globals.css), 랜딩 폼 + 공유 카드 미리보기 구현
@@ -37,9 +39,18 @@ clipnote/
 │       ├── metadata/  # URL 메타 파싱 GET (구현됨)
 │       ├── clip/      # 클립 생성 POST → slug (구현됨)
 │       └── og/        # 동적 OG 이미지 (구현됨)
-├── supabase/schema.sql # Supabase 테이블·함수·RLS (feat/supabase-store)
-├── .env.example       # 환경변수 예시
+├── middleware.ts      # Supabase 세션 갱신 (auth)
+├── supabase/schema.sql # clips 테이블(user_id 포함)·함수·RLS·GRANT
+├── .env.example       # 환경변수 예시 (서버 키 + NEXT_PUBLIC anon 키)
+├── app/
+│   ├── login/         # 로그인 페이지 (Google·Kakao)
+│   ├── auth/callback/ # OAuth 콜백
+│   ├── auth/signout/  # 로그아웃
+│   └── _components/AuthNav.tsx # 헤더 로그인 상태
 ├── lib/
+│   ├── supabase/client.ts  # 브라우저 클라이언트 (auth)
+│   ├── supabase/server.ts  # 서버 클라이언트 + getCurrentUser (auth)
+│   ├── local-clips.ts      # 비로그인 localStorage 저장
 │   ├── gradients.ts   # 그라디언트 프리셋 + 결정적 선택 (구현됨)
 │   ├── metadata.ts    # 어댑터→OG→HTML 단계별 폴백 (구현됨)
 │   ├── slug.ts        # base-57 슬러그 생성 (구현됨)

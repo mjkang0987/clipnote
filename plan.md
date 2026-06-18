@@ -50,8 +50,20 @@
 - [ ] 페이지 내 영상/이미지 분석 요약 (가장 후순위)
 
 ### 작업 보드 (GitHub Issues 대용 — 샌드박스에서 API 접근 불가하여 여기서 추적)
-- [x] #branch `feat/supabase-store` — Supabase 저장소 구현·연동·검증 완료. 서버 재시작 후에도 클립 영속 확인. (push 대기 — 토큰 필요)
-- [ ] 다음: 목록 페이지(/clips), 보존기간/사용량 제한(수익화)
+- [x] #branch `feat/supabase-store` — Supabase 저장소 구현·연동·검증 완료. push 완료, PR 대기.
+- [~] #branch `feat/auth-google-kakao` — 로그인(Google+Kakao) + 분기 (코드 완료, OAuth 등록 대기)
+  - [x] @supabase/ssr 도입, 서버/클라이언트 Supabase 클라이언트 + 세션 미들웨어
+  - [x] 로그인 페이지(Google·Kakao 버튼) + OAuth 콜백 라우트 + 로그아웃 + 헤더 상태
+  - [x] `clips.user_id` 컬럼 추가 (스키마)
+  - [x] "공유 링크 만들기"를 로그인 게이트 (로그인 시 DB 저장 + user_id)
+  - [x] 비로그인 저장 → localStorage 기반 저장(lib/local-clips)
+  - [ ] 로그인 목록/비로그인 목록 보여주는 /clips 페이지 (다음)
+  - [ ] **사용자 할 일: Google Cloud·Kakao OAuth 앱 등록 → Supabase provider 설정** (테스트 전제)
+- [ ] #branch `feat/auth-naver` — Naver 로그인 (커스텀 OAuth, Supabase 미지원이라 별도 구현)
+- [ ] 이후: 보존기간/사용량 제한(수익화)
+
+> 인증 메모: Supabase Auth 네이티브 = Google·Kakao 가능, **Naver 미지원**(커스텀 OAuth 필요).
+> OAuth 앱 등록·키 설정은 사용자 영역(코드는 클로드).
 
 > 메모: service_role 권한 — "새 테이블 자동 노출 OFF" 환경에선 신규 테이블에 자동 GRANT 가 안 되므로
 > schema.sql 에서 `grant ... to service_role` 명시 필요(anon 엔 미부여 = 서버 전용 유지).
@@ -94,8 +106,14 @@ tags                              -- MVP에 표시, 정리는 단계적
 - 공유 링크 클릭 시 미리보기 카드 노출 후 원본 도달
 - 입력 이력 날짜순 확인
 
-### 익명 허용 (확정)
-MVP는 **로그인 없이 익명 입력·공유 허용**. 계정/인증은 후순위. 익명 식별은 추후 필요 시 쿠키/브라우저 ID로 보완.
+### 로그인/비로그인 분기 (갱신 — 2026-06-18)
+초기엔 익명 공유 허용이었으나, 아래로 변경:
+
+- **비로그인(익명)**: 클립을 **브라우저 localStorage 에만 저장**(개인 북마크용). 서버/DB 미저장 → **공유 링크 생성·동작 불가**.
+- **로그인**: 클립을 **Supabase(DB)에 user_id 와 함께 저장** → **공유 링크(`/{slug}`) 생성·동작**. 목록도 DB 기준.
+- 인증: **Supabase Auth**. `clips.user_id` 추가, RLS 는 서버(service_role) 접근이라 그대로.
+
+> 의미: 공유 = 로그인 전용 기능. 비로그인은 "URL 모아두기"까지만(로컬).
 
 ## 7. 미해결 질문 (확인 필요)
 
