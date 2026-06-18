@@ -1,0 +1,18 @@
+# pnpm 설정 (pnpm v10.16+ 는 설정을 이 파일에서 관리)
+
+# allowBuilds:
+#   native 의존성의 설치 스크립트(빌드) 실행 허용 여부. pnpm v11이 미승인 빌드를
+#   자동으로 여기에 placeholder 로 추가하므로 true/false 로 결정해 준다.
+#   - sharp: 이미지 처리(리사이즈/포맷) 네이티브 라이브러리. 정상 패키지.
+#   - unrs-resolver: ESLint(oxc) 모듈 리졸버의 네이티브 바인딩. 정상 패키지.
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
+
+# minimumReleaseAgeExclude:
+#   minimumReleaseAge(공급망 보안 — 갓 배포된 패키지 설치 지연, 기본 1일) 정책은
+#   유지하되, 아래 패키지만 예외로 둔다.
+#   baseline-browser-mapping: next@16 / browserslist 가 쓰는 구글 관리 데이터 패키지로
+#   거의 매일 배포되어 정책에 상시 걸리므로 예외 처리. (다른 의존성엔 정책 그대로 적용)
+minimumReleaseAgeExclude:
+  - baseline-browser-mapping
