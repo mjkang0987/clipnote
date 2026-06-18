@@ -542,6 +542,8 @@ function sourceLabel(source: ClipMetadata["source"]): string {
       return "사이트 전용 추출";
     case "og":
       return "OG 태그";
+    case "embedded":
+      return "페이지 내장 데이터";
     case "html":
       return "HTML";
     default:

@@ -10,14 +10,22 @@ export type ClipMetadata = {
   description: string | null;
   image: string | null;
   siteName: string | null;
-  /** 메타 출처: adapter(사이트 전용) | og | html | none */
-  source: "adapter" | "og" | "html" | "none";
+  /** 메타 출처: adapter(사이트 전용) | og | embedded(스크립트 동봉 데이터) | html | none */
+  source: "adapter" | "og" | "embedded" | "html" | "none";
   /** 본문/메타를 못 가져온 경우 사유(사용자 안내용) */
   reason?: string;
 };
 
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_HTML_BYTES = 512 * 1024; // 512KB 까지만 파싱
+
+// 일반 브라우저 UA — 평소엔 이걸로 실제 HTML 을 받는다.
+const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
+// 공유 미리보기 크롤러 UA — 다수 사이트(네이버 공유 링크 등)가 이 UA 에는
+// 서버에서 OG 를 미리 그려 내려준다. 일반 UA 로 메타를 못 얻었을 때만 재시도.
+const CRAWLER_UA =
+  "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
 
 /** 사용자가 스킴 없이 입력해도 https 로 보정. */
 export function normalizeUrl(raw: string): string {
@@ -34,20 +42,34 @@ export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
     return blank(rawUrl, "올바른 URL 형식이 아니에요.");
   }
 
+  // 0) 사이트별 어댑터 우선 (네이버 카페, 인스타그램 등). 성공 시 바로 반환.
+  const adapted = await tryAdapters(url);
+  if (adapted) return adapted;
+
+  // 1) 일반 브라우저 UA 로 받아 파싱.
+  let result = await fetchAndParse(url, BROWSER_UA);
+
+  // 2) 메타를 못 얻으면(로그인 벽/JS 로 그리는 페이지 추정) 크롤러 UA 로 한 번 더.
+  //    공유 미리보기용 OG 를 서버에서 내려주는 사이트를 노리는 폴백.
+  if (result.source === "none") {
+    const crawled = await fetchAndParse(url, CRAWLER_UA);
+    if (crawled.source !== "none") result = crawled;
+  }
+
+  return result;
+}
+
+/** 사이트별 어댑터 시도. 매칭/성공 시 메타 반환, 아니면 null(일반 경로로 폴백). */
+async function tryAdapters(url: string): Promise<ClipMetadata | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-  // 0) 사이트별 어댑터 우선 (네이버 카페, 인스타그램 등). 성공 시 바로 반환.
   try {
     const u = new URL(url);
 
     const cafe = parseNaverCafe(u);
     if (cafe) {
       const adapted = await fetchNaverCafeMetadata(url, cafe, controller.signal);
-      if (adapted?.title) {
-        clearTimeout(timer);
-        return adapted;
-      }
+      if (adapted?.title) return adapted;
     }
 
     const ig = parseInstagram(u);
@@ -57,25 +79,27 @@ export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
         ig.shortcode,
         controller.signal,
       );
-      if (adapted?.title) {
-        clearTimeout(timer);
-        return adapted;
-      }
+      if (adapted?.title) return adapted;
     }
   } catch {
     // 어댑터 실패는 무시하고 일반 경로로 폴백
+  } finally {
+    clearTimeout(timer);
   }
+  return null;
+}
 
-  let html = "";
+/** 주어진 UA 로 URL 을 받아 HTML 을 파싱. 실패 시 blank(throw 안 함). */
+async function fetchAndParse(url: string, ua: string): Promise<ClipMetadata> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   let finalUrl = url;
   try {
     const res = await fetch(url, {
       signal: controller.signal,
       redirect: "follow",
       headers: {
-        // 일반 브라우저처럼 요청해 실제 HTML 을 받도록
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+        "User-Agent": ua,
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
       },
@@ -87,7 +111,8 @@ export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
       return blank(finalUrl, "HTML 페이지가 아니라 내용을 읽을 수 없어요.");
     }
 
-    html = await readCapped(res, MAX_HTML_BYTES);
+    const html = await readCapped(res, MAX_HTML_BYTES);
+    return parseHtml(finalUrl, html);
   } catch (err) {
     const aborted = err instanceof Error && err.name === "AbortError";
     return blank(
@@ -97,8 +122,6 @@ export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
   } finally {
     clearTimeout(timer);
   }
-
-  return parseHtml(finalUrl, html);
 }
 
 /** 응답 본문을 최대 maxBytes 까지만 읽어 문자열로. */
@@ -107,7 +130,6 @@ async function readCapped(res: Response, maxBytes: number): Promise<string> {
   const reader = res.body.getReader();
   const chunks: Uint8Array[] = [];
   let received = 0;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -150,6 +172,21 @@ function parseHtml(url: string, html: string): ClipMetadata {
       image: ogImage,
       siteName,
       source: "og",
+    };
+  }
+
+  // OG 가 없으면: 초기 HTML 에 스크립트로 동봉된 구조화 데이터에서 시도.
+  // SPA 가 메타 태그를 JS 로 늦게 그리더라도, 원본 데이터는 보통 <script>(JSON-LD /
+  // __NEXT_DATA__ / __APOLLO_STATE__ 등) 안에 들어 있어 헤드리스 없이 읽을 수 있다.
+  const embedded = parseEmbeddedData(html);
+  if (embedded && (embedded.title || embedded.description)) {
+    return {
+      url,
+      title: embedded.title ?? extractTitle(html),
+      description: embedded.description,
+      image: absolutize(url, embedded.image),
+      siteName: siteName ?? embedded.siteName,
+      source: "embedded",
     };
   }
 
@@ -202,6 +239,177 @@ function extractTitle(html: string): string | null {
   if (!m) return null;
   const t = decodeEntities(m[1]).replace(/\s+/g, " ").trim();
   return t || null;
+}
+
+type EmbeddedMeta = {
+  title: string | null;
+  description: string | null;
+  image: string | null;
+  siteName: string | null;
+};
+
+/**
+ * 초기 HTML 의 <script> 에 동봉된 구조화 데이터에서 메타를 추출.
+ *  1) JSON-LD / Next.js  : <script type="application/(ld+)?json"> 본문 파싱
+ *  2) 인라인 앱 상태       : window.__APOLLO_STATE__ / __NUXT__ 등 객체 리터럴 파싱
+ * 어느 쪽도 못 찾으면 null.
+ */
+function parseEmbeddedData(html: string): EmbeddedMeta | null {
+  const head = html.slice(0, MAX_HTML_BYTES);
+
+  // 1) <script type="application/ld+json"> 또는 application/json (Next.js __NEXT_DATA__ 포함)
+  const scriptRe =
+    /<script\b[^>]*type=["']application\/(?:ld\+json|json)["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = scriptRe.exec(head))) {
+    const obj = safeJsonParse(m[1].trim());
+    if (!obj) continue;
+    const meta = pickFromObject(obj);
+    if (meta.title || meta.description) return meta;
+  }
+
+  // 2) 인라인 상태 객체(중첩 JSON 이라 중괄호 균형으로 추출).
+  const stateKeys = [
+    "__APOLLO_STATE__",
+    "__NUXT__",
+    "__INITIAL_STATE__",
+    "__PRELOADED_STATE__",
+  ];
+  for (const key of stateKeys) {
+    const at = head.indexOf(key);
+    if (at < 0) continue;
+    const brace = head.indexOf("{", at);
+    if (brace < 0) continue;
+    const json = extractBalancedJson(head, brace);
+    const obj = json ? safeJsonParse(json) : null;
+    if (!obj) continue;
+    const meta = pickFromObject(obj);
+    if (meta.title || meta.description) return meta;
+  }
+
+  return null;
+}
+
+/** s[open] 의 '{' 부터 짝이 맞는 '}' 까지의 부분 문자열. 문자열 리터럴·이스케이프 고려. */
+function extractBalancedJson(s: string, open: number): string | null {
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  for (let i = open; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === "\\") esc = true;
+      else if (c === '"') inStr = false;
+    } else if (c === '"') {
+      inStr = true;
+    } else if (c === "{") {
+      depth++;
+    } else if (c === "}") {
+      if (--depth === 0) return s.slice(open, i + 1);
+    }
+  }
+  return null; // 닫히기 전 잘림(512KB 한도 등) → 폴백
+}
+
+/** 임의 객체 트리에서 키 이름으로 메타 후보를 깊이 탐색해 모은다. */
+function pickFromObject(root: unknown): EmbeddedMeta {
+  const title = deepFindString(root, ["headline", "title", "name", "subject"]);
+  const description = deepFindString(root, [
+    "description",
+    "summary",
+    "desc",
+  ]);
+  const image = normalizeImage(
+    deepFindValue(root, ["image", "thumbnailUrl", "thumbnail", "ogImage"]),
+  );
+  const siteName = deepFindString(root, ["siteName", "site_name"]);
+  return {
+    title: title ? clean(title) : null,
+    description: description ? clean(description, 300) : null,
+    image,
+    siteName: siteName ? clean(siteName) : null,
+  };
+}
+
+/** 키 목록 중 처음 발견되는 "문자열" 값. (깊이 제한 6) */
+function deepFindString(node: unknown, keys: string[], depth = 0): string | null {
+  if (node == null || depth > 6) return null;
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const found = deepFindString(item, keys, depth + 1);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (typeof node === "object") {
+    const obj = node as Record<string, unknown>;
+    for (const key of keys) {
+      const v = obj[key];
+      if (typeof v === "string" && v.trim()) return v;
+    }
+    for (const v of Object.values(obj)) {
+      const found = deepFindString(v, keys, depth + 1);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/** 키 목록 중 처음 발견되는 값(타입 무관). 이미지처럼 문자열/객체/배열 혼재 대응. */
+function deepFindValue(node: unknown, keys: string[], depth = 0): unknown {
+  if (node == null || depth > 6) return null;
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const found = deepFindValue(item, keys, depth + 1);
+      if (found != null) return found;
+    }
+    return null;
+  }
+  if (typeof node === "object") {
+    const obj = node as Record<string, unknown>;
+    for (const key of keys) {
+      if (obj[key] != null) return obj[key];
+    }
+    for (const v of Object.values(obj)) {
+      const found = deepFindValue(v, keys, depth + 1);
+      if (found != null) return found;
+    }
+  }
+  return null;
+}
+
+/** 이미지 값(string | {url|contentUrl|src} | 배열)을 URL 문자열로 정규화. */
+function normalizeImage(v: unknown): string | null {
+  if (!v) return null;
+  if (typeof v === "string") return v.trim() || null;
+  if (Array.isArray(v)) {
+    for (const item of v) {
+      const r = normalizeImage(item);
+      if (r) return r;
+    }
+    return null;
+  }
+  if (typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    return normalizeImage(o.url ?? o.contentUrl ?? o.src ?? null);
+  }
+  return null;
+}
+
+function safeJsonParse(s: string): unknown {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
+  }
+}
+
+/** 엔티티 디코드 + 공백 정리 + (옵션) 길이 제한. */
+function clean(s: string, max?: number): string {
+  const t = decodeEntities(s).replace(/\s+/g, " ").trim();
+  if (max && t.length > max) return `${t.slice(0, max - 1)}…`;
+  return t;
 }
 
 /** 상대 경로 이미지 URL 을 절대 경로로. */
