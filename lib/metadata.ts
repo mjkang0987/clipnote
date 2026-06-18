@@ -279,31 +279,30 @@ function charsetFromContentType(contentType: string | null): string | null {
 
 /**
  * HTML 바이트를 올바른 charset 으로 디코드.
- * 후보 순서: 문서 <meta charset> → Content-Type 헤더 → utf-8 → euc-kr.
- * 각 후보로 디코드해 깨짐(U+FFFD)이 0 이면 즉시 채택, 아니면 가장 적은 걸 선택.
- * (네이버 데스크톱 카페 등은 본문이 EUC-KR 인데 헤더는 utf-8 로 줘서, 헤더만 믿으면
- *  한글이 통째로 깨진다. 그래서 메타 선언을 우선하고 실제 결과로 검증한다.)
+ * 1) 문서가 선언한 charset(<meta> → Content-Type 헤더)이 있으면 신뢰한다.
+ *    (네이버 등 현대 페이지는 대부분 UTF-8 이고 정확히 선언한다.)
+ * 2) 선언이 없으면 UTF-8 기본. 단 UTF-8 로 디코딩한 결과가 "심하게" 깨질 때만
+ *    (대체문자 비율이 높을 때) EUC-KR 을 고려한다.
+ *
+ * ⚠️ 단순히 "대체문자(U+FFFD)가 가장 적은 인코딩"을 고르면 안 된다. 페이지 대부분이
+ *    ASCII 라, 본문에 잘못된 바이트가 몇 개만 있어도 UTF-8 의 ◆ 가 EUC-KR(한글만 ◆)
+ *    보다 많아져 UTF-8 페이지를 EUC-KR 로 오판한다.
  */
 function decodeHtml(bytes: Uint8Array, headerCharset: string | null): string {
-  const candidates: string[] = [];
-  for (const c of [sniffMetaCharset(bytes), headerCharset, "utf-8", "euc-kr"]) {
-    const label = c?.toLowerCase();
-    if (label && !candidates.includes(label)) candidates.push(label);
+  const declared = (sniffMetaCharset(bytes) ?? headerCharset)?.toLowerCase();
+  if (declared) {
+    const text = tryDecode(bytes, declared);
+    if (text != null) return text;
   }
 
-  let best: string | null = null;
-  let bestBad = Infinity;
-  for (const label of candidates) {
-    const text = tryDecode(bytes, label);
-    if (text == null) continue;
-    const bad = countReplacement(text);
-    if (bad === 0) return text;
-    if (bad < bestBad) {
-      best = text;
-      bestBad = bad;
-    }
-  }
-  return best ?? tryDecode(bytes, "utf-8") ?? "";
+  const utf8 = tryDecode(bytes, "utf-8") ?? "";
+  const utf8Bad = countReplacement(utf8);
+  // UTF-8 이 거의 깨지지 않으면 그대로 사용(정상 UTF-8 페이지).
+  if (utf8Bad === 0 || utf8Bad / Math.max(utf8.length, 1) < 0.02) return utf8;
+  // UTF-8 이 심하게 깨질 때만 EUC-KR 시도, 더 나을 때만 채택.
+  const euckr = tryDecode(bytes, "euc-kr");
+  if (euckr && countReplacement(euckr) < utf8Bad) return euckr;
+  return utf8;
 }
 
 /** 문서 앞부분의 <meta charset>/<meta ... content="...charset=..."> 선언을 찾는다. */
