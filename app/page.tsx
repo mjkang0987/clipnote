@@ -263,6 +263,10 @@ export default function Home() {
                 onChange={(e) => setTagInput(e.target.value)}
                 onClear={() => setTagInput("")}
               />
+              <p className="text-xs leading-relaxed text-fg-muted">
+                태그를 달아두면 <a href="/clips" className="font-semibold text-brand-strong underline">내 클립</a>에서
+                같은 태그끼리 모아 볼 수 있어요. 쉼표(,)로 여러 개, 최대 6개까지요.
+              </p>
               {tags.length > 0 && (
                 <ul className="mt-1 flex flex-wrap gap-1.5">
                   {tags.map((tag) => (
@@ -477,6 +481,15 @@ export default function Home() {
           <h2 className="mt-10 text-xl font-bold text-fg">자주 묻는 질문</h2>
           <dl className="mt-3 flex flex-col gap-4">
             <div>
+              <dt className="font-semibold text-fg">태그는 어떻게 쓰나요?</dt>
+              <dd className="mt-1 leading-relaxed text-fg-muted">
+                클립을 만들 때 태그 칸에 쉼표(,)로 구분해 최대 6개까지 달 수
+                있어요. ‘내 클립’ 화면에서 태그를 누르면 같은 태그의 클립만 모아
+                볼 수 있고, 한 번 쓴 태그는 다음에 ‘자주 쓴 태그’로 추천돼 한 번에
+                넣을 수 있어요.
+              </dd>
+            </div>
+            <div>
               <dt className="font-semibold text-fg">로그인 없이도 쓸 수 있나요?</dt>
               <dd className="mt-1 leading-relaxed text-fg-muted">
                 네. 비로그인 상태에서도 URL을 이 브라우저에 저장할 수 있어요. 다만
@@ -566,6 +579,14 @@ const faqJsonLd = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
   mainEntity: [
+    {
+      "@type": "Question",
+      name: "태그는 어떻게 쓰나요?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "클립을 만들 때 태그 칸에 쉼표(,)로 구분해 최대 6개까지 달 수 있어요. ‘내 클립’ 화면에서 태그를 누르면 같은 태그의 클립만 모아 볼 수 있고, 한 번 쓴 태그는 다음에 ‘자주 쓴 태그’로 추천됩니다.",
+      },
+    },
     {
       "@type": "Question",
       name: "로그인 없이도 쓸 수 있나요?",
