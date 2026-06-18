@@ -376,13 +376,34 @@ export default function Home() {
               >
                 {savedLocal ? "저장됨 ✓" : "이 브라우저에 저장"}
               </button>
-              <p className="text-center text-sm text-fg-muted">
-                공유 링크를 만들려면{" "}
-                <a href="/login" className="font-semibold text-brand-strong underline">
-                  로그인
-                </a>
-                하세요.
-              </p>
+
+              {/* 로그인 전(게스트)에 쓸 수 있는 기능 안내 */}
+              <div className="rounded-xl border border-border bg-surface p-4">
+                <p className="text-sm font-semibold text-fg">
+                  로그인 안 해도 이만큼 돼요
+                </p>
+                <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
+                  <li>· 링크를 붙여넣어 미리보기 카드를 만들 수 있어요.</li>
+                  <li>
+                    · 만든 카드를 이 브라우저에 저장하고{" "}
+                    <a href="/clips" className="font-semibold text-brand-strong underline">
+                      내 클립
+                    </a>
+                    에서 다시 볼 수 있어요.
+                  </li>
+                  <li>
+                    · 단, 저장한 클립은 이 기기에만 남고, 짧은 공유 링크는 만들 수
+                    없어요.
+                  </li>
+                </ul>
+                <p className="mt-3 text-sm text-fg-muted">
+                  공유 링크를 만들고 어디서나 보려면{" "}
+                  <a href="/login" className="font-semibold text-brand-strong underline">
+                    로그인
+                  </a>
+                  하세요.
+                </p>
+              </div>
             </div>
           ) : (
             // 로그인(또는 확인 중): 공유 링크 만들기
