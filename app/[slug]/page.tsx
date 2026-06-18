@@ -33,6 +33,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: clip.title,
     description,
+    // 공유 페이지는 원본으로 넘기는 기능성 페이지 → 검색 인덱싱 제외(follow 는 허용)
+    robots: { index: false, follow: true },
     openGraph: {
       title: clip.title,
       description,

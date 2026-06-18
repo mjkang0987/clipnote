@@ -427,6 +427,66 @@ export default function Home() {
             </div>
           )}
         </section>
+
+        {/* SEO/GEO: 소개·기능·FAQ */}
+        <section
+          className="mt-16 border-t border-border pt-10"
+          aria-labelledby="about-heading"
+        >
+          <h2 id="about-heading" className="text-xl font-bold text-fg">
+            ClipNote란?
+          </h2>
+          <p className="mt-3 leading-relaxed text-fg-muted">
+            ClipNote(클립노트)는 긴 URL을 공유하기 좋은 형태로 바꿔 주는 무료 웹
+            서비스예요. 링크를 붙여넣으면 페이지의 제목·설명·대표 이미지를 자동으로
+            읽어와 카드 미리보기를 만들고, 카카오톡이나 SNS에 공유했을 때 보기 좋은
+            이미지와 짧은 링크를 제공합니다. 네이버 카페 게시글, 인스타그램 릴처럼
+            일반적으로 미리보기가 잘 안 잡히는 링크도 지원해요.
+          </p>
+
+          <h2 className="mt-10 text-xl font-bold text-fg">이렇게 동작해요</h2>
+          <ol className="mt-3 flex flex-col gap-2 leading-relaxed text-fg-muted">
+            <li>1. 공유하고 싶은 URL을 붙여넣어요.</li>
+            <li>2. 제목·설명·대표 이미지를 자동으로 읽어와 카드를 만들어요.</li>
+            <li>3. 로그인하면 짧은 공유 링크가 생기고, 공유 시 예쁜 카드로 떠요.</li>
+          </ol>
+
+          <h2 className="mt-10 text-xl font-bold text-fg">자주 묻는 질문</h2>
+          <dl className="mt-3 flex flex-col gap-4">
+            <div>
+              <dt className="font-semibold text-fg">로그인 없이도 쓸 수 있나요?</dt>
+              <dd className="mt-1 leading-relaxed text-fg-muted">
+                네. 비로그인 상태에서도 URL을 이 브라우저에 저장할 수 있어요. 다만
+                공유 링크 생성은 로그인(Google·Kakao)이 필요합니다.
+              </dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-fg">
+                네이버 카페·인스타그램 링크도 되나요?
+              </dt>
+              <dd className="mt-1 leading-relaxed text-fg-muted">
+                네. 전용 추출 기능으로 네이버 카페 게시글 제목, 인스타그램 릴·게시물
+                정보까지 가져옵니다. (비공개·멤버 전용 글은 제한될 수 있어요.)
+              </dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-fg">공유 링크를 열면 어떻게 되나요?</dt>
+              <dd className="mt-1 leading-relaxed text-fg-muted">
+                예쁜 미리보기 카드가 잠깐 보인 뒤 원본 페이지로 자연스럽게 이동해요.
+              </dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-fg">무료인가요?</dt>
+              <dd className="mt-1 leading-relaxed text-fg-muted">네, 무료로 사용할 수 있어요.</dd>
+            </div>
+          </dl>
+        </section>
+
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
       </main>
 
       <footer className="border-t border-border">
@@ -437,6 +497,43 @@ export default function Home() {
     </div>
   );
 }
+
+// FAQ 구조화 데이터 — 검색·생성형 AI 가 질문/답을 이해하도록
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "로그인 없이도 쓸 수 있나요?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "네. 비로그인 상태에서도 URL을 이 브라우저에 저장할 수 있어요. 공유 링크 생성은 로그인(Google·Kakao)이 필요합니다.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "네이버 카페·인스타그램 링크도 되나요?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "네. 전용 추출 기능으로 네이버 카페 게시글 제목, 인스타그램 릴·게시물 정보까지 가져옵니다. 비공개·멤버 전용 글은 제한될 수 있어요.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "공유 링크를 열면 어떻게 되나요?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "예쁜 미리보기 카드가 잠깐 보인 뒤 원본 페이지로 자연스럽게 이동해요.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "무료인가요?",
+      acceptedAnswer: { "@type": "Answer", text: "네, 무료로 사용할 수 있어요." },
+    },
+  ],
+};
 
 /** 메타 출처를 사람이 읽기 좋은 라벨로. */
 function sourceLabel(source: ClipMetadata["source"]): string {
