@@ -60,7 +60,7 @@ export default function LoginPage() {
           className="mt-0.5 h-4 w-4 shrink-0 accent-brand"
         />
         <span className="text-sm leading-relaxed text-fg-muted">
-          로그인 시 이메일·프로필 정보가 수집되는 데 동의합니다.{" "}
+          로그인 시 회원 구분용 소셜 계정 고유 식별자가 수집되는 데 동의합니다.{" "}
           <a
             href="/privacy"
             target="_blank"
