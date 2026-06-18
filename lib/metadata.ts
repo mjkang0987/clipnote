@@ -5,7 +5,11 @@
 //  그래도 안 되면 수동 입력은 상위 레이어)
 
 import { fetchNaverCafeMetadata, parseNaverCafe } from "./adapters/naver-cafe";
-import { fetchInstagramMetadata, parseInstagram } from "./adapters/instagram";
+import {
+  fetchInstagramMetadata,
+  isInstagramStory,
+  parseInstagram,
+} from "./adapters/instagram";
 import {
   fetchNaverBlogMetadata,
   isNaverShortLink,
@@ -53,6 +57,19 @@ export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
 
   // 0) naver.me 단축 링크는 먼저 실제 목적지로 해제해야 알맞은 어댑터(카페/블로그 등)가 매칭된다.
   url = await resolveShortLinks(url);
+
+  // 인스타그램 스토리는 로그인 필요 + 24h 휘발성이라 서버 추출이 원천 불가 →
+  // 헛된 요청 대신 명확한 안내를 준다.
+  try {
+    if (isInstagramStory(new URL(url))) {
+      return blank(
+        url,
+        "인스타그램 스토리는 로그인이 필요하고 24시간 뒤 사라져서 미리보기를 만들 수 없어요. 제목을 직접 입력해 주세요.",
+      );
+    }
+  } catch {
+    // URL 파싱 실패는 무시하고 일반 흐름으로
+  }
 
   // 1) 사이트별 어댑터 우선 (네이버 카페·블로그, 인스타그램 등). 성공 시 바로 반환.
   const adapted = await tryAdapters(url);

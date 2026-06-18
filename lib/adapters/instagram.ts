@@ -19,6 +19,13 @@ export function parseInstagram(u: URL): { shortcode: string } | null {
   return m ? { shortcode: m[1] } : null;
 }
 
+/** instagram.com/stories/... 인지. 스토리는 로그인 필요 + 24h 휘발성이라 서버 추출 불가. */
+export function isInstagramStory(u: URL): boolean {
+  return (
+    /(^|\.)instagram\.com$/i.test(u.hostname) && /\/stories\//i.test(u.pathname)
+  );
+}
+
 export async function fetchInstagramMetadata(
   url: string,
   shortcode: string,
