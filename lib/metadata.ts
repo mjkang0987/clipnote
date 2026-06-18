@@ -110,12 +110,17 @@ async function tryAdapters(url: string): Promise<ClipMetadata | null> {
       const adapted = await fetchNaverCafeMetadata(url, cafe, controller.signal);
       if (adapted?.title) return adapted;
     }
-    // 카페 호스트면(별칭 URL 등 ID 추출 실패, 또는 비공식 API 차단 포함) 크롤러 UA 로
-    // 공개글 OG 를 한 번 더 시도한다. 네이버는 크롤러에게 공개글의 실제 제목 OG 를
-    // 내려주는 경우가 있어, stub 제목("네이버 카페")만 아니면 채택한다.
+    // 카페 호스트면(별칭 URL·API 차단 포함) 크롤러 UA 로 공개글 OG 를 시도한다.
+    // 네이버는 크롤러에게 공개글의 실제 제목 OG 를 내려주는데, 모바일(m.cafe)·앱 공유
+    // URL 은 generic stub("네이버 카페")만 주는 경우가 많다. 그래서 m.cafe 는 같은
+    // 경로의 데스크톱 cafe.naver.com 으로 바꿔서 받는다(이쪽이 실제 제목 OG 를 준다).
     if (/(^|\.)cafe\.naver\.com$/i.test(u.hostname)) {
-      const og = await fetchAndParse(url, CRAWLER_UA);
-      if (og.title && !isGenericCafeTitle(og.title)) return og;
+      const ogUrl = /^m\.cafe\.naver\.com$/i.test(u.hostname)
+        ? `https://cafe.naver.com${u.pathname}?tc=shared_link`
+        : url;
+      const og = await fetchAndParse(ogUrl, CRAWLER_UA);
+      // 저장 대상 URL 은 사용자가 연 원래 링크를 유지.
+      if (og.title && !isGenericCafeTitle(og.title)) return { ...og, url };
     }
 
     const blog = parseNaverBlog(u);
