@@ -64,8 +64,20 @@ export default function LoginPage() {
         </p>
       )}
 
-      <p className="mt-6 text-center text-xs text-fg-muted">
-        로그인 없이도 URL을 저장할 수 있어요(이 브라우저에만 보관).
+      <div className="mt-6 flex items-center gap-3">
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs text-fg-muted">또는</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <a
+        href="/"
+        className="mt-4 flex h-12 items-center justify-center rounded-xl px-4 text-base font-semibold text-fg-muted transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40"
+      >
+        게스트로 계속하기
+      </a>
+      <p className="mt-2 text-center text-xs text-fg-muted">
+        게스트는 URL을 이 브라우저에만 저장해요(공유 링크는 로그인 필요).
       </p>
     </main>
   );
