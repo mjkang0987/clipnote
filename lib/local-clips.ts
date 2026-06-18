@@ -48,3 +48,37 @@ function save(list: LocalClip[]) {
     // 용량 초과 등은 조용히 무시
   }
 }
+
+/* ── 태그 자동완성용: 사용자가 쓴 태그를 빈도로 기억 ───────────── */
+
+const TAGS_KEY = "clipnote.knownTags.v1";
+
+/** 자주 쓴 순으로 정렬된 과거 태그 목록. */
+export function getKnownTags(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(TAGS_KEY);
+    const map = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+    return Object.entries(map)
+      .sort((a, b) => b[1] - a[1])
+      .map(([tag]) => tag);
+  } catch {
+    return [];
+  }
+}
+
+/** 저장·공유 시 사용한 태그를 빈도에 누적. */
+export function recordTags(tags: string[]): void {
+  if (typeof window === "undefined" || tags.length === 0) return;
+  try {
+    const raw = window.localStorage.getItem(TAGS_KEY);
+    const map = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+    for (const t of tags) {
+      const key = t.trim();
+      if (key) map[key] = (map[key] ?? 0) + 1;
+    }
+    window.localStorage.setItem(TAGS_KEY, JSON.stringify(map));
+  } catch {
+    // 무시
+  }
+}

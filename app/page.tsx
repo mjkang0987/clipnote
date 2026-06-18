@@ -5,7 +5,7 @@ import { gradientCss, pickGradient } from "@/lib/gradients";
 import type { ClipMetadata } from "@/lib/metadata";
 import AuthNav from "@/app/_components/AuthNav";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { addLocalClip } from "@/lib/local-clips";
+import { addLocalClip, getKnownTags, recordTags } from "@/lib/local-clips";
 
 export default function Home() {
   const [url, setUrl] = useState("");
@@ -23,6 +23,12 @@ export default function Home() {
   // 로그인 상태: null=확인중, true/false
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [savedLocal, setSavedLocal] = useState(false);
+
+  // 태그 자동완성: 과거에 쓴 태그
+  const [knownTags, setKnownTags] = useState<string[]>([]);
+  useEffect(() => {
+    setKnownTags(getKnownTags());
+  }, []);
 
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -46,6 +52,21 @@ export default function Home() {
         .slice(0, 6),
     [tagInput],
   );
+
+  // 추천 태그: 과거 태그 중 아직 안 넣은 것
+  const tagSuggestions = useMemo(
+    () => knownTags.filter((t) => !tags.includes(t)).slice(0, 8),
+    [knownTags, tags],
+  );
+
+  function addTag(tag: string) {
+    if (tags.includes(tag)) return;
+    setTagInput((cur) => {
+      const t = cur.trim();
+      if (!t) return tag;
+      return t.endsWith(",") ? `${t} ${tag}` : `${t}, ${tag}`;
+    });
+  }
 
   // 미리보기 값: 사용자 입력 우선 → 가져온 메타 → 호스트
   const effectiveTitle =
@@ -108,6 +129,8 @@ export default function Home() {
         return;
       }
       setShareUrl(data.shareUrl);
+      recordTags(tags);
+      setKnownTags(getKnownTags());
     } catch {
       setError("공유 링크 생성 중 문제가 발생했어요.");
     } finally {
@@ -142,6 +165,8 @@ export default function Home() {
       gradient: gradient.name,
       tags,
     });
+    recordTags(tags);
+    setKnownTags(getKnownTags());
     setSavedLocal(true);
     setTimeout(() => setSavedLocal(false), 1800);
   }
@@ -247,6 +272,22 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {tagSuggestions.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs text-fg-muted">추천:</span>
+                  {tagSuggestions.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => addTag(tag)}
+                      className="rounded-full border border-border bg-bg px-2.5 py-1 text-xs font-medium text-fg-muted transition hover:border-brand hover:text-brand-strong"
+                    >
+                      + {tag}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
 
