@@ -93,6 +93,11 @@ async function resolveShortLinks(url: string): Promise<string> {
   }
 }
 
+/** 카페 글 제목을 못 얻었을 때 나오는 일반 stub 제목인지("네이버 카페" 등). */
+function isGenericCafeTitle(title: string): boolean {
+  return /^\s*(네이버\s*카페|naver\s*cafe)\s*$/i.test(title);
+}
+
 /** 사이트별 어댑터 시도. 매칭/성공 시 메타 반환, 아니면 null(일반 경로로 폴백). */
 async function tryAdapters(url: string): Promise<ClipMetadata | null> {
   const controller = new AbortController();
@@ -104,6 +109,13 @@ async function tryAdapters(url: string): Promise<ClipMetadata | null> {
     if (cafe) {
       const adapted = await fetchNaverCafeMetadata(url, cafe, controller.signal);
       if (adapted?.title) return adapted;
+    }
+    // 카페 호스트면(별칭 URL 등 ID 추출 실패, 또는 비공식 API 차단 포함) 크롤러 UA 로
+    // 공개글 OG 를 한 번 더 시도한다. 네이버는 크롤러에게 공개글의 실제 제목 OG 를
+    // 내려주는 경우가 있어, stub 제목("네이버 카페")만 아니면 채택한다.
+    if (/(^|\.)cafe\.naver\.com$/i.test(u.hostname)) {
+      const og = await fetchAndParse(url, CRAWLER_UA);
+      if (og.title && !isGenericCafeTitle(og.title)) return og;
     }
 
     const blog = parseNaverBlog(u);
@@ -267,25 +279,58 @@ function charsetFromContentType(contentType: string | null): string | null {
 
 /**
  * HTML 바이트를 올바른 charset 으로 디코드.
- * 1) Content-Type 헤더 charset → 2) 문서 앞부분의 <meta charset> → 3) utf-8.
- * (네이버 등 일부 한국 사이트는 EUC-KR 이라 utf-8 고정 디코딩 시 제목이 깨진다)
+ * 후보 순서: 문서 <meta charset> → Content-Type 헤더 → utf-8 → euc-kr.
+ * 각 후보로 디코드해 깨짐(U+FFFD)이 0 이면 즉시 채택, 아니면 가장 적은 걸 선택.
+ * (네이버 데스크톱 카페 등은 본문이 EUC-KR 인데 헤더는 utf-8 로 줘서, 헤더만 믿으면
+ *  한글이 통째로 깨진다. 그래서 메타 선언을 우선하고 실제 결과로 검증한다.)
  */
 function decodeHtml(bytes: Uint8Array, headerCharset: string | null): string {
-  let charset = headerCharset;
-  if (!charset) {
-    // 메타 태그는 ASCII 범위라 latin1 로 앞부분만 훑어 charset 선언을 찾는다.
-    const head = new TextDecoder("latin1").decode(bytes.subarray(0, 4096));
-    const m =
-      head.match(/<meta[^>]+charset=["']?\s*([\w-]+)/i) ??
-      head.match(/charset=["']?\s*([\w-]+)/i);
-    if (m) charset = m[1];
+  const candidates: string[] = [];
+  for (const c of [sniffMetaCharset(bytes), headerCharset, "utf-8", "euc-kr"]) {
+    const label = c?.toLowerCase();
+    if (label && !candidates.includes(label)) candidates.push(label);
   }
-  const label = (charset ?? "utf-8").toLowerCase();
+
+  let best: string | null = null;
+  let bestBad = Infinity;
+  for (const label of candidates) {
+    const text = tryDecode(bytes, label);
+    if (text == null) continue;
+    const bad = countReplacement(text);
+    if (bad === 0) return text;
+    if (bad < bestBad) {
+      best = text;
+      bestBad = bad;
+    }
+  }
+  return best ?? tryDecode(bytes, "utf-8") ?? "";
+}
+
+/** 문서 앞부분의 <meta charset>/<meta ... content="...charset=..."> 선언을 찾는다. */
+function sniffMetaCharset(bytes: Uint8Array): string | null {
+  // 메타 선언은 ASCII 범위라 latin1 로 앞부분만 훑어도 안전하게 잡힌다.
+  const head = new TextDecoder("latin1").decode(bytes.subarray(0, 4096));
+  const m =
+    head.match(/<meta[^>]+charset=["']?\s*([\w-]+)/i) ??
+    head.match(/charset=["']?\s*([\w-]+)/i);
+  return m ? m[1] : null;
+}
+
+function tryDecode(bytes: Uint8Array, label: string): string | null {
   try {
     return new TextDecoder(label).decode(bytes);
   } catch {
-    return new TextDecoder("utf-8").decode(bytes);
+    return null;
   }
+}
+
+/** 디코딩 실패 시 나타나는 대체문자(U+FFFD) 개수 — 인코딩 오선택 판별용. */
+function countReplacement(text: string): number {
+  let n = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) === 0xfffd) n++;
+  }
+  return n;
 }
 
 function parseHtml(url: string, html: string): ClipMetadata {
