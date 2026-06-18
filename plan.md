@@ -57,8 +57,10 @@
   - [x] `clips.user_id` 컬럼 추가 (스키마)
   - [x] "공유 링크 만들기"를 로그인 게이트 (로그인 시 DB 저장 + user_id)
   - [x] 비로그인 저장 → localStorage 기반 저장(lib/local-clips)
-  - [ ] 로그인 목록/비로그인 목록 보여주는 /clips 페이지 (다음)
+  - [x] 로그인 화면 "게스트로 계속" 버튼
   - [ ] **사용자 할 일: Google Cloud·Kakao OAuth 앱 등록 → Supabase provider 설정** (테스트 전제)
+- [~] #branch `feat/clips-list` — /clips 목록 페이지(게스트=localStorage, 로그인=DB). 코드 완료.
+  - 게스트 저장이 화면에 보이게 됨(검증 가능). 로그인 목록은 OAuth 후 검증.
 - [ ] #branch `feat/auth-naver` — Naver 로그인 (커스텀 OAuth, Supabase 미지원이라 별도 구현)
 - [ ] 이후: 보존기간/사용량 제한(수익화)
 

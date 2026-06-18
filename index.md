@@ -43,9 +43,11 @@ clipnote/
 ├── supabase/schema.sql # clips 테이블(user_id 포함)·함수·RLS·GRANT
 ├── .env.example       # 환경변수 예시 (서버 키 + NEXT_PUBLIC anon 키)
 ├── app/
-│   ├── login/         # 로그인 페이지 (Google·Kakao)
+│   ├── login/         # 로그인 페이지 (Google·Kakao·게스트)
+│   ├── clips/         # 내 클립 목록 (게스트=localStorage, 로그인=DB)
 │   ├── auth/callback/ # OAuth 콜백
 │   ├── auth/signout/  # 로그아웃
+│   ├── api/clips/     # 내 클립 목록 GET (로그인)
 │   └── _components/AuthNav.tsx # 헤더 로그인 상태
 ├── lib/
 │   ├── supabase/client.ts  # 브라우저 클라이언트 (auth)
