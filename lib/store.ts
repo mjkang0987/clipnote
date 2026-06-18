@@ -29,6 +29,7 @@ export interface ClipStore {
   get(slug: string): Promise<Clip | null>;
   incrementView(slug: string): Promise<void>;
   list(): Promise<Clip[]>;
+  listByUser(userId: string): Promise<Clip[]>;
 }
 
 function createMemoryStore(): ClipStore {
@@ -64,6 +65,12 @@ function createMemoryStore(): ClipStore {
       return [...clips.values()].sort((a, b) =>
         b.createdAt.localeCompare(a.createdAt),
       );
+    },
+
+    async listByUser(userId) {
+      return [...clips.values()]
+        .filter((c) => c.userId === userId)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     },
   };
 }

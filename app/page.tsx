@@ -159,7 +159,15 @@ export default function Home() {
           >
             Clip<span className="text-brand">Note</span>
           </a>
-          <AuthNav />
+          <div className="flex items-center gap-3">
+            <a
+              href="/clips"
+              className="text-sm font-semibold text-fg-muted transition hover:text-fg"
+            >
+              내 클립
+            </a>
+            <AuthNav />
+          </div>
         </nav>
       </header>
 

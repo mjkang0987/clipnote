@@ -102,5 +102,17 @@ export function createSupabaseStore(): ClipStore {
       if (error) throw new Error(`목록 조회 실패: ${error.message}`);
       return (data as Row[]).map(rowToClip);
     },
+
+    async listByUser(userId: string): Promise<Clip[]> {
+      const supabase = getSupabaseAdmin();
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select()
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw new Error(`목록 조회 실패: ${error.message}`);
+      return (data as Row[]).map(rowToClip);
+    },
   };
 }
