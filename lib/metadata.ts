@@ -279,29 +279,27 @@ function charsetFromContentType(contentType: string | null): string | null {
 
 /**
  * HTML 바이트를 올바른 charset 으로 디코드.
- * 1) 문서가 선언한 charset(<meta> → Content-Type 헤더)이 있으면 신뢰한다.
- *    (네이버 등 현대 페이지는 대부분 UTF-8 이고 정확히 선언한다.)
- * 2) 선언이 없으면 UTF-8 기본. 단 UTF-8 로 디코딩한 결과가 "심하게" 깨질 때만
- *    (대체문자 비율이 높을 때) EUC-KR 을 고려한다.
  *
- * ⚠️ 단순히 "대체문자(U+FFFD)가 가장 적은 인코딩"을 고르면 안 된다. 페이지 대부분이
- *    ASCII 라, 본문에 잘못된 바이트가 몇 개만 있어도 UTF-8 의 ◆ 가 EUC-KR(한글만 ◆)
- *    보다 많아져 UTF-8 페이지를 EUC-KR 로 오판한다.
+ * 핵심: 선언(meta/헤더)을 맹신하지 않는다. 네이버 일부 엔드포인트는 헤더/메타에
+ * `euc-kr` 이라 적고 실제로는 UTF-8 본문을 내려준다. 선언을 믿으면 한글이 깨지므로,
+ * 먼저 "실제 바이트가 UTF-8 로 깨끗이 읽히는지"를 본다.
+ *
+ * 1) UTF-8 로 디코딩해 대체문자(U+FFFD) 비율이 매우 낮으면 → UTF-8 확정.
+ *    (정상 UTF-8 페이지. 잘못된 바이트 몇 개가 섞여 있어도 비율이 낮아 안전.)
+ * 2) UTF-8 로 심하게 깨지면(=실제로 다른 인코딩) → 선언된 charset → euc-kr 순으로
+ *    시도하고, UTF-8 보다 덜 깨지는 것을 채택.
  */
 function decodeHtml(bytes: Uint8Array, headerCharset: string | null): string {
-  const declared = (sniffMetaCharset(bytes) ?? headerCharset)?.toLowerCase();
-  if (declared) {
-    const text = tryDecode(bytes, declared);
-    if (text != null) return text;
-  }
-
   const utf8 = tryDecode(bytes, "utf-8") ?? "";
   const utf8Bad = countReplacement(utf8);
-  // UTF-8 이 거의 깨지지 않으면 그대로 사용(정상 UTF-8 페이지).
-  if (utf8Bad === 0 || utf8Bad / Math.max(utf8.length, 1) < 0.02) return utf8;
-  // UTF-8 이 심하게 깨질 때만 EUC-KR 시도, 더 나을 때만 채택.
-  const euckr = tryDecode(bytes, "euc-kr");
-  if (euckr && countReplacement(euckr) < utf8Bad) return euckr;
+  if (utf8Bad / Math.max(utf8.length, 1) < 0.005) return utf8;
+
+  const declared = (sniffMetaCharset(bytes) ?? headerCharset)?.toLowerCase();
+  for (const label of [declared, "euc-kr"]) {
+    if (!label || label === "utf-8") continue;
+    const text = tryDecode(bytes, label);
+    if (text != null && countReplacement(text) < utf8Bad) return text;
+  }
   return utf8;
 }
 
