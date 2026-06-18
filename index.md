@@ -14,7 +14,12 @@
 
 - 단계: **로그인(Google·Kakao)/비로그인 분기 코드 완료(`feat/auth-google-kakao`). OAuth 앱 등록 후 테스트 가능.**
   - 로그인 → 공유 링크(DB, user_id). 비로그인 → 브라우저 localStorage 저장(공유 X).
-- 브랜치 전략: 작업은 `feat/*` 브랜치 → push. 이슈/PR 은 환경상 GitHub API 차단으로 plan.md 작업보드에서 추적.
+- 브랜치 전략(2026-06-18 갱신):
+  - `main` = 안정/배포용 (직접 작업 X)
+  - `develop` = 통합 브랜치 — 기능 작업은 여기로 머지
+  - `feat/*` = 기능 브랜치, `develop`에서 분기 → `develop`으로 머지
+  - 릴리스 시 `develop → main` 승격
+  - 이슈/PR 은 환경상 GitHub API 차단으로 plan.md 작업보드에서 추적.
 - 미해결: Naver 로그인은 Supabase 미지원 → 별도 커스텀 브랜치 예정.
 - 저장소: 클론 완료, 리모트 연결됨 (아직 커밋/푸시 전 — Mac에서 수행 필요, plan.md 참고)
 - 문서: `plan.md`, `index.md`, `design-guide.md` 작성 완료
