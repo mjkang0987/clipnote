@@ -77,7 +77,8 @@ export default function LoginPage() {
         게스트로 계속하기
       </a>
       <p className="mt-2 text-center text-xs text-fg-muted">
-        게스트는 URL을 이 브라우저에만 저장해요(공유 링크는 로그인 필요).
+        게스트로 쓰면 저장한 링크가 이 기기에만 남아요. 공유 링크를 만들려면
+        로그인이 필요해요.
       </p>
     </main>
   );

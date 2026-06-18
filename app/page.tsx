@@ -202,8 +202,8 @@ export default function Home() {
             URL을 <span className="text-brand">예쁜 공유 카드</span>로
           </h1>
           <p className="mx-auto mt-3 max-w-md text-base leading-relaxed text-fg-muted">
-            링크를 넣으면 내용을 읽어와 공유 카드를 만들어 드려요. 제목을 직접
-            정하거나 자동으로 채울 수 있어요.
+            링크만 붙여넣으면 제목·설명·이미지를 자동으로 읽어와 예쁜 공유 카드를
+            만들어요. 제목은 직접 고쳐도 돼요.
           </p>
         </section>
 
@@ -233,7 +233,9 @@ export default function Home() {
             <div className="flex flex-col gap-1.5">
               <label htmlFor="clip-title" className="text-sm font-medium text-fg">
                 제목{" "}
-                <span className="font-normal text-fg-muted">(선택 · 비우면 자동)</span>
+                <span className="font-normal text-fg-muted">
+                  (안 쓰면 자동으로 채워져요)
+                </span>
               </label>
               <ClearableInput
                 id="clip-title"
@@ -276,7 +278,7 @@ export default function Home() {
 
               {tagSuggestions.length > 0 && (
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-fg-muted">추천:</span>
+                  <span className="text-xs text-fg-muted">자주 쓴 태그:</span>
                   {tagSuggestions.map((tag) => (
                     <button
                       key={tag}
@@ -296,7 +298,7 @@ export default function Home() {
               disabled={!hasInput || loading}
               className="h-12 rounded-xl bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "내용 불러오는 중…" : "내용 가져오기"}
+              {loading ? "미리보기 만드는 중…" : "미리보기 만들기"}
             </button>
           </div>
         </form>
@@ -358,7 +360,7 @@ export default function Home() {
 
           <p className="mt-3 text-center text-xs text-fg-muted">
             배경색은 제목에 따라 자동으로 정해져요
-            {meta && meta.source !== "none" ? ` · 내용 출처: ${sourceLabel(meta.source)}` : ""}
+            {meta && meta.source !== "none" ? " · 제목·설명을 자동으로 가져왔어요" : ""}
           </p>
         </section>
 
@@ -574,22 +576,6 @@ const faqJsonLd = {
     },
   ],
 };
-
-/** 메타 출처를 사람이 읽기 좋은 라벨로. */
-function sourceLabel(source: ClipMetadata["source"]): string {
-  switch (source) {
-    case "adapter":
-      return "사이트 전용 추출";
-    case "og":
-      return "OG 태그";
-    case "embedded":
-      return "페이지 내장 데이터";
-    case "html":
-      return "HTML";
-    default:
-      return "없음";
-  }
-}
 
 /** URL에서 보기 좋은 호스트+경로 일부 추출. 실패 시 원문 반환. */
 function prettyHost(raw: string): string {
