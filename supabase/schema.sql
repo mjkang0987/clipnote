@@ -12,11 +12,16 @@ create table if not exists public.clips (
   gradient    text not null default 'grape',
   tags        text[] not null default '{}',
   view_count  integer not null default 0,
+  user_id     uuid references auth.users(id) on delete cascade,  -- 작성자(로그인). 공유=로그인 전용
   created_at  timestamptz not null default now(),
   expires_at  timestamptz            -- 보존기간(수익화) — 향후 사용
 );
 
+-- 기존 테이블에 user_id 가 없으면 추가 (재실행 안전)
+alter table public.clips add column if not exists user_id uuid references auth.users(id) on delete cascade;
+
 create index if not exists clips_created_at_idx on public.clips (created_at desc);
+create index if not exists clips_user_id_idx on public.clips (user_id);
 
 -- 조회수 원자적 증가 함수
 create or replace function public.increment_clip_view(target_slug text)

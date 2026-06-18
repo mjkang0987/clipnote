@@ -17,6 +17,7 @@ export type Clip = {
   siteName: string | null;
   gradient: string; // 그라디언트 이름 (lib/gradients)
   tags: string[];
+  userId: string | null; // 작성자(로그인 사용자). 공유 클립은 항상 존재
   createdAt: string; // ISO
   viewCount: number;
 };

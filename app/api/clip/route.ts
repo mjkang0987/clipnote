@@ -2,13 +2,23 @@ import { NextResponse } from "next/server";
 import { clipStore } from "@/lib/store";
 import { pickGradient } from "@/lib/gradients";
 import { normalizeUrl } from "@/lib/metadata";
+import { getCurrentUser } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-// 클립 생성: POST /api/clip
+// 클립 생성(=공유 링크): POST /api/clip — 로그인 사용자만.
 // body: { url, title, description?, image?, siteName?, tags?, gradient? }
 // → 저장 후 { slug, shareUrl } 반환
 export async function POST(request: Request) {
+  // 공유 링크 생성은 로그인 전용
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json(
+      { error: "공유 링크는 로그인 후 만들 수 있어요." },
+      { status: 401 },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await request.json();
@@ -46,6 +56,7 @@ export async function POST(request: Request) {
     siteName: typeof body.siteName === "string" ? body.siteName : null,
     gradient,
     tags,
+    userId: user.id,
   });
 
   const origin = new URL(request.url).origin;

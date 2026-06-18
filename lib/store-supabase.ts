@@ -17,6 +17,7 @@ type Row = {
   site_name: string | null;
   gradient: string;
   tags: string[] | null;
+  user_id: string | null;
   view_count: number;
   created_at: string;
 };
@@ -31,6 +32,7 @@ function rowToClip(row: Row): Clip {
     siteName: row.site_name,
     gradient: row.gradient,
     tags: row.tags ?? [],
+    userId: row.user_id,
     viewCount: row.view_count,
     createdAt: row.created_at,
   };
@@ -55,6 +57,7 @@ export function createSupabaseStore(): ClipStore {
             site_name: data.siteName,
             gradient: data.gradient,
             tags: data.tags,
+            user_id: data.userId,
           })
           .select()
           .single();

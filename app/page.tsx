@@ -1,8 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { gradientCss, pickGradient } from "@/lib/gradients";
 import type { ClipMetadata } from "@/lib/metadata";
+import AuthNav from "@/app/_components/AuthNav";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { addLocalClip } from "@/lib/local-clips";
 
 export default function Home() {
   const [url, setUrl] = useState("");
@@ -16,6 +19,23 @@ export default function Home() {
   const [creating, setCreating] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // 로그인 상태: null=확인중, true/false
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [savedLocal, setSavedLocal] = useState(false);
+
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      setIsLoggedIn(false);
+      return;
+    }
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data }) => setIsLoggedIn(Boolean(data.user)));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) =>
+      setIsLoggedIn(Boolean(session?.user)),
+    );
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   const tags = useMemo(
     () =>
@@ -106,12 +126,32 @@ export default function Home() {
     }
   }
 
+  // 비로그인: 이 브라우저(localStorage)에만 저장
+  function handleSaveLocal() {
+    const saveTitle = title.trim() || meta?.title || (url ? prettyHost(url) : "");
+    if (!saveTitle) {
+      setError("저장하려면 제목이 필요해요.");
+      return;
+    }
+    addLocalClip({
+      url: url.trim(),
+      title: saveTitle,
+      description: meta?.description ?? null,
+      image: meta?.image ?? null,
+      siteName: meta?.siteName ?? null,
+      gradient: gradient.name,
+      tags,
+    });
+    setSavedLocal(true);
+    setTimeout(() => setSavedLocal(false), 1800);
+  }
+
   const noMeta = meta?.source === "none";
 
   return (
     <div className="flex flex-1 flex-col">
       <header className="border-b border-border">
-        <nav className="mx-auto flex h-16 max-w-3xl items-center px-5">
+        <nav className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5">
           <a
             href="/"
             className="text-lg font-bold tracking-tight text-fg"
@@ -119,6 +159,7 @@ export default function Home() {
           >
             Clip<span className="text-brand">Note</span>
           </a>
+          <AuthNav />
         </nav>
       </header>
 
@@ -272,15 +313,37 @@ export default function Home() {
           </p>
         </section>
 
-        <section className="mt-8" aria-label="공유 링크 만들기">
-          <button
-            type="button"
-            onClick={handleCreateShare}
-            disabled={!hasInput || creating}
-            className="h-12 w-full rounded-xl border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {creating ? "만드는 중…" : "공유 링크 만들기"}
-          </button>
+        <section className="mt-8" aria-label="저장 및 공유">
+          {isLoggedIn === false ? (
+            // 비로그인: 이 브라우저에 저장만 (공유 불가)
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={handleSaveLocal}
+                disabled={!hasInput}
+                className="h-12 w-full rounded-xl border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {savedLocal ? "저장됨 ✓" : "이 브라우저에 저장"}
+              </button>
+              <p className="text-center text-sm text-fg-muted">
+                공유 링크를 만들려면{" "}
+                <a href="/login" className="font-semibold text-brand-strong underline">
+                  로그인
+                </a>
+                하세요.
+              </p>
+            </div>
+          ) : (
+            // 로그인(또는 확인 중): 공유 링크 만들기
+            <button
+              type="button"
+              onClick={handleCreateShare}
+              disabled={!hasInput || creating || isLoggedIn === null}
+              className="h-12 w-full rounded-xl border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {creating ? "만드는 중…" : "공유 링크 만들기"}
+            </button>
+          )}
 
           {shareUrl && (
             <div className="mt-4 flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
