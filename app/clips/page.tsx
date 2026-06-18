@@ -17,6 +17,7 @@ type Item = {
   url: string;
   host: string;
   slug: string | null; // DB(로그인)만 공유 슬러그 존재
+  image: string | null; // 원본 대표이미지(있으면 썸네일)
   tags: string[];
   gradient: string;
   date: string;
@@ -112,10 +113,23 @@ export default function ClipsPage() {
                 className="flex gap-4 rounded-2xl border border-border bg-surface p-4"
               >
                 <div
-                  className="h-16 w-16 shrink-0 rounded-xl"
+                  className="h-16 w-16 shrink-0 overflow-hidden rounded-xl"
                   style={{ background: gradientCss(pickGradient(item.gradient)) }}
                   aria-hidden
-                />
+                >
+                  {item.image && (
+                    // 원본 썸네일. 로드 실패(핫링크 차단 등)하면 숨겨져 그라디언트 노출
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.image}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  )}
+                </div>
                 <div className="flex min-w-0 flex-1 flex-col">
                   <p className="truncate font-semibold text-fg">{item.title}</p>
                   <p className="truncate text-sm text-fg-muted">{item.host}</p>
@@ -176,6 +190,7 @@ function dbToItem(c: Clip): Item {
     url: c.url,
     host: prettyHost(c.url),
     slug: c.slug,
+    image: c.image,
     tags: c.tags,
     gradient: c.gradient,
     date: c.createdAt,
@@ -190,6 +205,7 @@ function localToItem(c: LocalClip): Item {
     url: c.url,
     host: prettyHost(c.url),
     slug: null,
+    image: c.image,
     tags: c.tags,
     gradient: c.gradient,
     date: c.savedAt,
