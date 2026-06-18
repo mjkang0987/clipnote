@@ -8,6 +8,7 @@ type Provider = "google" | "kakao";
 export default function LoginPage() {
   const [loading, setLoading] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [agreed, setAgreed] = useState(false);
 
   // 콜백에서 로그인 실패로 돌아온 경우(/login?error=...) 안내를 보여줌
   useEffect(() => {
@@ -17,6 +18,10 @@ export default function LoginPage() {
   }, []);
 
   async function signIn(provider: Provider) {
+    if (!agreed) {
+      setError("개인정보처리방침에 동의하셔야 로그인할 수 있어요.");
+      return;
+    }
     setLoading(provider);
     setError(null);
     try {
@@ -60,12 +65,34 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <div className="mt-6 flex flex-col gap-3">
+      {/* 개인정보 수집·이용 동의 */}
+      <label className="mt-6 flex cursor-pointer items-start gap-2.5 rounded-xl border border-border bg-bg p-3.5">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-brand"
+        />
+        <span className="text-sm leading-relaxed text-fg-muted">
+          로그인 시 이메일·프로필 정보가 수집되는 데 동의합니다.{" "}
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-brand-strong underline"
+          >
+            개인정보처리방침
+          </a>
+          을 확인했어요.
+        </span>
+      </label>
+
+      <div className="mt-4 flex flex-col gap-3">
         <button
           type="button"
           onClick={() => signIn("google")}
-          disabled={loading !== null}
-          className="flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-bg px-4 text-base font-semibold text-fg transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-50"
+          disabled={loading !== null || !agreed}
+          className="flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-bg px-4 text-base font-semibold text-fg transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading === "google" ? "이동 중…" : "Google로 계속하기"}
         </button>
@@ -73,8 +100,8 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={() => signIn("kakao")}
-          disabled={loading !== null}
-          className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#FEE500] px-4 text-base font-semibold text-[#191600] transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-50"
+          disabled={loading !== null || !agreed}
+          className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#FEE500] px-4 text-base font-semibold text-[#191600] transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading === "kakao" ? "이동 중…" : "카카오로 계속하기"}
         </button>

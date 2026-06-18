@@ -526,8 +526,12 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-border">
-        <div className="mx-auto max-w-3xl px-5 py-6 text-center text-xs text-fg-muted">
-          © 2026 ClipNote
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-5 py-6 text-center text-xs text-fg-muted">
+          <span>© 2026 ClipNote</span>
+          <span aria-hidden>·</span>
+          <a href="/privacy" className="font-semibold hover:text-fg">
+            개인정보처리방침
+          </a>
         </div>
       </footer>
     </div>
