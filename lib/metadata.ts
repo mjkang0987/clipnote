@@ -1,7 +1,8 @@
 // URL 메타데이터 추출 (plan.md §8 — 단계별 폴백)
 // 0) 단축 링크 해제(naver.me) → 1) 사이트별 어댑터(네이버 카페·블로그, 인스타) →
 // 2) OG 태그 → 3) script 동봉 데이터(JSON-LD/앱 상태) → 4) HTML <title>/<meta> →
-// (실패 시 크롤러 UA 로 1회 재시도, 그래도 안 되면 수동 입력은 상위 레이어)
+// (메타가 없으면 같은 사이트 본문 iframe 1회 추적, 크롤러 UA 로 1회 재시도,
+//  그래도 안 되면 수동 입력은 상위 레이어)
 
 import { fetchNaverCafeMetadata, parseNaverCafe } from "./adapters/naver-cafe";
 import { fetchInstagramMetadata, parseInstagram } from "./adapters/instagram";
@@ -128,8 +129,13 @@ async function tryAdapters(url: string): Promise<ClipMetadata | null> {
   return null;
 }
 
-/** 주어진 UA 로 URL 을 받아 HTML 을 파싱. 실패 시 blank(throw 안 함). */
-async function fetchAndParse(url: string, ua: string): Promise<ClipMetadata> {
+/** 주어진 UA 로 URL 을 받아 HTML 을 파싱. 실패 시 blank(throw 안 함).
+ *  allowIframe: 메타를 못 얻었을 때 본문 iframe(같은 사이트)을 1회 따라간다. */
+async function fetchAndParse(
+  url: string,
+  ua: string,
+  allowIframe = true,
+): Promise<ClipMetadata> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   let finalUrl = url;
@@ -151,7 +157,22 @@ async function fetchAndParse(url: string, ua: string): Promise<ClipMetadata> {
     }
 
     const html = await readCapped(res, MAX_HTML_BYTES);
-    return parseHtml(finalUrl, html);
+    const result = parseHtml(finalUrl, html);
+    if (result.source !== "none") return result;
+
+    // 메타가 전혀 없으면, 본문을 iframe 으로 그리는 페이지(네이버 블로그류)일 수 있다.
+    // 같은 사이트의 콘텐츠 프레임을 한 번만 따라가 본다(광고/외부 임베드는 제외).
+    if (allowIframe) {
+      const frame = findContentIframe(html, finalUrl);
+      if (frame && frame !== finalUrl) {
+        const inner = await fetchAndParse(frame, ua, false);
+        if (inner.source !== "none") {
+          // 저장 대상은 사용자가 연 바깥 페이지이므로 URL 은 바깥 것을 유지.
+          return { ...inner, url: finalUrl };
+        }
+      }
+    }
+    return result;
   } catch (err) {
     const aborted = err instanceof Error && err.name === "AbortError";
     return blank(
@@ -161,6 +182,51 @@ async function fetchAndParse(url: string, ua: string): Promise<ClipMetadata> {
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * 본문이 들어있을 법한 iframe 의 절대 URL 을 고른다. 없으면 null.
+ * - 외부 광고/소셜 임베드 회피를 위해 같은 사이트(동일 등록 도메인)만 후보.
+ * - id/name/class 에 main·content·post 등이 있으면 우선.
+ */
+function findContentIframe(html: string, baseUrl: string): string | null {
+  let base: URL;
+  try {
+    base = new URL(baseUrl);
+  } catch {
+    return null;
+  }
+
+  const head = html.slice(0, MAX_HTML_BYTES);
+  const tags = head.match(/<iframe\b[^>]*>/gi) ?? [];
+  const candidates: { url: string; score: number }[] = [];
+  for (const tag of tags) {
+    const src = attr(tag, "src");
+    if (!src) continue;
+    let abs: URL;
+    try {
+      abs = new URL(src, base);
+    } catch {
+      continue;
+    }
+    if (abs.protocol !== "http:" && abs.protocol !== "https:") continue;
+    if (!sameSite(abs.hostname, base.hostname)) continue;
+
+    const hint =
+      `${attr(tag, "id") ?? ""} ${attr(tag, "name") ?? ""} ${attr(tag, "class") ?? ""}`.toLowerCase();
+    const score = /main|content|post|view|article|board|body/.test(hint) ? 2 : 1;
+    candidates.push({ url: abs.toString(), score });
+  }
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates[0].url;
+}
+
+/** 두 호스트가 같은 사이트(동일 등록 도메인, 단순 휴리스틱)인지. */
+function sameSite(a: string, b: string): boolean {
+  if (a === b) return true;
+  const reg = (h: string) => h.split(".").slice(-2).join(".");
+  return reg(a) === reg(b);
 }
 
 /** 응답 본문을 최대 maxBytes 까지만 읽어 문자열로. */
