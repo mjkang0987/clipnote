@@ -156,7 +156,8 @@ async function fetchAndParse(
       return blank(finalUrl, "HTML 페이지가 아니라 내용을 읽을 수 없어요.");
     }
 
-    const html = await readCapped(res, MAX_HTML_BYTES);
+    const bytes = await readCapped(res, MAX_HTML_BYTES);
+    const html = decodeHtml(bytes, charsetFromContentType(contentType));
     const result = parseHtml(finalUrl, html);
     if (result.source !== "none") return result;
 
@@ -229,9 +230,9 @@ function sameSite(a: string, b: string): boolean {
   return reg(a) === reg(b);
 }
 
-/** 응답 본문을 최대 maxBytes 까지만 읽어 문자열로. */
-async function readCapped(res: Response, maxBytes: number): Promise<string> {
-  if (!res.body) return await res.text();
+/** 응답 본문을 최대 maxBytes 까지만 읽어 원시 바이트로. (디코딩은 charset 판별 후 별도) */
+async function readCapped(res: Response, maxBytes: number): Promise<Uint8Array> {
+  if (!res.body) return new Uint8Array(await res.arrayBuffer());
   const reader = res.body.getReader();
   const chunks: Uint8Array[] = [];
   let received = 0;
@@ -254,7 +255,37 @@ async function readCapped(res: Response, maxBytes: number): Promise<string> {
     offset += c.length;
     if (offset >= maxBytes) break;
   }
-  return new TextDecoder("utf-8").decode(merged);
+  return merged;
+}
+
+/** Content-Type 헤더의 charset 값. 없으면 null. */
+function charsetFromContentType(contentType: string | null): string | null {
+  if (!contentType) return null;
+  const m = contentType.match(/charset=["']?\s*([\w-]+)/i);
+  return m ? m[1] : null;
+}
+
+/**
+ * HTML 바이트를 올바른 charset 으로 디코드.
+ * 1) Content-Type 헤더 charset → 2) 문서 앞부분의 <meta charset> → 3) utf-8.
+ * (네이버 등 일부 한국 사이트는 EUC-KR 이라 utf-8 고정 디코딩 시 제목이 깨진다)
+ */
+function decodeHtml(bytes: Uint8Array, headerCharset: string | null): string {
+  let charset = headerCharset;
+  if (!charset) {
+    // 메타 태그는 ASCII 범위라 latin1 로 앞부분만 훑어 charset 선언을 찾는다.
+    const head = new TextDecoder("latin1").decode(bytes.subarray(0, 4096));
+    const m =
+      head.match(/<meta[^>]+charset=["']?\s*([\w-]+)/i) ??
+      head.match(/charset=["']?\s*([\w-]+)/i);
+    if (m) charset = m[1];
+  }
+  const label = (charset ?? "utf-8").toLowerCase();
+  try {
+    return new TextDecoder(label).decode(bytes);
+  } catch {
+    return new TextDecoder("utf-8").decode(bytes);
+  }
 }
 
 function parseHtml(url: string, html: string): ClipMetadata {
