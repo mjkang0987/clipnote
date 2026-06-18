@@ -263,6 +263,10 @@ export default function Home() {
                 onChange={(e) => setTagInput(e.target.value)}
                 onClear={() => setTagInput("")}
               />
+              <p className="text-xs leading-relaxed text-fg-muted">
+                태그를 달아두면 <a href="/clips" className="font-semibold text-brand-strong underline">내 클립</a>에서
+                같은 태그끼리 모아 볼 수 있어요. 쉼표(,)로 여러 개, 최대 6개까지요.
+              </p>
               {tags.length > 0 && (
                 <ul className="mt-1 flex flex-wrap gap-1.5">
                   {tags.map((tag) => (
@@ -376,13 +380,34 @@ export default function Home() {
               >
                 {savedLocal ? "저장됨 ✓" : "이 브라우저에 저장"}
               </button>
-              <p className="text-center text-sm text-fg-muted">
-                공유 링크를 만들려면{" "}
-                <a href="/login" className="font-semibold text-brand-strong underline">
-                  로그인
-                </a>
-                하세요.
-              </p>
+
+              {/* 로그인 전(게스트)에 쓸 수 있는 기능 안내 */}
+              <div className="rounded-xl border border-border bg-surface p-4">
+                <p className="text-sm font-semibold text-fg">
+                  로그인 안 해도 이만큼 돼요
+                </p>
+                <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
+                  <li>· 링크를 붙여넣어 미리보기 카드를 만들 수 있어요.</li>
+                  <li>
+                    · 만든 카드를 이 브라우저에 저장하고{" "}
+                    <a href="/clips" className="font-semibold text-brand-strong underline">
+                      내 클립
+                    </a>
+                    에서 다시 볼 수 있어요.
+                  </li>
+                  <li>
+                    · 단, 저장한 클립은 이 기기에만 남고, 짧은 공유 링크는 만들 수
+                    없어요.
+                  </li>
+                </ul>
+                <p className="mt-3 text-sm text-fg-muted">
+                  공유 링크를 만들고 어디서나 보려면{" "}
+                  <a href="/login" className="font-semibold text-brand-strong underline">
+                    로그인
+                  </a>
+                  하세요.
+                </p>
+              </div>
             </div>
           ) : (
             // 로그인(또는 확인 중): 공유 링크 만들기
@@ -456,6 +481,15 @@ export default function Home() {
           <h2 className="mt-10 text-xl font-bold text-fg">자주 묻는 질문</h2>
           <dl className="mt-3 flex flex-col gap-4">
             <div>
+              <dt className="font-semibold text-fg">태그는 어떻게 쓰나요?</dt>
+              <dd className="mt-1 leading-relaxed text-fg-muted">
+                클립을 만들 때 태그 칸에 쉼표(,)로 구분해 최대 6개까지 달 수
+                있어요. ‘내 클립’ 화면에서 태그를 누르면 같은 태그의 클립만 모아
+                볼 수 있고, 한 번 쓴 태그는 다음에 ‘자주 쓴 태그’로 추천돼 한 번에
+                넣을 수 있어요.
+              </dd>
+            </div>
+            <div>
               <dt className="font-semibold text-fg">로그인 없이도 쓸 수 있나요?</dt>
               <dd className="mt-1 leading-relaxed text-fg-muted">
                 네. 비로그인 상태에서도 URL을 이 브라우저에 저장할 수 있어요. 다만
@@ -492,8 +526,12 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-border">
-        <div className="mx-auto max-w-3xl px-5 py-6 text-center text-xs text-fg-muted">
-          © 2026 ClipNote
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-5 py-6 text-center text-xs text-fg-muted">
+          <span>© 2026 ClipNote</span>
+          <span aria-hidden>·</span>
+          <a href="/privacy" className="font-semibold hover:text-fg">
+            개인정보처리방침
+          </a>
         </div>
       </footer>
     </div>
@@ -545,6 +583,14 @@ const faqJsonLd = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
   mainEntity: [
+    {
+      "@type": "Question",
+      name: "태그는 어떻게 쓰나요?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "클립을 만들 때 태그 칸에 쉼표(,)로 구분해 최대 6개까지 달 수 있어요. ‘내 클립’ 화면에서 태그를 누르면 같은 태그의 클립만 모아 볼 수 있고, 한 번 쓴 태그는 다음에 ‘자주 쓴 태그’로 추천됩니다.",
+      },
+    },
     {
       "@type": "Question",
       name: "로그인 없이도 쓸 수 있나요?",
