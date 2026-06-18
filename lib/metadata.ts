@@ -52,7 +52,7 @@ export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
   try {
     url = new URL(normalizeUrl(rawUrl)).toString();
   } catch {
-    return blank(rawUrl, "올바른 URL 형식이 아니에요.");
+    return blank(rawUrl, "올바른 주소(URL) 형식이 아니에요.");
   }
 
   // 0) naver.me 단축 링크는 먼저 실제 목적지로 해제해야 알맞은 어댑터(카페/블로그 등)가 매칭된다.
@@ -187,7 +187,10 @@ async function fetchAndParse(
 
     const contentType = res.headers.get("content-type") ?? "";
     if (!/text\/html|application\/xhtml|application\/xml/i.test(contentType)) {
-      return blank(finalUrl, "HTML 페이지가 아니라 내용을 읽을 수 없어요.");
+      return blank(
+        finalUrl,
+        "웹페이지가 아니라서 내용을 읽을 수 없어요(이미지·PDF 등). 제목을 직접 입력해 주세요.",
+      );
     }
 
     const bytes = await readCapped(res, MAX_HTML_BYTES);
@@ -406,7 +409,7 @@ function parseHtml(url: string, html: string): ClipMetadata {
 
   return blank(
     url,
-    "이 페이지는 제목·설명을 자동으로 읽을 수 없어요(로그인이 필요하거나 자바스크립트로 그려지는 페이지). 제목을 직접 입력해 주세요.",
+    "이 페이지는 제목·설명을 자동으로 가져올 수 없어요(로그인이 필요한 페이지일 수 있어요). 제목을 직접 입력해 주세요.",
   );
 }
 
