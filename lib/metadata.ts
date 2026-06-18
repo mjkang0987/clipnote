@@ -1,8 +1,16 @@
 // URL 메타데이터 추출 (plan.md §8 — 단계별 폴백)
-// 0) 사이트별 어댑터(예: 네이버 카페) → 1) OG 태그 → 2) HTML <title>/<meta> → (수동은 상위 레이어)
+// 0) 단축 링크 해제(naver.me) → 1) 사이트별 어댑터(네이버 카페·블로그, 인스타) →
+// 2) OG 태그 → 3) script 동봉 데이터(JSON-LD/앱 상태) → 4) HTML <title>/<meta> →
+// (실패 시 크롤러 UA 로 1회 재시도, 그래도 안 되면 수동 입력은 상위 레이어)
 
 import { fetchNaverCafeMetadata, parseNaverCafe } from "./adapters/naver-cafe";
 import { fetchInstagramMetadata, parseInstagram } from "./adapters/instagram";
+import {
+  fetchNaverBlogMetadata,
+  isNaverShortLink,
+  parseNaverBlog,
+  resolveNaverShortLink,
+} from "./adapters/naver";
 
 export type ClipMetadata = {
   url: string; // 정규화된 최종 URL
@@ -42,7 +50,10 @@ export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
     return blank(rawUrl, "올바른 URL 형식이 아니에요.");
   }
 
-  // 0) 사이트별 어댑터 우선 (네이버 카페, 인스타그램 등). 성공 시 바로 반환.
+  // 0) naver.me 단축 링크는 먼저 실제 목적지로 해제해야 알맞은 어댑터(카페/블로그 등)가 매칭된다.
+  url = await resolveShortLinks(url);
+
+  // 1) 사이트별 어댑터 우선 (네이버 카페·블로그, 인스타그램 등). 성공 시 바로 반환.
   const adapted = await tryAdapters(url);
   if (adapted) return adapted;
 
@@ -59,6 +70,28 @@ export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
   return result;
 }
 
+/** 알려진 단축 링크(naver.me 등)를 실제 목적지로 해제. 실패하면 원본 URL 유지. */
+async function resolveShortLinks(url: string): Promise<string> {
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return url;
+  }
+  if (!isNaverShortLink(u)) return url;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const resolved = await resolveNaverShortLink(url, controller.signal);
+    return resolved ?? url;
+  } catch {
+    return url;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** 사이트별 어댑터 시도. 매칭/성공 시 메타 반환, 아니면 null(일반 경로로 폴백). */
 async function tryAdapters(url: string): Promise<ClipMetadata | null> {
   const controller = new AbortController();
@@ -69,6 +102,12 @@ async function tryAdapters(url: string): Promise<ClipMetadata | null> {
     const cafe = parseNaverCafe(u);
     if (cafe) {
       const adapted = await fetchNaverCafeMetadata(url, cafe, controller.signal);
+      if (adapted?.title) return adapted;
+    }
+
+    const blog = parseNaverBlog(u);
+    if (blog) {
+      const adapted = await fetchNaverBlogMetadata(url, blog, controller.signal);
       if (adapted?.title) return adapted;
     }
 
