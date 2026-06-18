@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Provider = "google" | "kakao";
@@ -8,6 +8,13 @@ type Provider = "google" | "kakao";
 export default function LoginPage() {
   const [loading, setLoading] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // 콜백에서 로그인 실패로 돌아온 경우(/login?error=...) 안내를 보여줌
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("error")) {
+      setError("로그인이 완료되지 않았어요. 다시 시도해 주세요.");
+    }
+  }, []);
 
   async function signIn(provider: Provider) {
     setLoading(provider);
