@@ -29,6 +29,7 @@ export default function ClipsPage() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Item | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -81,8 +82,10 @@ export default function ClipsPage() {
 
   const groups = useMemo(() => groupByDate(filtered), [filtered]);
 
-  function handleDeleteLocal(url: string) {
-    setItems(removeLocalClip(url).map(localToItem));
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    setItems(removeLocalClip(pendingDelete.url).map(localToItem));
+    setPendingDelete(null);
   }
 
   return (
@@ -160,7 +163,7 @@ export default function ClipsPage() {
                     <ClipCard
                       key={item.key}
                       item={item}
-                      onDeleteLocal={handleDeleteLocal}
+                      onRequestDelete={setPendingDelete}
                     />
                   ))}
                 </ul>
@@ -169,16 +172,89 @@ export default function ClipsPage() {
           </div>
         )}
       </main>
+
+      {pendingDelete && (
+        <DeleteConfirmLayer
+          item={pendingDelete}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={confirmDelete}
+        />
+      )}
+    </div>
+  );
+}
+
+/** 삭제 확인 레이어. 모바일은 하단 시트, 데스크톱은 가운데 모달. */
+function DeleteConfirmLayer({
+  item,
+  onCancel,
+  onConfirm,
+}: {
+  item: Item;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onCancel();
+    }
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onCancel]);
+
+  return (
+    <div
+      role="presentation"
+      onClick={onCancel}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
+    >
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="delete-title"
+        aria-describedby="delete-desc"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-t-2xl bg-surface p-6 shadow-soft sm:rounded-2xl"
+      >
+        <h2 id="delete-title" className="text-lg font-bold text-fg">
+          클립을 삭제할까요?
+        </h2>
+        <p id="delete-desc" className="mt-2 text-sm leading-relaxed text-fg-muted">
+          ‘<span className="font-medium text-fg">{item.title}</span>’ 클립을
+          삭제합니다. 이 작업은 되돌릴 수 없어요.
+        </p>
+        <div className="mt-6 flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-12 flex-1 rounded-xl border border-border bg-bg text-base font-semibold text-fg transition hover:bg-border/40"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            autoFocus
+            className="h-12 flex-1 rounded-xl bg-danger text-base font-semibold text-white transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-danger/50"
+          >
+            삭제
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
 function ClipCard({
   item,
-  onDeleteLocal,
+  onRequestDelete,
 }: {
   item: Item;
-  onDeleteLocal: (url: string) => void;
+  onRequestDelete: (item: Item) => void;
 }) {
   return (
     <li className="flex gap-4 rounded-2xl border border-border bg-surface p-4">
@@ -236,7 +312,7 @@ function ClipCard({
           {item.local && (
             <button
               type="button"
-              onClick={() => onDeleteLocal(item.url)}
+              onClick={() => onRequestDelete(item)}
               className="font-semibold text-danger hover:underline"
             >
               삭제
