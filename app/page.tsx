@@ -217,7 +217,7 @@ export default function Home() {
               <label htmlFor="clip-url" className="text-sm font-medium text-fg">
                 URL <span className="text-danger">*</span>
               </label>
-              <input
+              <ClearableInput
                 id="clip-url"
                 name="url"
                 type="url"
@@ -226,7 +226,7 @@ export default function Home() {
                 placeholder="https://example.com/article"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="h-12 rounded-xl border border-border bg-bg px-4 text-base text-fg outline-none transition focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40"
+                onClear={() => setUrl("")}
               />
             </div>
 
@@ -235,7 +235,7 @@ export default function Home() {
                 제목{" "}
                 <span className="font-normal text-fg-muted">(선택 · 비우면 자동)</span>
               </label>
-              <input
+              <ClearableInput
                 id="clip-title"
                 name="title"
                 type="text"
@@ -243,7 +243,7 @@ export default function Home() {
                 placeholder="공유 카드에 보일 제목"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="h-12 rounded-xl border border-border bg-bg px-4 text-base text-fg outline-none transition focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40"
+                onClear={() => setTitle("")}
               />
             </div>
 
@@ -252,14 +252,14 @@ export default function Home() {
                 태그{" "}
                 <span className="font-normal text-fg-muted">(선택 · 쉼표로 구분)</span>
               </label>
-              <input
+              <ClearableInput
                 id="clip-tags"
                 name="tags"
                 type="text"
                 placeholder="개발, 디자인, 읽을거리"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
-                className="h-12 rounded-xl border border-border bg-bg px-4 text-base text-fg outline-none transition focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40"
+                onClear={() => setTagInput("")}
               />
               {tags.length > 0 && (
                 <ul className="mt-1 flex flex-wrap gap-1.5">
@@ -494,6 +494,46 @@ export default function Home() {
           © 2026 ClipNote
         </div>
       </footer>
+    </div>
+  );
+}
+
+/**
+ * 오른쪽에 지우기(×) 버튼이 달린 입력칸. 값이 있을 때만 버튼이 보인다.
+ * 모바일에서 길게 눌러 전체 선택→삭제할 필요 없이 한 번에 비울 수 있다.
+ */
+function ClearableInput({
+  value,
+  onClear,
+  ...props
+}: Omit<React.InputHTMLAttributes<HTMLInputElement>, "className"> & {
+  onClear: () => void;
+}) {
+  const hasValue = String(value ?? "").length > 0;
+  return (
+    <div className="relative">
+      <input
+        {...props}
+        value={value}
+        className="h-12 w-full rounded-xl border border-border bg-bg pl-4 pr-12 text-base text-fg outline-none transition focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40"
+      />
+      {hasValue && (
+        <button
+          type="button"
+          onClick={onClear}
+          aria-label="입력 지우기"
+          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-fg-muted transition hover:bg-border hover:text-fg active:scale-90"
+        >
+          <svg viewBox="0 0 20 20" className="h-5 w-5" aria-hidden="true">
+            <path
+              d="M6 6l8 8M14 6l-8 8"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
