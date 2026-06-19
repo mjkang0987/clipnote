@@ -62,6 +62,10 @@
 - [~] #branch `feat/clips-list` — /clips 목록 페이지(게스트=localStorage, 로그인=DB). 코드 완료.
   - 게스트 저장이 화면에 보이게 됨(검증 가능). 로그인 목록은 OAuth 후 검증.
 - [ ] #branch `feat/auth-naver` — Naver 로그인 (커스텀 OAuth, Supabase 미지원이라 별도 구현)
+- [x] #branch `feat/clips-edit-bulk` — 내 클립 편집/일괄 관리(DB 클립 대상, 2026-06-19, 11장). 코드 완료, tsc 통과.
+  - A: 단건 편집 모달(제목+태그) ✓
+  - B: 여러 개 선택 → 일괄 삭제 ✓
+  - C: 선택한 클립에 태그 일괄 적용(추가)/변경(교체) ✓
 - [x] #branch `feat/home-compact` — 홈을 PC·모바일 한 화면에(버튼까지). 미리보기 카드 1200:630 고정 → 내용 높이(auto)로 축소, 히어로·폼·섹션 세로 여백 축소, 대표이미지 max-h-72→40. tsc 통과. (2026-06-19)
 - [x] #branch `feat/pwa` — 기본 설치형 PWA (2026-06-19): `app/manifest.ts`(standalone, theme #7c5cfc) + 아이콘(북마크 마크, 192·512·apple·maskable) + 최소 서비스워커(`public/sw.js`) + 등록 컴포넌트 + layout themeColor/apple 메타. 코드 완료, tsc 통과. 오프라인/공유타깃은 후순위.
 - [~] #branch `feat/clip-save-share-split` — 공유 생성 / 클립 저장 분리 + 로그인 클립 삭제 (코드 완료, 10장). 남은 사용자 할 일: Supabase `saved` 컬럼 SQL 실행 + 푸시/배포.
@@ -101,6 +105,27 @@
 ### 기대 결과
 - 공유 링크를 만들어도 내 클립엔 자동으로 안 쌓임. 원할 때만 "클립에 추가".
 - 내 클립에서 불필요한 클립 삭제 가능.
+
+## 11. 계획: 내 클립 편집/일괄 관리 (2026-06-19, DB 클립 대상)
+
+### 요구사항
+- A. 단건 편집: 카드 "편집" → 모달에서 **제목·태그** 수정 후 저장.
+- B. 일괄 삭제: 선택 모드(체크박스)로 여러 개 골라 한 번에 삭제.
+- C. 태그 일괄: 선택한 클립들에 태그 **추가**(기존에 더함) 또는 **교체**(기존 무시).
+- 대상은 로그인(DB) 클립만. 게스트(로컬)는 선택/편집 미지원.
+
+### 설계
+- **store**: `update(slug, userId, patch: {title?, tags?, saved?, description?, gradient?}): Promise<Clip|null>` 추가(소유자 확인). memory+supabase. `setSaved`는 `update`로 대체 가능하나 호환 위해 유지.
+- **API**: `PATCH /api/clip/[slug]` 확장 — body 의 `title`(문자), `tags`(string[]), `saved`(bool) 중 온 것만 반영. (일괄은 선택 슬러그마다 PATCH/DELETE 호출 — 소규모라 N요청 허용.)
+- **UI(`/clips`)**:
+  - 카드에 "편집" 버튼 → `EditClipLayer` 모달(제목 input + 태그 input). 저장 시 PATCH → 목록 in-place 갱신.
+  - 상단 "선택" 토글 → 선택 모드: 카드에 체크박스. 선택 시 하단 액션바("태그 적용", "삭제", "취소").
+    - 삭제: 선택 슬러그 DELETE 일괄 → 목록에서 제거.
+    - 태그 적용: 입력 모달(태그 + 추가/교체 선택) → 각 PATCH(tags) → 목록 갱신.
+  - 선택/편집은 `loggedIn`일 때만 노출.
+
+### 영향 파일
+`lib/store.ts`, `lib/store-supabase.ts`, `app/api/clip/[slug]/route.ts`, `app/clips/page.tsx`.
 
 ### 구현 메모 (2026-06-19)
 - `clips.saved` 추가, `listByUser` 는 `saved=true` 만. 공유 생성=`saved:false`, 클립 추가=`saved:true`.

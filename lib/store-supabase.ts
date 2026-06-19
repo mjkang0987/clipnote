@@ -1,7 +1,7 @@
 // Supabase(Postgres) 기반 ClipStore 구현.
 // 환경변수가 설정돼 있을 때만 사용된다(lib/store.ts 의 팩토리에서 선택).
 
-import type { Clip, ClipStore, NewClip } from "./store";
+import type { Clip, ClipPatch, ClipStore, NewClip } from "./store";
 import { generateSlug } from "./slug";
 import { getSupabaseAdmin } from "./supabase";
 import { canonicalizeUrl } from "./metadata";
@@ -148,6 +148,29 @@ export function createSupabaseStore(): ClipStore {
         .select("slug");
       if (error) throw new Error(`클립 저장 상태 변경 실패: ${error.message}`);
       return (data?.length ?? 0) > 0;
+    },
+
+    async update(slug: string, userId: string, patch: ClipPatch): Promise<Clip | null> {
+      const supabase = getSupabaseAdmin();
+      // camelCase → DB 컬럼. 온 값만 반영.
+      const row: Record<string, unknown> = {};
+      if (patch.title !== undefined) row.title = patch.title;
+      if (patch.description !== undefined) row.description = patch.description;
+      if (patch.tags !== undefined) row.tags = patch.tags;
+      if (patch.gradient !== undefined) row.gradient = patch.gradient;
+      if (patch.saved !== undefined) row.saved = patch.saved;
+      if (Object.keys(row).length === 0) {
+        return this.get(slug); // 변경 없음
+      }
+      const { data, error } = await supabase
+        .from(TABLE)
+        .update(row)
+        .eq("slug", slug)
+        .eq("user_id", userId)
+        .select()
+        .maybeSingle();
+      if (error) throw new Error(`클립 수정 실패: ${error.message}`);
+      return data ? rowToClip(data as Row) : null;
     },
 
     async remove(slug: string, userId: string): Promise<boolean> {

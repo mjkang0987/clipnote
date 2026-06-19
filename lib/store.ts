@@ -26,6 +26,11 @@ export type Clip = {
 
 export type NewClip = Omit<Clip, "slug" | "createdAt" | "viewCount">;
 
+/** 수정 가능한 필드(부분). */
+export type ClipPatch = Partial<
+  Pick<Clip, "title" | "description" | "tags" | "gradient" | "saved">
+>;
+
 export interface ClipStore {
   create(data: NewClip): Promise<Clip>;
   get(slug: string): Promise<Clip | null>;
@@ -36,6 +41,8 @@ export interface ClipStore {
   findByUserUrl(userId: string, url: string): Promise<Clip | null>;
   /** 본인 클립의 saved 토글. 대상이 없거나 소유자가 아니면 false. */
   setSaved(slug: string, userId: string, saved: boolean): Promise<boolean>;
+  /** 본인 클립 수정(제목·태그·저장여부 등). 소유 아니면 null. */
+  update(slug: string, userId: string, patch: ClipPatch): Promise<Clip | null>;
   /** 본인 클립 삭제. 대상이 없거나 소유자가 아니면 false. */
   remove(slug: string, userId: string): Promise<boolean>;
 }
@@ -95,6 +102,17 @@ function createMemoryStore(): ClipStore {
       if (!clip || clip.userId !== userId) return false;
       clip.saved = saved;
       return true;
+    },
+
+    async update(slug, userId, patch) {
+      const clip = clips.get(slug);
+      if (!clip || clip.userId !== userId) return null;
+      if (patch.title !== undefined) clip.title = patch.title;
+      if (patch.description !== undefined) clip.description = patch.description;
+      if (patch.tags !== undefined) clip.tags = patch.tags;
+      if (patch.gradient !== undefined) clip.gradient = patch.gradient;
+      if (patch.saved !== undefined) clip.saved = patch.saved;
+      return clip;
     },
 
     async remove(slug, userId) {
