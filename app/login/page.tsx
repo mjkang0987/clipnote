@@ -10,18 +10,18 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
 
+  // 카카오 로그인 임시 비활성화.
+  // 이유: Supabase 가 카카오에 account_email 을 강제 요청하는데(클라이언트 scope 로 제거 불가),
+  // account_email 은 카카오 "비즈앱" 전환 후에만 켤 수 있어 개인 앱에선 400(KOE205) 이 남는다.
+  // → 비즈앱 전환을 결정하면 true 로 바꿔 재활성화한다. (Supabase issue #36878)
+  const KAKAO_ENABLED = false;
+
   // 콜백에서 로그인 실패로 돌아온 경우(/login?error=...) 안내를 보여줌
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("error")) {
       setError("로그인이 완료되지 않았어요. 다시 시도해 주세요.");
     }
   }, []);
-
-  // 공급자별 요청 scope. 카카오는 OpenID Connect(openid)로 고유 식별자(sub)만 받는다.
-  // → 동의항목(닉네임·이메일·프로필) 설정/심사 불필요. 로그인 정보 외에는 수집하지 않음.
-  const PROVIDER_SCOPES: Partial<Record<Provider, string>> = {
-    kakao: "openid",
-  };
 
   async function signIn(provider: Provider) {
     if (!agreed) {
@@ -34,10 +34,7 @@ export default function LoginPage() {
       const supabase = createSupabaseBrowserClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          scopes: PROVIDER_SCOPES[provider],
-        },
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
       if (error) {
         setError("로그인을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.");
@@ -57,7 +54,9 @@ export default function LoginPage() {
         Clip<span className="text-brand">Note</span> 로그인
       </h1>
       <p className="mt-2 text-center text-sm text-fg-muted">
-        Google·카카오 계정으로 간편하게 시작하세요.
+        {KAKAO_ENABLED
+          ? "Google·카카오 계정으로 간편하게 시작하세요."
+          : "Google 계정으로 간편하게 시작하세요."}
       </p>
 
       {/* 개인정보 수집·이용 동의 */}
@@ -92,14 +91,16 @@ export default function LoginPage() {
           {loading === "google" ? "이동 중…" : "Google로 계속하기"}
         </button>
 
-        <button
-          type="button"
-          onClick={() => signIn("kakao")}
-          disabled={loading !== null || !agreed}
-          className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#FEE500] px-4 text-base font-semibold text-[#191600] transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {loading === "kakao" ? "이동 중…" : "카카오로 계속하기"}
-        </button>
+        {KAKAO_ENABLED && (
+          <button
+            type="button"
+            onClick={() => signIn("kakao")}
+            disabled={loading !== null || !agreed}
+            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#FEE500] px-4 text-base font-semibold text-[#191600] transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading === "kakao" ? "이동 중…" : "카카오로 계속하기"}
+          </button>
+        )}
       </div>
 
       {error && (
