@@ -18,6 +18,7 @@ type Row = {
   gradient: string;
   tags: string[] | null;
   user_id: string | null;
+  saved: boolean | null;
   view_count: number;
   created_at: string;
 };
@@ -33,6 +34,7 @@ function rowToClip(row: Row): Clip {
     gradient: row.gradient,
     tags: row.tags ?? [],
     userId: row.user_id,
+    saved: row.saved ?? false,
     viewCount: row.view_count,
     createdAt: row.created_at,
   };
@@ -58,6 +60,7 @@ export function createSupabaseStore(): ClipStore {
             gradient: data.gradient,
             tags: data.tags,
             user_id: data.userId,
+            saved: data.saved,
           })
           .select()
           .single();
@@ -109,10 +112,36 @@ export function createSupabaseStore(): ClipStore {
         .from(TABLE)
         .select()
         .eq("user_id", userId)
+        .eq("saved", true)
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw new Error(`목록 조회 실패: ${error.message}`);
       return (data as Row[]).map(rowToClip);
+    },
+
+    async setSaved(slug: string, userId: string, saved: boolean): Promise<boolean> {
+      const supabase = getSupabaseAdmin();
+      // 본인(user_id) 소유만 변경 — 일치하는 행이 없으면 빈 결과
+      const { data, error } = await supabase
+        .from(TABLE)
+        .update({ saved })
+        .eq("slug", slug)
+        .eq("user_id", userId)
+        .select("slug");
+      if (error) throw new Error(`클립 저장 상태 변경 실패: ${error.message}`);
+      return (data?.length ?? 0) > 0;
+    },
+
+    async remove(slug: string, userId: string): Promise<boolean> {
+      const supabase = getSupabaseAdmin();
+      const { data, error } = await supabase
+        .from(TABLE)
+        .delete()
+        .eq("slug", slug)
+        .eq("user_id", userId)
+        .select("slug");
+      if (error) throw new Error(`클립 삭제 실패: ${error.message}`);
+      return (data?.length ?? 0) > 0;
     },
   };
 }

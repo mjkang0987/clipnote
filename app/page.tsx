@@ -18,7 +18,12 @@ export default function Home() {
 
   const [creating, setCreating] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareSlug, setShareSlug] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // 클립에 추가(내 클립 목록에 담기)
+  const [adding, setAdding] = useState(false);
+  const [added, setAdded] = useState(false);
 
   // 로그인 상태: null=확인중, true/false
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
@@ -87,6 +92,8 @@ export default function Home() {
     setError(null);
     setMeta(null);
     setShareUrl(null);
+    setShareSlug(null);
+    setAdded(false);
     try {
       const res = await fetch(`/api/metadata?url=${encodeURIComponent(url.trim())}`);
       const data = (await res.json()) as ClipMetadata;
@@ -123,18 +130,79 @@ export default function Home() {
           gradient: gradient.name,
         }),
       });
-      const data = (await res.json()) as { shareUrl?: string; error?: string };
+      const data = (await res.json()) as {
+        slug?: string;
+        shareUrl?: string;
+        error?: string;
+      };
       if (!res.ok || !data.shareUrl) {
         setError(data.error ?? "공유 링크 생성에 실패했어요.");
         return;
       }
       setShareUrl(data.shareUrl);
+      setShareSlug(data.slug ?? null);
       recordTags(tags);
       setKnownTags(getKnownTags());
     } catch {
       setError("공유 링크 생성 중 문제가 발생했어요.");
     } finally {
       setCreating(false);
+    }
+  }
+
+  // 로그인: 내 클립 목록에 담기. 공유 링크를 이미 만들었으면 그 클립을 담고,
+  // 아니면 새로 만들어 담는다(공유 링크 없이도 가능).
+  async function handleAddClip() {
+    const sendTitle = title.trim() || meta?.title || (url ? prettyHost(url) : "");
+    if (!sendTitle) {
+      setError("클립을 추가하려면 제목이 필요해요. 제목을 입력해 주세요.");
+      return;
+    }
+    setAdding(true);
+    setError(null);
+    setAdded(false);
+    try {
+      if (shareSlug) {
+        const res = await fetch(`/api/clip/${shareSlug}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ saved: true }),
+        });
+        if (!res.ok) {
+          const d = (await res.json().catch(() => ({}))) as { error?: string };
+          setError(d.error ?? "클립 추가에 실패했어요.");
+          return;
+        }
+      } else {
+        const res = await fetch("/api/clip", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: url.trim(),
+            title: sendTitle,
+            description: meta?.description ?? null,
+            image: meta?.image ?? null,
+            siteName: meta?.siteName ?? null,
+            tags,
+            gradient: gradient.name,
+            save: true,
+          }),
+        });
+        const data = (await res.json()) as { slug?: string; error?: string };
+        if (!res.ok || !data.slug) {
+          setError(data.error ?? "클립 추가에 실패했어요.");
+          return;
+        }
+        setShareSlug(data.slug);
+      }
+      recordTags(tags);
+      setKnownTags(getKnownTags());
+      setAdded(true);
+      setTimeout(() => setAdded(false), 1800);
+    } catch {
+      setError("클립 추가 중 문제가 발생했어요.");
+    } finally {
+      setAdding(false);
     }
   }
 
@@ -410,15 +478,25 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            // 로그인(또는 확인 중): 공유 링크 만들기
-            <button
-              type="button"
-              onClick={handleCreateShare}
-              disabled={!hasInput || creating || isLoggedIn === null}
-              className="h-12 w-full rounded-xl border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {creating ? "만드는 중…" : "공유 링크 만들기"}
-            </button>
+            // 로그인(또는 확인 중): 공유 링크 만들기 / 내 클립에 추가 (분리)
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={handleCreateShare}
+                disabled={!hasInput || creating || isLoggedIn === null}
+                className="h-12 w-full rounded-xl border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {creating ? "만드는 중…" : "공유 링크 만들기"}
+              </button>
+              <button
+                type="button"
+                onClick={handleAddClip}
+                disabled={!hasInput || adding || isLoggedIn === null}
+                className="h-12 w-full rounded-xl border border-border bg-bg px-5 text-base font-semibold text-fg transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {adding ? "추가 중…" : added ? "추가됨 ✓" : "내 클립에 추가"}
+              </button>
+            </div>
           )}
 
           {shareUrl && (

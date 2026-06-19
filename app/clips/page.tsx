@@ -82,10 +82,27 @@ export default function ClipsPage() {
 
   const groups = useMemo(() => groupByDate(filtered), [filtered]);
 
-  function confirmDelete() {
-    if (!pendingDelete) return;
-    setItems(removeLocalClip(pendingDelete.url).map(localToItem));
+  async function confirmDelete() {
+    const target = pendingDelete;
+    if (!target) return;
     setPendingDelete(null);
+
+    if (target.local) {
+      // 게스트: localStorage 에서 제거
+      setItems(removeLocalClip(target.url).map(localToItem));
+      return;
+    }
+
+    // 로그인(DB): 서버에서 삭제 후 목록에서 제거
+    if (!target.slug) return;
+    try {
+      const res = await fetch(`/api/clip/${target.slug}`, { method: "DELETE" });
+      if (res.ok) {
+        setItems((cur) => cur.filter((i) => i.key !== target.key));
+      }
+    } catch {
+      // 네트워크 실패 시 목록 유지(사용자가 재시도)
+    }
   }
 
   return (
@@ -309,15 +326,13 @@ function ClipCard({
           >
             원본 열기
           </a>
-          {item.local && (
-            <button
-              type="button"
-              onClick={() => onRequestDelete(item)}
-              className="font-semibold text-danger hover:underline"
-            >
-              삭제
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => onRequestDelete(item)}
+            className="font-semibold text-danger hover:underline"
+          >
+            삭제
+          </button>
         </div>
       </div>
     </li>

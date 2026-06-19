@@ -47,6 +47,9 @@ export async function POST(request: Request) {
         .slice(0, 6)
     : [];
 
+  // save=true 면 내 클립 목록에 담음(클립에 추가). 기본은 공유 링크만(false).
+  const saved = body.save === true;
+
   const clip = await clipStore.create({
     url: normalizeUrl(url),
     title: title.slice(0, 120),
@@ -57,11 +60,13 @@ export async function POST(request: Request) {
     gradient,
     tags,
     userId: user.id,
+    saved,
   });
 
   const origin = new URL(request.url).origin;
   return NextResponse.json({
     slug: clip.slug,
     shareUrl: `${origin}/${clip.slug}`,
+    saved: clip.saved,
   });
 }

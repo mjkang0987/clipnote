@@ -62,7 +62,50 @@
 - [~] #branch `feat/clips-list` — /clips 목록 페이지(게스트=localStorage, 로그인=DB). 코드 완료.
   - 게스트 저장이 화면에 보이게 됨(검증 가능). 로그인 목록은 OAuth 후 검증.
 - [ ] #branch `feat/auth-naver` — Naver 로그인 (커스텀 OAuth, Supabase 미지원이라 별도 구현)
+- [~] #branch `feat/clip-save-share-split` — 공유 생성 / 클립 저장 분리 + 로그인 클립 삭제 (코드 완료, 10장). 남은 사용자 할 일: Supabase `saved` 컬럼 SQL 실행 + 푸시/배포.
 - [ ] 이후: 보존기간/사용량 제한(수익화)
+
+## 10. 계획: 공유 생성 / 클립 저장 분리 + 삭제 (2026-06-19)
+
+### 배경/문제
+- 현재 로그인 상태에서 "공유 링크 만들기" = 무조건 DB 저장 = 내 클립에 영구히 남음. 저장 안 함 선택지 없음.
+- 로그인(DB) 클립은 **삭제 기능이 없음**(삭제는 게스트 localStorage 만 구현). 한 번 만들면 못 지우고 누적.
+
+### 요구사항
+1. 메인 폼(로그인 시): 버튼 2개로 분리 — **공유 링크 만들기**(링크만 발급, 목록엔 안 남김) / **클립에 추가**(내 클립 목록에 저장).
+2. 내 클립(로그인=DB)에서 **삭제** 가능.
+3. 게스트(localStorage) 동작은 기존 유지(이 브라우저에 저장 / 로컬 삭제).
+
+### 설계
+- **DB**: `clips` 에 `saved boolean not null default false` 추가(idempotent). 목록 `listByUser` 는 `saved=true` 만 반환.
+  - 공유 링크 만들기 → `saved=false` row 생성(슬러그 발급, 공유 동작 O, 목록 X).
+  - 클립에 추가 → 방금 만든 공유 slug 가 있으면 그 row `saved=true` 로 업데이트, 없으면 `saved=true` 로 새 row 생성.
+- **API**
+  - `POST /api/clip`: body 에 `save?: boolean`(기본 false) 추가 → 그 값으로 저장.
+  - `PATCH /api/clip/[slug]`: 본인 클립 `saved` 토글(=클립에 추가).
+  - `DELETE /api/clip/[slug]`: 본인 클립 삭제.
+- **store** (`lib/store.ts` 인터페이스 + memory, `lib/store-supabase.ts`): `setSaved(slug,userId,saved)`, `remove(slug,userId)` 추가. `listByUser` 에 `saved=true` 필터.
+- **UI**
+  - `app/page.tsx`(로그인): 버튼 2개 + `handleAddClip`. 게스트는 기존 "이 브라우저에 저장" 유지.
+  - `app/clips/page.tsx`: 로그인 클립 삭제 버튼 → `DELETE` 호출 후 목록에서 제거. 게스트는 기존 로컬 삭제 유지.
+
+### 영향 파일
+`supabase/schema.sql`, `lib/store.ts`, `lib/store-supabase.ts`, `app/api/clip/route.ts`, `app/api/clip/[slug]/route.ts`(신규), `app/page.tsx`, `app/clips/page.tsx`.
+
+### 사용자 할 일
+- Supabase SQL Editor: `alter table public.clips add column if not exists saved boolean not null default false;`
+- 커밋·푸시(Mac) → Vercel 재배포.
+
+### 기대 결과
+- 공유 링크를 만들어도 내 클립엔 자동으로 안 쌓임. 원할 때만 "클립에 추가".
+- 내 클립에서 불필요한 클립 삭제 가능.
+
+### 구현 메모 (2026-06-19)
+- `clips.saved` 추가, `listByUser` 는 `saved=true` 만. 공유 생성=`saved:false`, 클립 추가=`saved:true`.
+- "내 클립에 추가"는 방금 만든 공유 slug 가 있으면 `PATCH /api/clip/[slug] {saved:true}`, 없으면 `POST /api/clip {save:true}` 로 새로 저장(공유 링크 없이도 가능).
+- 삭제: `DELETE /api/clip/[slug]`(소유자 확인). 내 클립 카드 삭제 버튼이 게스트뿐 아니라 로그인 클립에도 노출되도록 수정(기존엔 `item.local` 일 때만 보였음).
+- 검증: `tsc --noEmit` 통과, 신규/수정 코드 ESLint 클린(기존 a-link 경고는 무관, Next16은 build 시 lint 미실행).
+- ⚠️ 메모리 저장소(키 없을 때)는 서버 재시작 시 saved 상태도 사라짐 — 운영은 Supabase 기준.
 
 > 인증 메모: Supabase Auth 네이티브 = Google·Kakao 가능, **Naver 미지원**(커스텀 OAuth 필요).
 > OAuth 앱 등록·키 설정은 사용자 영역(코드는 클로드).

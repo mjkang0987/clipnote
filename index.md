@@ -87,3 +87,5 @@ clipnote/
 - 2026-06-18: 동적 OG 이미지(`/api/og`, next/og) — 그라디언트+제목+설명 카드, Pretendard woff 서브셋 번들(한글 렌더 확인). 슬러그(`lib/slug.ts`)·메모리 저장소(`lib/store.ts`)·생성 API(`/api/clip`)·공유 페이지(`/[slug]`, OG 주입+스마트 리다이렉트) 구현. E2E(생성→공유→OG메타→404) 검증 완료.
   - ⚠️ 저장소가 메모리라 서버 재시작 시 클립 사라짐 → Supabase 연동 시 교체 필요.
   - ⚠️ og:image 가 metadataBase(clipnote.co.kr) 기준 절대 URL → 로컬에선 이미지 미리보기는 `/api/og` 직접 호출로 확인.
+- 2026-06-19: 구글 로그인 출시. 카카오는 `KAKAO_ENABLED=false`(Supabase 한계로 비활성, 비즈앱 결정 시 재활성).
+- 2026-06-19: 공유 생성/클립 저장 분리 + 로그인 클립 삭제(`feat/clip-save-share-split`). `clips.saved` 컬럼 추가(목록은 saved=true만). 메인 폼 로그인 시 버튼 2개("공유 링크 만들기"=saved:false / "내 클립에 추가"=saved:true). `PATCH/DELETE /api/clip/[slug]` 신규(소유자 확인). 내 클립 카드 삭제 버튼을 로그인(DB) 클립에도 노출. tsc 통과. **사용자 할 일: Supabase에 `alter table public.clips add column if not exists saved boolean not null default false;` 실행 + 푸시/배포.**

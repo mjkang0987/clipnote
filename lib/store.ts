@@ -18,6 +18,7 @@ export type Clip = {
   gradient: string; // 그라디언트 이름 (lib/gradients)
   tags: string[];
   userId: string | null; // 작성자(로그인 사용자). 공유 클립은 항상 존재
+  saved: boolean; // 내 클립 목록에 담겼는지(공유만 만든 건 false)
   createdAt: string; // ISO
   viewCount: number;
 };
@@ -30,6 +31,10 @@ export interface ClipStore {
   incrementView(slug: string): Promise<void>;
   list(): Promise<Clip[]>;
   listByUser(userId: string): Promise<Clip[]>;
+  /** 본인 클립의 saved 토글. 대상이 없거나 소유자가 아니면 false. */
+  setSaved(slug: string, userId: string, saved: boolean): Promise<boolean>;
+  /** 본인 클립 삭제. 대상이 없거나 소유자가 아니면 false. */
+  remove(slug: string, userId: string): Promise<boolean>;
 }
 
 function createMemoryStore(): ClipStore {
@@ -69,8 +74,21 @@ function createMemoryStore(): ClipStore {
 
     async listByUser(userId) {
       return [...clips.values()]
-        .filter((c) => c.userId === userId)
+        .filter((c) => c.userId === userId && c.saved)
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+
+    async setSaved(slug, userId, saved) {
+      const clip = clips.get(slug);
+      if (!clip || clip.userId !== userId) return false;
+      clip.saved = saved;
+      return true;
+    },
+
+    async remove(slug, userId) {
+      const clip = clips.get(slug);
+      if (!clip || clip.userId !== userId) return false;
+      return clips.delete(slug);
     },
   };
 }
