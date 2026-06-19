@@ -47,6 +47,40 @@ export function normalizeUrl(raw: string): string {
   return `https://${trimmed}`;
 }
 
+// 중복 판정·저장용 정규화. "사람 눈에 같은" URL 을 같은 문자열로 만든다.
+// - 호스트 소문자, 기본 포트 제거
+// - 끝 슬래시 제거(루트 제외)
+// - 광고/추적 파라미터 제거(utm_*, fbclid, gclid 등)
+// ⚠️ www 는 건드리지 않음(사이트에 따라 리다이렉트가 깨질 수 있어 보수적으로).
+const TRACKING_PARAMS = new Set([
+  "fbclid", "gclid", "gclsrc", "dclid", "msclkid", "yclid", "igshid",
+  "mc_eid", "mc_cid", "_hsenc", "_hsmi", "spm",
+]);
+export function canonicalizeUrl(raw: string): string {
+  const base = normalizeUrl(raw);
+  try {
+    const u = new URL(base);
+    u.hostname = u.hostname.toLowerCase();
+    if (
+      (u.protocol === "https:" && u.port === "443") ||
+      (u.protocol === "http:" && u.port === "80")
+    ) {
+      u.port = "";
+    }
+    for (const key of [...u.searchParams.keys()]) {
+      if (key.toLowerCase().startsWith("utm_") || TRACKING_PARAMS.has(key.toLowerCase())) {
+        u.searchParams.delete(key);
+      }
+    }
+    if (u.pathname.length > 1 && u.pathname.endsWith("/")) {
+      u.pathname = u.pathname.replace(/\/+$/, "");
+    }
+    return u.toString();
+  } catch {
+    return base;
+  }
+}
+
 export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
   let url: string;
   try {

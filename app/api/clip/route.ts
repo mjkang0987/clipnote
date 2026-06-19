@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { clipStore } from "@/lib/store";
 import { pickGradient } from "@/lib/gradients";
-import { normalizeUrl } from "@/lib/metadata";
+import { canonicalizeUrl } from "@/lib/metadata";
 import { getCurrentUser } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
   // save=true 면 내 클립 목록에 담음(클립에 추가). 기본은 공유 링크만(false).
   const save = body.save === true;
-  const normalizedUrl = normalizeUrl(url);
+  const normalizedUrl = canonicalizeUrl(url);
   const origin = new URL(request.url).origin;
 
   // 중복 방지: 같은 사용자의 같은 URL 클립이 이미 있으면 새로 만들지 않고 재사용.

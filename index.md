@@ -100,5 +100,6 @@ clipnote/
 - 2026-06-19: 원본 대표이미지 검증(`lib/metadata.ts verifyImage`) — og:image 선언만 있고 실제 404 인 경우가 흔해, 파싱 시 실제 열리는지(200/206 + image 타입, 4s 타임아웃) 확인 후 아니면 null 처리. 깨진 썸네일/404 요청 방지(그라디언트 폴백).
 - 2026-06-19: 버전 0.5.2 → 0.6.0 (오늘 기능 묶음: 공유/저장 분리·삭제, PWA, 중복 방지, 이미지 검증 등).
 - 2026-06-19: 자동 버전닝 도입 — `.github/workflows/release-please.yml`(release-please, release-type node). main 푸시 시 커밋 컨벤션 읽어 릴리스 PR 자동 생성→머지하면 package.json/CHANGELOG/태그 자동. ⚠️ 사용자 할 일: GitHub repo Settings→Actions→Workflow permissions를 "Read and write"로.
+- 2026-06-19: URL 정규화(`lib/metadata.ts canonicalizeUrl`) — 저장·중복비교 시 끝 슬래시/호스트 대소문자/추적 파라미터(utm_*·fbclid 등) 차이를 같은 URL로 처리(www는 미변경). 슬래시 차이로 중복되던 문제 해결. (기존 데이터는 옛 형식이라 신규부터 적용)
 - 2026-06-19: 클립 중복 방지 — `POST /api/clip` 에서 같은 (user, URL) 클립이 있으면 새로 안 만들고 재사용. "내 클립에 추가" 시 이미 있으면 저장 처리만 하고 `alreadySaved` 응답 → 버튼에 "이미 추가됨 ✓" 표시. store에 `findByUserUrl` 추가. (홈의 미사용 `shareSlug` 상태 제거)
 - 2026-06-19: 공유 생성/클립 저장 분리 + 로그인 클립 삭제(`feat/clip-save-share-split`). `clips.saved` 컬럼 추가(목록은 saved=true만). 메인 폼 로그인 시 버튼 2개("공유 링크 만들기"=saved:false / "내 클립에 추가"=saved:true). `PATCH/DELETE /api/clip/[slug]` 신규(소유자 확인). 내 클립 카드 삭제 버튼을 로그인(DB) 클립에도 노출. tsc 통과. **사용자 할 일: Supabase에 `alter table public.clips add column if not exists saved boolean not null default false;` 실행 + 푸시/배포.**
