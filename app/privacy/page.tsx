@@ -8,11 +8,10 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-// ── 운영자가 채워야 하는 값 ──────────────────────────────────
-// 실제 서비스 공개 전에 아래 연락처/책임자 정보를 실제 값으로 바꿔 주세요.
-const CONTACT_EMAIL = "snowdrop1202@gmail.com";
-const PRIVACY_OFFICER = "ClipNote 운영자";
-const EFFECTIVE_DATE = "2026년 6월 18일";
+// ── 운영자 정보 ──────────────────────────────────
+const CONTACT_EMAIL = "pikaworks.help@gmail.com";
+const PRIVACY_OFFICER = "pikaworks 운영자";
+const EFFECTIVE_DATE = "2026년 6월 19일";
 
 export default function PrivacyPage() {
   return (
@@ -78,10 +77,12 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
-        <Section title="4. 개인정보 처리위탁 및 국외 이전">
+        <Section title="4. 개인정보 처리위탁">
           <p>
             서비스는 안정적인 운영을 위해 아래와 같이 개인정보 처리 업무를
-            위탁하고 있으며, 일부 데이터는 국외에 저장·처리될 수 있습니다.
+            위탁하고 있습니다. 이용자의 데이터는 국내(대한민국) 리전 서버에
+            저장됩니다. 다만 소셜 로그인 인증 과정에서 일부 정보가 각 공급자의
+            서버(국외 포함)에서 처리될 수 있습니다.
           </p>
           <div className="mt-3 overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
@@ -89,7 +90,7 @@ export default function PrivacyPage() {
                 <tr className="border-b border-border text-fg">
                   <th className="py-2 pr-4 font-semibold">수탁자</th>
                   <th className="py-2 pr-4 font-semibold">위탁 업무</th>
-                  <th className="py-2 font-semibold">이전 국가</th>
+                  <th className="py-2 font-semibold">저장 위치</th>
                 </tr>
               </thead>
               <tbody className="text-fg-muted">
@@ -98,7 +99,7 @@ export default function PrivacyPage() {
                   <td className="py-2 pr-4">
                     데이터베이스 저장, 사용자 인증(로그인) 처리
                   </td>
-                  <td className="py-2">미국 등</td>
+                  <td className="py-2">대한민국 (서울 리전)</td>
                 </tr>
               </tbody>
             </table>
@@ -167,8 +168,7 @@ export default function PrivacyPage() {
         </Section>
 
         <p className="mt-10 text-xs leading-relaxed text-fg-muted">
-          ※ 본 방침은 일반적인 형식을 따른 초안입니다. 실제 서비스 공개 전,
-          수집 항목·연락처·보유 기간 등을 실제 운영 내용에 맞게 검토해 주세요.
+          ※ 본 방침은 시행일 기준 내용이며, 변경 시 서비스 화면에 공지합니다.
         </p>
       </main>
 
