@@ -393,8 +393,12 @@ export default function Home() {
           </p>
         )}
 
+        {/* ① 공유 카드: 링크를 공유했을 때 보이는 이미지 */}
         <section className="mt-6" aria-label="공유 카드 미리보기">
-          <h2 className="mb-2 text-sm font-medium text-fg-muted">미리보기</h2>
+          <h2 className="mb-2 text-sm font-medium text-fg-muted">
+            공유 카드{" "}
+            <span className="font-normal text-fg-muted">— 링크를 공유하면 이렇게 보여요</span>
+          </h2>
           <div
             className="flex w-full flex-col gap-1 rounded-2xl px-5 py-4 shadow-soft"
             style={{ background: gradientCss(gradient) }}
@@ -414,25 +418,55 @@ export default function Home() {
               <p className="truncate text-xs text-white/80">{prettyHost(url)}</p>
             )}
           </div>
+          <p className="mt-1.5 text-xs text-fg-muted">
+            배경색은 제목에 따라 자동으로 정해져요.
+          </p>
+        </section>
 
-          {image && (
-            <figure className="mt-3 overflow-hidden rounded-xl border border-border">
-              {/* 원본 대표 이미지 (외부 호스트). 로드 실패 시 자동 숨김 */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={image}
-                alt={`${effectiveTitle} 대표 이미지`}
-                className="max-h-40 w-full object-cover"
-                onError={(e) => {
-                  (e.currentTarget.parentElement as HTMLElement).style.display = "none";
-                }}
-              />
-            </figure>
-          )}
-
-          <p className="mt-2 text-center text-xs text-fg-muted">
-            배경색은 제목에 따라 자동으로 정해져요
-            {meta && meta.source !== "none" ? " · 제목·설명을 자동으로 가져왔어요" : ""}
+        {/* ② 내 클립 저장 모습: 목록에서 보이는 카드(왼쪽 썸네일 = 원본 이미지) */}
+        <section className="mt-5" aria-label="내 클립 저장 미리보기">
+          <h2 className="mb-2 text-sm font-medium text-fg-muted">
+            내 클립에 저장하면{" "}
+            <span className="font-normal text-fg-muted">— 목록에서 이렇게 보여요</span>
+          </h2>
+          <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-soft">
+            <div
+              className="h-14 w-14 shrink-0 overflow-hidden rounded-xl"
+              style={{ background: gradientCss(gradient) }}
+              aria-hidden
+            >
+              {image && (
+                // 원본 대표 이미지 = 목록 썸네일. 로드 실패 시 그라디언트가 보임.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={image}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              )}
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <p className="truncate font-semibold text-fg">{effectiveTitle}</p>
+              {url && <p className="truncate text-sm text-fg-muted">{prettyHost(url)}</p>}
+              {tags.length > 0 && (
+                <ul className="mt-1 flex flex-wrap gap-1">
+                  {tags.map((tag) => (
+                    <li
+                      key={tag}
+                      className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-strong"
+                    >
+                      {tag}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+          <p className="mt-1.5 text-xs text-fg-muted">
+            왼쪽 썸네일은 원본 페이지의 대표 이미지예요. 없으면 그라디언트로 채워져요.
           </p>
         </section>
 
