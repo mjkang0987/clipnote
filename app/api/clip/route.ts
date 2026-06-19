@@ -48,10 +48,29 @@ export async function POST(request: Request) {
     : [];
 
   // save=true 면 내 클립 목록에 담음(클립에 추가). 기본은 공유 링크만(false).
-  const saved = body.save === true;
+  const save = body.save === true;
+  const normalizedUrl = normalizeUrl(url);
+  const origin = new URL(request.url).origin;
+
+  // 중복 방지: 같은 사용자의 같은 URL 클립이 이미 있으면 새로 만들지 않고 재사용.
+  const existing = await clipStore.findByUserUrl(user.id, normalizedUrl);
+  if (existing) {
+    const alreadySaved = existing.saved;
+    // 공유 링크만 있던(미저장) 클립을 "내 클립에 추가"하면 그 클립을 저장 처리.
+    if (save && !existing.saved) {
+      await clipStore.setSaved(existing.slug, user.id, true);
+    }
+    return NextResponse.json({
+      slug: existing.slug,
+      shareUrl: `${origin}/${existing.slug}`,
+      saved: save || existing.saved,
+      existed: true,
+      alreadySaved: save && alreadySaved, // 이미 내 클립에 있던 경우
+    });
+  }
 
   const clip = await clipStore.create({
-    url: normalizeUrl(url),
+    url: normalizedUrl,
     title: title.slice(0, 120),
     description:
       typeof body.description === "string" ? body.description.slice(0, 300) : null,
@@ -60,10 +79,9 @@ export async function POST(request: Request) {
     gradient,
     tags,
     userId: user.id,
-    saved,
+    saved: save,
   });
 
-  const origin = new URL(request.url).origin;
   return NextResponse.json({
     slug: clip.slug,
     shareUrl: `${origin}/${clip.slug}`,

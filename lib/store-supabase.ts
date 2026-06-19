@@ -119,6 +119,21 @@ export function createSupabaseStore(): ClipStore {
       return (data as Row[]).map(rowToClip);
     },
 
+    async findByUserUrl(userId: string, url: string): Promise<Clip | null> {
+      const supabase = getSupabaseAdmin();
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select()
+        .eq("user_id", userId)
+        .eq("url", url)
+        .order("saved", { ascending: false }) // 저장된 것 우선
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw new Error(`클립 조회 실패: ${error.message}`);
+      return data ? rowToClip(data as Row) : null;
+    },
+
     async setSaved(slug: string, userId: string, saved: boolean): Promise<boolean> {
       const supabase = getSupabaseAdmin();
       // 본인(user_id) 소유만 변경 — 일치하는 행이 없으면 빈 결과

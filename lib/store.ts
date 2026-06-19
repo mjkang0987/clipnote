@@ -31,6 +31,8 @@ export interface ClipStore {
   incrementView(slug: string): Promise<void>;
   list(): Promise<Clip[]>;
   listByUser(userId: string): Promise<Clip[]>;
+  /** 같은 사용자의 같은 URL 클립을 찾음(저장된 것 우선). 없으면 null — 중복 방지용. */
+  findByUserUrl(userId: string, url: string): Promise<Clip | null>;
   /** 본인 클립의 saved 토글. 대상이 없거나 소유자가 아니면 false. */
   setSaved(slug: string, userId: string, saved: boolean): Promise<boolean>;
   /** 본인 클립 삭제. 대상이 없거나 소유자가 아니면 false. */
@@ -76,6 +78,14 @@ function createMemoryStore(): ClipStore {
       return [...clips.values()]
         .filter((c) => c.userId === userId && c.saved)
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+
+    async findByUserUrl(userId, url) {
+      const matches = [...clips.values()].filter(
+        (c) => c.userId === userId && c.url === url,
+      );
+      // 저장된 것 우선
+      return matches.find((c) => c.saved) ?? matches[0] ?? null;
     },
 
     async setSaved(slug, userId, saved) {

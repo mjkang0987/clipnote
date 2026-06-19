@@ -18,12 +18,12 @@ export default function Home() {
 
   const [creating, setCreating] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [shareSlug, setShareSlug] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   // 클립에 추가(내 클립 목록에 담기)
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+  const [alreadySaved, setAlreadySaved] = useState(false);
 
   // 로그인 상태: null=확인중, true/false
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
@@ -92,7 +92,6 @@ export default function Home() {
     setError(null);
     setMeta(null);
     setShareUrl(null);
-    setShareSlug(null);
     setAdded(false);
     try {
       const res = await fetch(`/api/metadata?url=${encodeURIComponent(url.trim())}`);
@@ -140,7 +139,6 @@ export default function Home() {
         return;
       }
       setShareUrl(data.shareUrl);
-      setShareSlug(data.slug ?? null);
       recordTags(tags);
       setKnownTags(getKnownTags());
     } catch {
@@ -150,8 +148,8 @@ export default function Home() {
     }
   }
 
-  // 로그인: 내 클립 목록에 담기. 공유 링크를 이미 만들었으면 그 클립을 담고,
-  // 아니면 새로 만들어 담는다(공유 링크 없이도 가능).
+  // 로그인: 내 클립 목록에 담기. 서버가 같은 URL 클립을 (user 기준) 중복 없이
+  // 재사용하므로, 이미 담겨 있으면 새로 만들지 않고 "이미 추가됨"으로 알려준다.
   async function handleAddClip() {
     const sendTitle = title.trim() || meta?.title || (url ? prettyHost(url) : "");
     if (!sendTitle) {
@@ -162,43 +160,37 @@ export default function Home() {
     setError(null);
     setAdded(false);
     try {
-      if (shareSlug) {
-        const res = await fetch(`/api/clip/${shareSlug}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ saved: true }),
-        });
-        if (!res.ok) {
-          const d = (await res.json().catch(() => ({}))) as { error?: string };
-          setError(d.error ?? "클립 추가에 실패했어요.");
-          return;
-        }
-      } else {
-        const res = await fetch("/api/clip", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: url.trim(),
-            title: sendTitle,
-            description: meta?.description ?? null,
-            image: meta?.image ?? null,
-            siteName: meta?.siteName ?? null,
-            tags,
-            gradient: gradient.name,
-            save: true,
-          }),
-        });
-        const data = (await res.json()) as { slug?: string; error?: string };
-        if (!res.ok || !data.slug) {
-          setError(data.error ?? "클립 추가에 실패했어요.");
-          return;
-        }
-        setShareSlug(data.slug);
+      const res = await fetch("/api/clip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: url.trim(),
+          title: sendTitle,
+          description: meta?.description ?? null,
+          image: meta?.image ?? null,
+          siteName: meta?.siteName ?? null,
+          tags,
+          gradient: gradient.name,
+          save: true,
+        }),
+      });
+      const data = (await res.json()) as {
+        slug?: string;
+        error?: string;
+        alreadySaved?: boolean;
+      };
+      if (!res.ok || !data.slug) {
+        setError(data.error ?? "클립 추가에 실패했어요.");
+        return;
       }
       recordTags(tags);
       setKnownTags(getKnownTags());
+      setAlreadySaved(Boolean(data.alreadySaved));
       setAdded(true);
-      setTimeout(() => setAdded(false), 1800);
+      setTimeout(() => {
+        setAdded(false);
+        setAlreadySaved(false);
+      }, 2000);
     } catch {
       setError("클립 추가 중 문제가 발생했어요.");
     } finally {
@@ -528,7 +520,13 @@ export default function Home() {
                 disabled={!hasInput || adding || isLoggedIn === null}
                 className="h-12 w-full rounded-xl border border-border bg-bg px-5 text-base font-semibold text-fg transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {adding ? "추가 중…" : added ? "추가됨 ✓" : "내 클립에 추가"}
+                {adding
+                  ? "추가 중…"
+                  : added
+                    ? alreadySaved
+                      ? "이미 추가됨 ✓"
+                      : "추가됨 ✓"
+                    : "내 클립에 추가"}
               </button>
             </div>
           )}
