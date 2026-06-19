@@ -94,4 +94,5 @@ clipnote/
 - 2026-06-19: 카카오 로그인 재활성화(`KAKAO_ENABLED=true`) — 카카오 동의항목 설정 완료. Supabase 기본 scope 사용(이메일·닉네임·프로필 수집). 로그인 동의 문구 + 약관 수집항목(이메일·프로필 추가) 갱신.
 - 2026-06-19: 개인정보처리방침 헤더 로그인 상태 반영(AuthNav).
 - 2026-06-19: 기본 설치형 PWA(`feat/pwa`) — `app/manifest.ts`(standalone, theme #7c5cfc), 아이콘 public/icon-192·512·apple-icon-180·icon-maskable-512(북마크 마크), `public/sw.js`(최소 SW) + `app/_components/ServiceWorkerRegister.tsx`, layout viewport themeColor·appleWebApp·icons. tsc 통과.
+- 2026-06-19: favicon(`app/favicon.ico`)을 북마크 아이콘으로 교체(16·32·48·64 다중 해상도, 풀블리드).
 - 2026-06-19: 공유 생성/클립 저장 분리 + 로그인 클립 삭제(`feat/clip-save-share-split`). `clips.saved` 컬럼 추가(목록은 saved=true만). 메인 폼 로그인 시 버튼 2개("공유 링크 만들기"=saved:false / "내 클립에 추가"=saved:true). `PATCH/DELETE /api/clip/[slug]` 신규(소유자 확인). 내 클립 카드 삭제 버튼을 로그인(DB) 클립에도 노출. tsc 통과. **사용자 할 일: Supabase에 `alter table public.clips add column if not exists saved boolean not null default false;` 실행 + 푸시/배포.**
