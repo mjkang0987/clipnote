@@ -1,0 +1,23 @@
+name: release-please
+
+# main 에 푸시되면 커밋 메시지(Conventional Commits)를 읽어
+# 다음 버전을 계산하고 "릴리스 PR"을 자동 생성/갱신한다.
+# 그 PR 을 머지하면 package.json 버전 + CHANGELOG.md + git 태그가 자동 반영된다.
+#   feat: → minor,  fix:/perf: → patch,  feat!:/BREAKING CHANGE → major
+#   docs:/chore:/style:/refactor: 등은 버전에 영향 없음(CHANGELOG 정리용).
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          release-type: node
