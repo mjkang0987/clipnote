@@ -12,8 +12,9 @@
 
 ## 현재 상태
 
-- 단계: **로그인(Google·Kakao)/비로그인 분기 코드 완료(`feat/auth-google-kakao`). OAuth 앱 등록 후 테스트 가능.**
+- 단계: **로그인(Google·Kakao) main 머지·배포 완료(v0.5.2). 구글 로그인 실동작 확인. 카카오는 `openid`(OIDC) scope 로 식별자만 수집 — 배포 후 검증 중.**
   - 로그인 → 공유 링크(DB, user_id). 비로그인 → 브라우저 localStorage 저장(공유 X).
+  - ⚠️ 게스트(localStorage) 클립은 로그인 시 화면에 안 보임(DB 모드). 자동 이전(마이그레이션) 미구현 — 후속 검토.
 - 브랜치 전략: 작업은 `feat/*` 브랜치 → push. 이슈/PR 은 환경상 GitHub API 차단으로 plan.md 작업보드에서 추적.
 - 미해결: Naver 로그인은 Supabase 미지원 → 별도 커스텀 브랜치 예정.
 - 저장소: 클론 완료, 리모트 연결됨 (아직 커밋/푸시 전 — Mac에서 수행 필요, plan.md 참고)

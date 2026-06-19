@@ -17,6 +17,12 @@ export default function LoginPage() {
     }
   }, []);
 
+  // 공급자별 요청 scope. 카카오는 OpenID Connect(openid)로 고유 식별자(sub)만 받는다.
+  // → 동의항목(닉네임·이메일·프로필) 설정/심사 불필요. 로그인 정보 외에는 수집하지 않음.
+  const PROVIDER_SCOPES: Partial<Record<Provider, string>> = {
+    kakao: "openid",
+  };
+
   async function signIn(provider: Provider) {
     if (!agreed) {
       setError("개인정보처리방침에 동의하셔야 로그인할 수 있어요.");
@@ -28,7 +34,10 @@ export default function LoginPage() {
       const supabase = createSupabaseBrowserClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: PROVIDER_SCOPES[provider],
+        },
       });
       if (error) {
         setError("로그인을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.");
