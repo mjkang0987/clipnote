@@ -97,4 +97,5 @@ clipnote/
 - 2026-06-19: favicon(`app/favicon.ico`)을 북마크 아이콘으로 교체(16·32·48·64 다중 해상도, 풀블리드).
 - 2026-06-19: 홈 화면 컴팩트화(`feat/home-compact`) — 미리보기 카드 1200:630 고정 제거→내용 높이, 히어로/폼/섹션 여백 축소, 대표이미지 높이 축소. PC·모바일에서 공유/저장 버튼까지 한 화면에 가깝게.
 - 2026-06-19: 홈 미리보기 2블록 재구성 — ①공유 카드(공유 시 보이는 이미지) ②내 클립 저장 모습(목록 카드 형태, 왼쪽 썸네일=원본 대표이미지/그라디언트 폴백). 각 블록에 설명 캡션 추가로 "어떤 이미지인지" 명확화.
+- 2026-06-19: 원본 대표이미지 검증(`lib/metadata.ts verifyImage`) — og:image 선언만 있고 실제 404 인 경우가 흔해, 파싱 시 실제 열리는지(200/206 + image 타입, 4s 타임아웃) 확인 후 아니면 null 처리. 깨진 썸네일/404 요청 방지(그라디언트 폴백).
 - 2026-06-19: 공유 생성/클립 저장 분리 + 로그인 클립 삭제(`feat/clip-save-share-split`). `clips.saved` 컬럼 추가(목록은 saved=true만). 메인 폼 로그인 시 버튼 2개("공유 링크 만들기"=saved:false / "내 클립에 추가"=saved:true). `PATCH/DELETE /api/clip/[slug]` 신규(소유자 확인). 내 클립 카드 삭제 버튼을 로그인(DB) 클립에도 노출. tsc 통과. **사용자 할 일: Supabase에 `alter table public.clips add column if not exists saved boolean not null default false;` 실행 + 푸시/배포.**

@@ -73,7 +73,10 @@ export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
 
   // 1) 사이트별 어댑터 우선 (네이버 카페·블로그, 인스타그램 등). 성공 시 바로 반환.
   const adapted = await tryAdapters(url);
-  if (adapted) return adapted;
+  if (adapted) {
+    adapted.image = await verifyImage(adapted.image);
+    return adapted;
+  }
 
   // 1) 일반 브라우저 UA 로 받아 파싱.
   let result = await fetchAndParse(url, BROWSER_UA);
@@ -85,7 +88,34 @@ export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
     if (crawled.source !== "none") result = crawled;
   }
 
+  // 원본이 og:image 를 선언만 해두고 실제 파일은 404 인 경우가 흔하다.
+  // 실제로 열리는 이미지인지 확인하고, 아니면 버려서(=null) 그라디언트 폴백만 쓰게 한다.
+  result.image = await verifyImage(result.image);
+
   return result;
+}
+
+/** 이미지 URL 이 실제로 열리고 이미지 타입인지 확인. 아니면 null. */
+async function verifyImage(imageUrl: string | null): Promise<string | null> {
+  if (!imageUrl) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4000);
+  try {
+    // HEAD 미지원 서버가 많아 GET 으로 첫 바이트만 요청.
+    const res = await fetch(imageUrl, {
+      method: "GET",
+      headers: { Range: "bytes=0-0", "User-Agent": BROWSER_UA },
+      signal: controller.signal,
+      redirect: "follow",
+    });
+    if (!res.ok && res.status !== 206) return null;
+    const type = res.headers.get("content-type") ?? "";
+    return type.startsWith("image/") ? imageUrl : null;
+  } catch {
+    return null; // 네트워크 실패·타임아웃·CORS 등 → 깨진 것으로 간주
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /** 알려진 단축 링크(naver.me 등)를 실제 목적지로 해제. 실패하면 원본 URL 유지. */
