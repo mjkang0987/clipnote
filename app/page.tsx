@@ -531,38 +531,6 @@ export default function Home() {
             </div>
           )}
 
-          {shareUrl && (
-            <div className="mt-4 flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
-              <p className="text-sm font-medium text-fg">공유 링크가 만들어졌어요 🎉</p>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <input
-                  id="share-url"
-                  readOnly
-                  value={shareUrl}
-                  aria-label="공유 링크"
-                  className="h-11 flex-1 rounded-lg border border-border bg-bg px-3 text-sm text-fg outline-none"
-                  onFocus={(e) => e.currentTarget.select()}
-                />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleCopy}
-                    className="h-11 rounded-lg bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong"
-                  >
-                    {copied ? "복사됨" : "복사"}
-                  </button>
-                  <a
-                    href={shareUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex h-11 items-center rounded-lg border border-border px-4 text-sm font-semibold text-fg transition hover:bg-bg"
-                  >
-                    열기
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
         </section>
 
         {/* SEO/GEO: 소개·기능·FAQ */}
@@ -644,6 +612,98 @@ export default function Home() {
           </a>
         </div>
       </footer>
+
+      {shareUrl && (
+        <ShareResultLayer
+          url={shareUrl}
+          copied={copied}
+          onCopy={handleCopy}
+          onClose={() => {
+            setShareUrl(null);
+            setCopied(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** 공유 링크 생성 결과 레이어(모달). 링크 복사·열기·닫기. */
+function ShareResultLayer({
+  url,
+  copied,
+  onCopy,
+  onClose,
+}: {
+  url: string;
+  copied: boolean;
+  onCopy: () => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      role="presentation"
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-title"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-t-2xl bg-surface p-6 shadow-soft sm:rounded-2xl"
+      >
+        <h2 id="share-title" className="text-lg font-bold text-fg">
+          공유 링크가 만들어졌어요 🎉
+        </h2>
+        <p className="mt-1 text-sm leading-relaxed text-fg-muted">
+          링크를 복사해 공유하세요. 열면 공유 카드가 먼저 보인 뒤 원본으로 이동해요.
+        </p>
+        <input
+          id="share-url"
+          readOnly
+          value={url}
+          aria-label="공유 링크"
+          onFocus={(e) => e.currentTarget.select()}
+          className="mt-4 h-11 w-full rounded-lg border border-border bg-bg px-3 text-sm text-fg outline-none"
+        />
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={onCopy}
+            className="h-11 flex-1 rounded-lg bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50"
+          >
+            {copied ? "복사됨 ✓" : "링크 복사"}
+          </button>
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex h-11 items-center justify-center rounded-lg border border-border px-4 text-sm font-semibold text-fg transition hover:bg-bg"
+          >
+            열기
+          </a>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-2 h-11 w-full rounded-lg text-sm font-semibold text-fg-muted transition hover:bg-bg"
+        >
+          닫기
+        </button>
+      </div>
     </div>
   );
 }
