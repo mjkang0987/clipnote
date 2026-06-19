@@ -273,6 +273,19 @@ function ClipCard({
   item: Item;
   onRequestDelete: (item: Item) => void;
 }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyShare() {
+    if (!item.slug) return;
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/${item.slug}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // 클립보드 접근 실패는 무시
+    }
+  }
+
   return (
     <li className="flex gap-4 rounded-2xl border border-border bg-surface p-4">
       <div
@@ -317,6 +330,15 @@ function ClipCard({
             >
               공유 페이지
             </a>
+          ) : null}
+          {item.slug ? (
+            <button
+              type="button"
+              onClick={copyShare}
+              className="font-semibold text-brand-strong hover:underline"
+            >
+              {copied ? "복사됨 ✓" : "공유 링크 복사"}
+            </button>
           ) : null}
           <a
             href={item.url}
