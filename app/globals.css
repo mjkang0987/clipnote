@@ -61,3 +61,11 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+/* 전역 리셋: Tailwind v4 preflight 가 버튼 커서를 default 로 바꾸므로
+   활성 버튼/버튼 역할 요소에 포인터 커서를 공통 적용한다.
+   (비활성은 각 버튼의 disabled:cursor-not-allowed 유틸이 우선) */
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
+}

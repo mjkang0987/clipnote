@@ -88,4 +88,5 @@ clipnote/
   - ⚠️ 저장소가 메모리라 서버 재시작 시 클립 사라짐 → Supabase 연동 시 교체 필요.
   - ⚠️ og:image 가 metadataBase(clipnote.co.kr) 기준 절대 URL → 로컬에선 이미지 미리보기는 `/api/og` 직접 호출로 확인.
 - 2026-06-19: 구글 로그인 출시. 카카오는 `KAKAO_ENABLED=false`(Supabase 한계로 비활성, 비즈앱 결정 시 재활성).
+- 2026-06-19: 버튼 커서 공통 추가 — globals.css base 에 `button:not(:disabled){cursor:pointer}`(Tailwind v4 preflight 대응).
 - 2026-06-19: 공유 생성/클립 저장 분리 + 로그인 클립 삭제(`feat/clip-save-share-split`). `clips.saved` 컬럼 추가(목록은 saved=true만). 메인 폼 로그인 시 버튼 2개("공유 링크 만들기"=saved:false / "내 클립에 추가"=saved:true). `PATCH/DELETE /api/clip/[slug]` 신규(소유자 확인). 내 클립 카드 삭제 버튼을 로그인(DB) 클립에도 노출. tsc 통과. **사용자 할 일: Supabase에 `alter table public.clips add column if not exists saved boolean not null default false;` 실행 + 푸시/배포.**
