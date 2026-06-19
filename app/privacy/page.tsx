@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import AuthNav from "@/app/_components/AuthNav";
 
 export const metadata: Metadata = {
   title: "개인정보처리방침",
@@ -25,12 +26,7 @@ export default function PrivacyPage() {
           >
             Clip<span className="text-brand">Note</span>
           </a>
-          <a
-            href="/login"
-            className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-fg transition hover:bg-surface"
-          >
-            로그인
-          </a>
+          <AuthNav />
         </nav>
       </header>
 
