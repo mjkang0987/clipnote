@@ -7,6 +7,7 @@
 import { generateSlug } from "./slug";
 import { hasSupabaseEnv } from "./supabase";
 import { createSupabaseStore } from "./store-supabase";
+import { canonicalizeUrl } from "./metadata";
 
 export type Clip = {
   slug: string;
@@ -81,11 +82,12 @@ function createMemoryStore(): ClipStore {
     },
 
     async findByUserUrl(userId, url) {
+      // 저장된 URL 도 비교 순간 정규화 → 옛 형식(슬래시 등) 데이터도 같이 매칭.
+      const target = canonicalizeUrl(url);
       const matches = [...clips.values()].filter(
-        (c) => c.userId === userId && c.url === url,
+        (c) => c.userId === userId && canonicalizeUrl(c.url) === target,
       );
-      // 저장된 것 우선
-      return matches.find((c) => c.saved) ?? matches[0] ?? null;
+      return matches.find((c) => c.saved) ?? matches[0] ?? null; // 저장된 것 우선
     },
 
     async setSaved(slug, userId, saved) {

@@ -4,6 +4,7 @@
 import type { Clip, ClipStore, NewClip } from "./store";
 import { generateSlug } from "./slug";
 import { getSupabaseAdmin } from "./supabase";
+import { canonicalizeUrl } from "./metadata";
 
 const TABLE = "clips";
 
@@ -121,17 +122,19 @@ export function createSupabaseStore(): ClipStore {
 
     async findByUserUrl(userId: string, url: string): Promise<Clip | null> {
       const supabase = getSupabaseAdmin();
+      // 저장된 URL 도 비교 순간 정규화해야 옛 형식(슬래시 등) 데이터까지 매칭되므로,
+      // SQL eq 대신 사용자 클립을 받아 JS 에서 canonical 비교한다.
       const { data, error } = await supabase
         .from(TABLE)
         .select()
         .eq("user_id", userId)
-        .eq("url", url)
         .order("saved", { ascending: false }) // 저장된 것 우선
         .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(500);
       if (error) throw new Error(`클립 조회 실패: ${error.message}`);
-      return data ? rowToClip(data as Row) : null;
+      const target = canonicalizeUrl(url);
+      const match = (data as Row[]).find((r) => canonicalizeUrl(r.url) === target);
+      return match ? rowToClip(match) : null;
     },
 
     async setSaved(slug: string, userId: string, saved: boolean): Promise<boolean> {
