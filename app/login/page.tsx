@@ -5,10 +5,14 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Provider = "google" | "kakao";
 
+// 마지막으로 사용한 로그인 수단(이 브라우저 기준)을 기억해 "최근 로그인" 배지로 보여준다.
+const LAST_PROVIDER_KEY = "clipnote:last-login-provider";
+
 export default function LoginPage() {
   const [loading, setLoading] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
+  const [lastProvider, setLastProvider] = useState<Provider | null>(null);
 
   // 카카오 로그인 임시 비활성화.
   // 이유: Supabase 가 카카오에 account_email 을 강제 요청하는데(클라이언트 scope 로 제거 불가),
@@ -16,10 +20,16 @@ export default function LoginPage() {
   // → 비즈앱 전환을 결정하면 true 로 바꿔 재활성화한다. (Supabase issue #36878)
   const KAKAO_ENABLED = false;
 
-  // 콜백에서 로그인 실패로 돌아온 경우(/login?error=...) 안내를 보여줌
+  // 콜백에서 로그인 실패로 돌아온 경우(/login?error=...) 안내 + 최근 로그인 수단 읽기
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("error")) {
       setError("로그인이 완료되지 않았어요. 다시 시도해 주세요.");
+    }
+    try {
+      const v = localStorage.getItem(LAST_PROVIDER_KEY);
+      if (v === "google" || v === "kakao") setLastProvider(v);
+    } catch {
+      // localStorage 미사용 환경이면 무시
     }
   }, []);
 
@@ -30,6 +40,12 @@ export default function LoginPage() {
     }
     setLoading(provider);
     setError(null);
+    // 이동 전에 선택한 수단 기록(다음 방문 시 "최근 로그인" 표시)
+    try {
+      localStorage.setItem(LAST_PROVIDER_KEY, provider);
+    } catch {
+      // 무시
+    }
     try {
       const supabase = createSupabaseBrowserClient();
       const { error } = await supabase.auth.signInWithOAuth({
@@ -86,9 +102,10 @@ export default function LoginPage() {
           type="button"
           onClick={() => signIn("google")}
           disabled={loading !== null || !agreed}
-          className="flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-bg px-4 text-base font-semibold text-fg transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
+          className="relative flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-bg px-4 text-base font-semibold text-fg transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading === "google" ? "이동 중…" : "Google로 계속하기"}
+          {lastProvider === "google" && <RecentBadge />}
         </button>
 
         {KAKAO_ENABLED && (
@@ -96,9 +113,10 @@ export default function LoginPage() {
             type="button"
             onClick={() => signIn("kakao")}
             disabled={loading !== null || !agreed}
-            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#FEE500] px-4 text-base font-semibold text-[#191600] transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
+            className="relative flex h-12 items-center justify-center gap-2 rounded-xl bg-[#FEE500] px-4 text-base font-semibold text-[#191600] transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading === "kakao" ? "이동 중…" : "카카오로 계속하기"}
+            {lastProvider === "kakao" && <RecentBadge />}
           </button>
         )}
       </div>
@@ -155,5 +173,14 @@ export default function LoginPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+// "최근 로그인" 배지 — 버튼 우상단에 표시(버튼에 relative 필요).
+function RecentBadge() {
+  return (
+    <span className="absolute -top-2 right-3 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white shadow-soft">
+      최근 로그인
+    </span>
   );
 }
