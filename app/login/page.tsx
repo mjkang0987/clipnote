@@ -14,11 +14,9 @@ export default function LoginPage() {
   const [agreed, setAgreed] = useState(false);
   const [lastProvider, setLastProvider] = useState<Provider | null>(null);
 
-  // 카카오 로그인 임시 비활성화.
-  // 이유: Supabase 가 카카오에 account_email 을 강제 요청하는데(클라이언트 scope 로 제거 불가),
-  // account_email 은 카카오 "비즈앱" 전환 후에만 켤 수 있어 개인 앱에선 400(KOE205) 이 남는다.
-  // → 비즈앱 전환을 결정하면 true 로 바꿔 재활성화한다. (Supabase issue #36878)
-  const KAKAO_ENABLED = false;
+  // 카카오 로그인 활성화. 카카오 동의항목(이메일·닉네임·프로필) 설정 완료 후 켬.
+  // Supabase 기본 scope(account_email·profile_image·profile_nickname)를 그대로 사용한다.
+  const KAKAO_ENABLED = true;
 
   // 콜백에서 로그인 실패로 돌아온 경우(/login?error=...) 안내 + 최근 로그인 수단 읽기
   useEffect(() => {
@@ -84,7 +82,8 @@ export default function LoginPage() {
           className="mt-0.5 h-4 w-4 shrink-0 accent-brand"
         />
         <span className="text-sm leading-relaxed text-fg-muted">
-          로그인 시 회원 구분용 소셜 계정 고유 식별자가 수집되는 데 동의합니다.{" "}
+          로그인 시 회원 식별을 위해 소셜 계정 정보(고유 식별자, 이메일, 프로필
+          닉네임·이미지)가 수집되는 데 동의합니다.{" "}
           <a
             href="/privacy"
             target="_blank"
