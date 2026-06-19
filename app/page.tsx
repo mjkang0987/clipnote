@@ -264,23 +264,23 @@ export default function Home() {
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-12 sm:py-16">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-6 sm:py-8">
         <section className="text-center">
-          <h1 className="text-3xl font-bold leading-tight tracking-tight text-fg sm:text-4xl">
+          <h1 className="text-2xl font-bold leading-tight tracking-tight text-fg sm:text-3xl">
             URL을 <span className="text-brand">예쁜 공유 카드</span>로
           </h1>
-          <p className="mx-auto mt-3 max-w-md text-base leading-relaxed text-fg-muted">
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-muted sm:text-base">
             링크만 붙여넣으면 제목·설명·이미지를 자동으로 읽어와 예쁜 공유 카드를
-            만들어요. 제목은 직접 고쳐도 돼요.
+            만들어요.
           </p>
         </section>
 
         <form
           onSubmit={handleSubmit}
-          className="mt-10 rounded-2xl border border-border bg-surface p-5 shadow-soft sm:p-6"
+          className="mt-5 rounded-2xl border border-border bg-surface p-4 shadow-soft sm:p-5"
           aria-label="클립 만들기"
         >
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-3.5">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="clip-url" className="text-sm font-medium text-fg">
                 URL <span className="text-danger">*</span>
@@ -393,36 +393,36 @@ export default function Home() {
           </p>
         )}
 
-        <section className="mt-10" aria-label="공유 카드 미리보기">
-          <h2 className="mb-3 text-sm font-medium text-fg-muted">미리보기</h2>
+        <section className="mt-6" aria-label="공유 카드 미리보기">
+          <h2 className="mb-2 text-sm font-medium text-fg-muted">미리보기</h2>
           <div
-            className="flex aspect-[1200/630] w-full flex-col justify-end rounded-2xl p-6 shadow-soft sm:p-8"
+            className="flex w-full flex-col gap-1 rounded-2xl px-5 py-4 shadow-soft"
             style={{ background: gradientCss(gradient) }}
           >
             <p className="text-xs font-semibold uppercase tracking-wider text-white/80">
               {meta?.siteName ?? "ClipNote"}
             </p>
-            <p className="mt-2 line-clamp-2 text-2xl font-bold leading-tight text-white drop-shadow-sm sm:text-3xl">
+            <p className="line-clamp-2 text-xl font-bold leading-snug text-white drop-shadow-sm sm:text-2xl">
               {effectiveTitle}
             </p>
             {description && (
-              <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-white/90">
+              <p className="line-clamp-2 text-sm leading-relaxed text-white/90">
                 {description}
               </p>
             )}
             {url && (
-              <p className="mt-2 truncate text-sm text-white/80">{prettyHost(url)}</p>
+              <p className="truncate text-xs text-white/80">{prettyHost(url)}</p>
             )}
           </div>
 
           {image && (
-            <figure className="mt-4 overflow-hidden rounded-xl border border-border">
+            <figure className="mt-3 overflow-hidden rounded-xl border border-border">
               {/* 원본 대표 이미지 (외부 호스트). 로드 실패 시 자동 숨김 */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={image}
                 alt={`${effectiveTitle} 대표 이미지`}
-                className="max-h-72 w-full object-cover"
+                className="max-h-40 w-full object-cover"
                 onError={(e) => {
                   (e.currentTarget.parentElement as HTMLElement).style.display = "none";
                 }}
@@ -430,13 +430,13 @@ export default function Home() {
             </figure>
           )}
 
-          <p className="mt-3 text-center text-xs text-fg-muted">
+          <p className="mt-2 text-center text-xs text-fg-muted">
             배경색은 제목에 따라 자동으로 정해져요
             {meta && meta.source !== "none" ? " · 제목·설명을 자동으로 가져왔어요" : ""}
           </p>
         </section>
 
-        <section className="mt-8" aria-label="저장 및 공유">
+        <section className="mt-5" aria-label="저장 및 공유">
           {isLoggedIn === false ? (
             // 비로그인: 이 브라우저에 저장만 (공유 불가)
             <div className="flex flex-col gap-3">

@@ -62,6 +62,7 @@
 - [~] #branch `feat/clips-list` — /clips 목록 페이지(게스트=localStorage, 로그인=DB). 코드 완료.
   - 게스트 저장이 화면에 보이게 됨(검증 가능). 로그인 목록은 OAuth 후 검증.
 - [ ] #branch `feat/auth-naver` — Naver 로그인 (커스텀 OAuth, Supabase 미지원이라 별도 구현)
+- [x] #branch `feat/home-compact` — 홈을 PC·모바일 한 화면에(버튼까지). 미리보기 카드 1200:630 고정 → 내용 높이(auto)로 축소, 히어로·폼·섹션 세로 여백 축소, 대표이미지 max-h-72→40. tsc 통과. (2026-06-19)
 - [x] #branch `feat/pwa` — 기본 설치형 PWA (2026-06-19): `app/manifest.ts`(standalone, theme #7c5cfc) + 아이콘(북마크 마크, 192·512·apple·maskable) + 최소 서비스워커(`public/sw.js`) + 등록 컴포넌트 + layout themeColor/apple 메타. 코드 완료, tsc 통과. 오프라인/공유타깃은 후순위.
 - [~] #branch `feat/clip-save-share-split` — 공유 생성 / 클립 저장 분리 + 로그인 클립 삭제 (코드 완료, 10장). 남은 사용자 할 일: Supabase `saved` 컬럼 SQL 실행 + 푸시/배포.
 - [ ] 이후: 보존기간/사용량 제한(수익화)
