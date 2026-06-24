@@ -21,9 +21,13 @@ create table if not exists public.clips (
 -- 기존 테이블에 컬럼이 없으면 추가 (재실행 안전)
 alter table public.clips add column if not exists user_id uuid references auth.users(id) on delete cascade;
 alter table public.clips add column if not exists saved boolean not null default false;
+-- 정규화 URL: 중복 검사를 전체 스캔 없이 인덱스 조회로 처리하기 위함.
+-- 옛 행은 null → findByUserUrl 의 레거시 폴백(JS 정규화)이 처리.
+alter table public.clips add column if not exists canonical_url text;
 
 create index if not exists clips_created_at_idx on public.clips (created_at desc);
 create index if not exists clips_user_id_idx on public.clips (user_id);
+create index if not exists clips_user_canonical_idx on public.clips (user_id, canonical_url);
 
 -- 조회수 원자적 증가 함수
 create or replace function public.increment_clip_view(target_slug text)

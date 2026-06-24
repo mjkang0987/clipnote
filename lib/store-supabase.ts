@@ -20,6 +20,7 @@ type Row = {
   tags: string[] | null;
   user_id: string | null;
   saved: boolean | null;
+  canonical_url: string | null; // 옛 행은 null(레거시 폴백 대상)
   view_count: number;
   created_at: string;
 };
@@ -54,6 +55,8 @@ export function createSupabaseStore(): ClipStore {
           .insert({
             slug,
             url: data.url,
+            // data.url 은 이미 정규화돼 들어오지만 멱등하므로 한 번 더 정규화해 저장.
+            canonical_url: canonicalizeUrl(data.url),
             title: data.title,
             description: data.description,
             image: data.image,
@@ -122,18 +125,33 @@ export function createSupabaseStore(): ClipStore {
 
     async findByUserUrl(userId: string, url: string): Promise<Clip | null> {
       const supabase = getSupabaseAdmin();
-      // 저장된 URL 도 비교 순간 정규화해야 옛 형식(슬래시 등) 데이터까지 매칭되므로,
-      // SQL eq 대신 사용자 클립을 받아 JS 에서 canonical 비교한다.
-      const { data, error } = await supabase
+      const target = canonicalizeUrl(url);
+
+      // 1) 빠른 경로: canonical_url 인덱스 조회(신규 행은 항상 채워짐).
+      const { data: hit, error: hitErr } = await supabase
         .from(TABLE)
         .select()
         .eq("user_id", userId)
+        .eq("canonical_url", target)
         .order("saved", { ascending: false }) // 저장된 것 우선
         .order("created_at", { ascending: false })
-        .limit(500);
-      if (error) throw new Error(`클립 조회 실패: ${error.message}`);
-      const target = canonicalizeUrl(url);
-      const match = (data as Row[]).find((r) => canonicalizeUrl(r.url) === target);
+        .limit(1);
+      if (hitErr) throw new Error(`클립 조회 실패: ${hitErr.message}`);
+      if (hit && hit.length > 0) return rowToClip(hit[0] as Row);
+
+      // 2) 레거시 폴백: canonical_url 이 비어있는 옛 행만 받아 JS 로 정규화 비교.
+      //    (정규화 도입 이전 데이터. 신규 행은 1)에서 끝나므로 이 집합은 늘지 않음.)
+      const { data: legacy, error: legErr } = await supabase
+        .from(TABLE)
+        .select()
+        .eq("user_id", userId)
+        .is("canonical_url", null)
+        .order("saved", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (legErr) throw new Error(`클립 조회 실패: ${legErr.message}`);
+      const match = (legacy as Row[] | null)?.find(
+        (r) => canonicalizeUrl(r.url) === target,
+      );
       return match ? rowToClip(match) : null;
     },
 
