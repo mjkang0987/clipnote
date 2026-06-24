@@ -84,19 +84,21 @@ export default function Home() {
 
   const hasInput = url.trim().length > 0;
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!hasInput || loading) return;
+  // 미리보기 생성. withShare=true 면(로그인 시) 미리보기 직후 공유 링크까지 한 번에.
+  async function runMake(withShare: boolean) {
+    if (!hasInput || loading || creating) return;
 
     setLoading(true);
     setError(null);
     setMeta(null);
     setShareUrl(null);
     setAdded(false);
+    let fetched: ClipMetadata | null = null;
     try {
       const res = await fetch(`/api/metadata?url=${encodeURIComponent(url.trim())}`);
       const data = (await res.json()) as ClipMetadata;
       setMeta(data);
+      fetched = data;
       // 제목을 비워뒀고 자동으로 가져온 제목이 있으면 입력란에 채워줌(편집 가능)
       if (!title.trim() && data.title) setTitle(data.title);
     } catch {
@@ -104,10 +106,23 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+    // 미리보기 직후 공유 링크 생성. state(meta) 갱신을 기다리지 않도록
+    // 방금 받은 데이터를 직접 넘긴다.
+    if (fetched && withShare && isLoggedIn) {
+      await handleCreateShare(fetched);
+    }
   }
 
-  async function handleCreateShare() {
-    const sendTitle = title.trim() || meta?.title || "";
+  // 폼 제출(Enter 포함)은 안전하게 미리보기만.
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    runMake(false);
+  }
+
+  // m: 사용할 메타데이터. 미리보기 직후 자동 호출 시엔 state(meta)가 아직 갱신
+  // 전이라 방금 받은 데이터를 직접 넘긴다. 버튼 클릭 시엔 state(meta) 사용.
+  async function handleCreateShare(m: ClipMetadata | null = meta) {
+    const sendTitle = title.trim() || m?.title || "";
     if (!sendTitle) {
       setError("공유 링크를 만들려면 제목이 필요해요. 제목을 입력해 주세요.");
       return;
@@ -122,9 +137,9 @@ export default function Home() {
         body: JSON.stringify({
           url: url.trim(),
           title: sendTitle,
-          description: meta?.description ?? null,
-          image: meta?.image ?? null,
-          siteName: meta?.siteName ?? null,
+          description: m?.description ?? null,
+          image: m?.image ?? null,
+          siteName: m?.siteName ?? null,
           tags,
           gradient: gradient.name,
         }),
@@ -357,13 +372,30 @@ export default function Home() {
               )}
             </div>
 
-            <button
-              type="submit"
-              disabled={!hasInput || loading}
-              className="h-12 rounded-xl bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? "미리보기 만드는 중…" : "미리보기 만들기"}
-            </button>
+            {/* 미리보기만 / (로그인 시) 미리보기+공유 링크 한 번에 */}
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="submit"
+                disabled={!hasInput || loading || creating}
+                className="h-12 flex-1 rounded-xl bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? "미리보기 만드는 중…" : "미리보기 만들기"}
+              </button>
+              {isLoggedIn === true && (
+                <button
+                  type="button"
+                  onClick={() => runMake(true)}
+                  disabled={!hasInput || loading || creating}
+                  className="h-12 flex-1 rounded-xl border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {creating
+                    ? "공유 링크 만드는 중…"
+                    : loading
+                      ? "만드는 중…"
+                      : "미리보기 + 공유 링크 만들기"}
+                </button>
+              )}
+            </div>
           </div>
         </form>
 
@@ -508,7 +540,7 @@ export default function Home() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
-                onClick={handleCreateShare}
+                onClick={() => handleCreateShare()}
                 disabled={!hasInput || creating || isLoggedIn === null}
                 className="h-12 w-full rounded-xl border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
               >
