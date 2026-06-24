@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Clip } from "@/lib/store";
 import { gradientCss, pickGradient } from "@/lib/gradients";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   getLocalClips,
   removeLocalClip,
@@ -44,26 +43,31 @@ export default function ClipsPage() {
 
     async function load() {
       const hasAuth = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
-      let isUser = false;
 
-      if (hasAuth) {
-        const supabase = createSupabaseBrowserClient();
-        const { data } = await supabase.auth.getUser();
-        isUser = Boolean(data.user);
+      // 인증 미설정: 게스트 전용(localStorage) — 네트워크 불필요.
+      if (!hasAuth) {
+        if (!active) return;
+        setLoggedIn(false);
+        setItems(getLocalClips().map(localToItem));
+        setLoading(false);
+        return;
       }
-      if (!active) return;
-      setLoggedIn(isUser);
 
-      if (isUser) {
-        try {
-          const res = await fetch("/api/clips");
-          const json = (await res.json()) as { clips: Clip[] };
-          if (!active) return;
-          setItems(json.clips.map(dbToItem));
-        } catch {
-          if (active) setItems([]);
-        }
-      } else {
+      // 단일 요청으로 로그인 여부 + 목록을 함께 수신(별도 auth.getUser() 왕복 제거).
+      try {
+        const res = await fetch("/api/clips");
+        const json = (await res.json()) as { loggedIn: boolean; clips: Clip[] };
+        if (!active) return;
+        setLoggedIn(json.loggedIn);
+        setItems(
+          json.loggedIn
+            ? json.clips.map(dbToItem)
+            : getLocalClips().map(localToItem),
+        );
+      } catch {
+        // 네트워크 실패: 게스트 폴백
+        if (!active) return;
+        setLoggedIn(false);
         setItems(getLocalClips().map(localToItem));
       }
       if (active) setLoading(false);
