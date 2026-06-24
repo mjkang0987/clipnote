@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-// 헤더 우측: 로그인 상태에 따라 "로그인" 링크 또는 사용자 + 로그아웃.
+// 헤더 우측: 로그인 상태에 따라 "로그인" 링크 또는 로그아웃 버튼.
+// 이메일 등 개인정보는 수집·표시하지 않고 로그인 여부만 본다.
 export default function AuthNav() {
-  const [email, setEmail] = useState<string | null>(null);
+  const [loggedIn, setLoggedIn] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -17,19 +18,19 @@ export default function AuthNav() {
     const supabase = createSupabaseBrowserClient();
 
     supabase.auth.getUser().then(({ data }) => {
-      setEmail(data.user?.email ?? null);
+      setLoggedIn(Boolean(data.user));
       setReady(true);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setEmail(session?.user?.email ?? null);
+      setLoggedIn(Boolean(session?.user));
     });
     return () => sub.subscription.unsubscribe();
   }, []);
 
   if (!ready) return <div className="h-9 w-16" aria-hidden />;
 
-  if (!email) {
+  if (!loggedIn) {
     return (
       <a
         href="/login"
@@ -42,9 +43,6 @@ export default function AuthNav() {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="hidden max-w-[12rem] truncate text-sm text-fg-muted sm:inline">
-        {email}
-      </span>
       <form action="/auth/signout" method="post">
         <button
           type="submit"

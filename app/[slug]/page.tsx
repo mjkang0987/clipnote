@@ -1,10 +1,15 @@
+import { cache } from "react";
 import type { Metadata } from "next";
+import { after } from "next/server";
 import { notFound } from "next/navigation";
 import { clipStore } from "@/lib/store";
 import { gradientCss, pickGradient } from "@/lib/gradients";
 import SmartRedirect from "./SmartRedirect";
 
 type Params = { params: Promise<{ slug: string }> };
+
+// generateMetadata 와 SharePage 가 같은 slug 를 조회 — 요청 단위로 1회만 DB 왕복.
+const getClip = cache((slug: string) => clipStore.get(slug));
 
 /** OG 이미지 URL 구성(상대 경로 — metadataBase 기준으로 절대화됨). */
 function ogImageUrl(p: {
@@ -24,7 +29,7 @@ function ogImageUrl(p: {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
-  const clip = await clipStore.get(slug);
+  const clip = await getClip(slug);
   if (!clip) return { title: "찾을 수 없는 링크 · ClipNote" };
 
   const image = ogImageUrl(clip);
@@ -52,10 +57,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function SharePage({ params }: Params) {
   const { slug } = await params;
-  const clip = await clipStore.get(slug);
+  const clip = await getClip(slug);
   if (!clip) notFound();
 
-  await clipStore.incrementView(slug);
+  // 조회수 증가는 렌더를 막을 이유가 없음 — 응답 후 실행(after).
+  // 서버리스에서도 함수가 살아있는 동안 실행이 보장됨(bare void 는 동결될 수 있음).
+  after(() => clipStore.incrementView(slug));
   const gradient = pickGradient(clip.gradient);
 
   return (

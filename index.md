@@ -12,8 +12,9 @@
 
 ## 현재 상태
 
-- 단계: **로그인(Google·Kakao)/비로그인 분기 코드 완료(`feat/auth-google-kakao`). OAuth 앱 등록 후 테스트 가능.**
+- 단계: **구글·카카오 로그인 활성화(`KAKAO_ENABLED=true`). 카카오 동의항목(이메일·닉네임·프로필) 설정 완료 후 Supabase 기본 scope 그대로 사용. 카카오 로그인 시 이메일 수집 → 약관 반영함.**
   - 로그인 → 공유 링크(DB, user_id). 비로그인 → 브라우저 localStorage 저장(공유 X).
+  - ⚠️ 게스트(localStorage) 클립은 로그인 시 화면에 안 보임(DB 모드). 자동 이전(마이그레이션) 미구현 — 후속 검토.
 - 브랜치 전략(2026-06-18 갱신):
   - `main` = 안정/배포용 (직접 작업 X)
   - `develop` = 통합 브랜치 — 기능 작업은 여기로 머지
@@ -91,3 +92,22 @@ clipnote/
 - 2026-06-18: 동적 OG 이미지(`/api/og`, next/og) — 그라디언트+제목+설명 카드, Pretendard woff 서브셋 번들(한글 렌더 확인). 슬러그(`lib/slug.ts`)·메모리 저장소(`lib/store.ts`)·생성 API(`/api/clip`)·공유 페이지(`/[slug]`, OG 주입+스마트 리다이렉트) 구현. E2E(생성→공유→OG메타→404) 검증 완료.
   - ⚠️ 저장소가 메모리라 서버 재시작 시 클립 사라짐 → Supabase 연동 시 교체 필요.
   - ⚠️ og:image 가 metadataBase(clipnote.co.kr) 기준 절대 URL → 로컬에선 이미지 미리보기는 `/api/og` 직접 호출로 확인.
+- 2026-06-19: 구글 로그인 출시. 카카오는 `KAKAO_ENABLED=false`(Supabase 한계로 비활성, 비즈앱 결정 시 재활성).
+- 2026-06-19: 버튼 커서 공통 추가 — globals.css base 에 `button:not(:disabled){cursor:pointer}`(Tailwind v4 preflight 대응).
+- 2026-06-19: 로그인 화면 "최근 로그인" 배지 — 마지막에 쓴 수단을 localStorage(`clipnote:last-login-provider`)에 기록, 다음 방문 시 해당 버튼 우상단에 표시. (현재 구글만 노출, 카카오 복귀 시 자동 적용)
+- 2026-06-19: 개인정보처리방침 갱신 — 책임자 pikaworks 운영자 / 이메일 pikaworks.help@gmail.com, 시행일 2026-06-19, Supabase 저장 위치를 대한민국(서울 리전)으로 명시(국외 이전 → 국내 저장), 초안 문구 정리.
+- 2026-06-19: 카카오 로그인 재활성화(`KAKAO_ENABLED=true`) — 카카오 동의항목 설정 완료. Supabase 기본 scope 사용(이메일·닉네임·프로필 수집). 로그인 동의 문구 + 약관 수집항목(이메일·프로필 추가) 갱신.
+- 2026-06-19: 개인정보처리방침 헤더 로그인 상태 반영(AuthNav).
+- 2026-06-19: 기본 설치형 PWA(`feat/pwa`) — `app/manifest.ts`(standalone, theme #7c5cfc), 아이콘 public/icon-192·512·apple-icon-180·icon-maskable-512(북마크 마크), `public/sw.js`(최소 SW) + `app/_components/ServiceWorkerRegister.tsx`, layout viewport themeColor·appleWebApp·icons. tsc 통과.
+- 2026-06-19: favicon(`app/favicon.ico`)을 북마크 아이콘으로 교체(16·32·48·64 다중 해상도, 풀블리드).
+- 2026-06-19: 홈 화면 컴팩트화(`feat/home-compact`) — 미리보기 카드 1200:630 고정 제거→내용 높이, 히어로/폼/섹션 여백 축소, 대표이미지 높이 축소. PC·모바일에서 공유/저장 버튼까지 한 화면에 가깝게.
+- 2026-06-19: 홈 미리보기 2블록 재구성 — ①공유 카드(공유 시 보이는 이미지) ②내 클립 저장 모습(목록 카드 형태, 왼쪽 썸네일=원본 대표이미지/그라디언트 폴백). 각 블록에 설명 캡션 추가로 "어떤 이미지인지" 명확화.
+- 2026-06-19: 원본 대표이미지 검증(`lib/metadata.ts verifyImage`) — og:image 선언만 있고 실제 404 인 경우가 흔해, 파싱 시 실제 열리는지(200/206 + image 타입, 4s 타임아웃) 확인 후 아니면 null 처리. 깨진 썸네일/404 요청 방지(그라디언트 폴백).
+- 2026-06-19: 버전 0.5.2 → 0.6.0 (오늘 기능 묶음: 공유/저장 분리·삭제, PWA, 중복 방지, 이미지 검증 등).
+- 2026-06-19: 자동 버전닝 도입 — `.github/workflows/release-please.yml`(release-please, release-type node). main 푸시 시 커밋 컨벤션 읽어 릴리스 PR 자동 생성→머지하면 package.json/CHANGELOG/태그 자동. ⚠️ 사용자 할 일: GitHub repo Settings→Actions→Workflow permissions를 "Read and write"로.
+- 2026-06-19: 공유 링크 생성 결과를 하단 인라인 → **모달 레이어**(`ShareResultLayer`)로 변경(복사·열기·닫기, Esc/배경클릭 닫기).
+- 2026-06-19: 내 클립 카드에 "공유 링크 복사" 버튼 추가(slug 있는 로그인 클립만, 클립보드 복사+복사됨 피드백).
+- 2026-06-19: 내 클립 편집/일괄 관리(`feat/clips-edit-bulk`, DB 클립) — A) 카드 "편집"→모달(제목·태그), B) "선택" 모드+체크박스→일괄 삭제, C) 선택 클립 태그 일괄 추가/교체. store `update`+`ClipPatch`, `PATCH /api/clip/[slug]` 확장(title/tags/saved), 모달 공통 `ModalShell`. tsc 통과.
+- 2026-06-19: URL 정규화(`lib/metadata.ts canonicalizeUrl`) — 저장·중복비교 시 끝 슬래시/호스트 대소문자/추적 파라미터(utm_*·fbclid 등) 차이를 같은 URL로 처리(www는 미변경). 슬래시 차이로 중복되던 문제 해결. (기존 데이터는 옛 형식이라 신규부터 적용)
+- 2026-06-19: 클립 중복 방지 — `POST /api/clip` 에서 같은 (user, URL) 클립이 있으면 새로 안 만들고 재사용. "내 클립에 추가" 시 이미 있으면 저장 처리만 하고 `alreadySaved` 응답 → 버튼에 "이미 추가됨 ✓" 표시. store에 `findByUserUrl` 추가. (홈의 미사용 `shareSlug` 상태 제거)
+- 2026-06-19: 공유 생성/클립 저장 분리 + 로그인 클립 삭제(`feat/clip-save-share-split`). `clips.saved` 컬럼 추가(목록은 saved=true만). 메인 폼 로그인 시 버튼 2개("공유 링크 만들기"=saved:false / "내 클립에 추가"=saved:true). `PATCH/DELETE /api/clip/[slug]` 신규(소유자 확인). 내 클립 카드 삭제 버튼을 로그인(DB) 클립에도 노출. tsc 통과. **사용자 할 일: Supabase에 `alter table public.clips add column if not exists saved boolean not null default false;` 실행 + 푸시/배포.**

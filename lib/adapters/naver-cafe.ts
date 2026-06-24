@@ -20,12 +20,45 @@ export function parseNaverCafe(u: URL): NaverCafeIds | null {
   const path = u.pathname.match(/\/cafes\/(\d+)\/articles\/(\d+)/);
   if (path) return { cafeId: path[1], articleId: path[2] };
 
+  // 모바일 공유 링크: m.cafe.naver.com/{cafe별칭}/{articleId}?art={JWT}
+  // 경로에는 숫자 cafeId 가 없지만(별칭), art 토큰 payload 에 cafeId/articleId 가 들어있다.
+  const art = u.searchParams.get("art");
+  if (art) {
+    const ids = parseArtToken(art);
+    if (ids) return ids;
+  }
+
   // 구형: ArticleRead.nhn?clubid={cafeId}&articleid={articleId}
   const clubid = u.searchParams.get("clubid");
   const articleid = u.searchParams.get("articleid");
   if (clubid && articleid) return { cafeId: clubid, articleId: articleid };
 
   return null;
+}
+
+/** 공유 링크 art 토큰(JWT 형태)의 payload 에서 cafeId/articleId 추출. 실패 시 null. */
+function parseArtToken(art: string): NaverCafeIds | null {
+  for (const seg of art.split(".")) {
+    const payload = decodeBase64UrlJson(seg);
+    if (payload && typeof payload === "object") {
+      const o = payload as Record<string, unknown>;
+      if (o.cafeId != null && o.articleId != null) {
+        return { cafeId: String(o.cafeId), articleId: String(o.articleId) };
+      }
+    }
+  }
+  return null;
+}
+
+/** base64url 세그먼트를 JSON 으로 디코드. 객체가 아니면(또는 실패) null. */
+function decodeBase64UrlJson(seg: string): unknown {
+  try {
+    const b64 = seg.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = b64.length % 4 ? "=".repeat(4 - (b64.length % 4)) : "";
+    return JSON.parse(Buffer.from(b64 + pad, "base64").toString("utf-8"));
+  } catch {
+    return null;
+  }
 }
 
 /** 네이버 카페 게시글 메타데이터 조회. 실패 시 null. */

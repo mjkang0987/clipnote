@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, ogImagePath } from "@/lib/site";
+import ServiceWorkerRegister from "@/app/_components/ServiceWorkerRegister";
 
 const ogImage = ogImagePath({
   title: "URL을 예쁜 공유 카드로",
@@ -51,6 +52,19 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true, "max-image-preview": "large" },
   },
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/apple-icon-180.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "ClipNote",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#7c5cfc",
 };
 
 // 사이트 전역 구조화 데이터(JSON-LD) — 검색·생성형 AI 가 ClipNote 를 이해하도록
@@ -90,6 +104,7 @@ export default function RootLayout({
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <ServiceWorkerRegister />
         {children}
       </body>
     </html>

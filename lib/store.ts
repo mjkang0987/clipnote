@@ -7,6 +7,7 @@
 import { generateSlug } from "./slug";
 import { hasSupabaseEnv } from "./supabase";
 import { createSupabaseStore } from "./store-supabase";
+import { canonicalizeUrl } from "./metadata";
 
 export type Clip = {
   slug: string;
@@ -18,11 +19,17 @@ export type Clip = {
   gradient: string; // 그라디언트 이름 (lib/gradients)
   tags: string[];
   userId: string | null; // 작성자(로그인 사용자). 공유 클립은 항상 존재
+  saved: boolean; // 내 클립 목록에 담겼는지(공유만 만든 건 false)
   createdAt: string; // ISO
   viewCount: number;
 };
 
 export type NewClip = Omit<Clip, "slug" | "createdAt" | "viewCount">;
+
+/** 수정 가능한 필드(부분). */
+export type ClipPatch = Partial<
+  Pick<Clip, "title" | "description" | "tags" | "gradient" | "saved">
+>;
 
 export interface ClipStore {
   create(data: NewClip): Promise<Clip>;
@@ -30,6 +37,14 @@ export interface ClipStore {
   incrementView(slug: string): Promise<void>;
   list(): Promise<Clip[]>;
   listByUser(userId: string): Promise<Clip[]>;
+  /** 같은 사용자의 같은 URL 클립을 찾음(저장된 것 우선). 없으면 null — 중복 방지용. */
+  findByUserUrl(userId: string, url: string): Promise<Clip | null>;
+  /** 본인 클립의 saved 토글. 대상이 없거나 소유자가 아니면 false. */
+  setSaved(slug: string, userId: string, saved: boolean): Promise<boolean>;
+  /** 본인 클립 수정(제목·태그·저장여부 등). 소유 아니면 null. */
+  update(slug: string, userId: string, patch: ClipPatch): Promise<Clip | null>;
+  /** 본인 클립 삭제. 대상이 없거나 소유자가 아니면 false. */
+  remove(slug: string, userId: string): Promise<boolean>;
 }
 
 function createMemoryStore(): ClipStore {
@@ -69,8 +84,41 @@ function createMemoryStore(): ClipStore {
 
     async listByUser(userId) {
       return [...clips.values()]
-        .filter((c) => c.userId === userId)
+        .filter((c) => c.userId === userId && c.saved)
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+
+    async findByUserUrl(userId, url) {
+      // 저장된 URL 도 비교 순간 정규화 → 옛 형식(슬래시 등) 데이터도 같이 매칭.
+      const target = canonicalizeUrl(url);
+      const matches = [...clips.values()].filter(
+        (c) => c.userId === userId && canonicalizeUrl(c.url) === target,
+      );
+      return matches.find((c) => c.saved) ?? matches[0] ?? null; // 저장된 것 우선
+    },
+
+    async setSaved(slug, userId, saved) {
+      const clip = clips.get(slug);
+      if (!clip || clip.userId !== userId) return false;
+      clip.saved = saved;
+      return true;
+    },
+
+    async update(slug, userId, patch) {
+      const clip = clips.get(slug);
+      if (!clip || clip.userId !== userId) return null;
+      if (patch.title !== undefined) clip.title = patch.title;
+      if (patch.description !== undefined) clip.description = patch.description;
+      if (patch.tags !== undefined) clip.tags = patch.tags;
+      if (patch.gradient !== undefined) clip.gradient = patch.gradient;
+      if (patch.saved !== undefined) clip.saved = patch.saved;
+      return clip;
+    },
+
+    async remove(slug, userId) {
+      const clip = clips.get(slug);
+      if (!clip || clip.userId !== userId) return false;
+      return clips.delete(slug);
     },
   };
 }
