@@ -108,8 +108,14 @@ export default function Home() {
     }
     // 미리보기 직후 공유 링크 생성. state(meta) 갱신을 기다리지 않도록
     // 방금 받은 데이터를 직접 넘긴다.
-    if (fetched && withShare && isLoggedIn) {
-      await handleCreateShare(fetched);
+    if (fetched && withShare) {
+      if (isLoggedIn === false) {
+        // 게스트: 공유는 로그인 전용 — 미리보기만 보여주고 안내.
+        setError("공유 링크는 로그인 후 만들 수 있어요. 로그인하고 다시 시도해 주세요.");
+      } else {
+        // 로그인(또는 확인 중): 서버가 비로그인이면 401 로 막아준다.
+        await handleCreateShare(fetched);
+      }
     }
   }
 
@@ -271,7 +277,7 @@ export default function Home() {
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-6 sm:py-8">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-5 sm:py-8">
         <section className="text-center">
           <h1 className="text-2xl font-bold leading-tight tracking-tight text-fg sm:text-3xl">
             URL을 <span className="text-brand">예쁜 공유 카드</span>로
@@ -284,10 +290,10 @@ export default function Home() {
 
         <form
           onSubmit={handleSubmit}
-          className="mt-5 rounded-2xl border border-border bg-surface p-4 shadow-soft sm:p-5"
+          className="mt-4 rounded-2xl border border-border bg-surface p-4 shadow-soft sm:mt-5 sm:p-5"
           aria-label="클립 만들기"
         >
-          <div className="flex flex-col gap-3.5">
+          <div className="flex flex-col gap-3 sm:gap-3.5">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="clip-url" className="text-sm font-medium text-fg">
                 URL <span className="text-danger">*</span>
@@ -372,27 +378,27 @@ export default function Home() {
               )}
             </div>
 
-            {/* 미리보기만 / (로그인 시) 미리보기+공유 링크 한 번에 */}
+            {/* 미리보기만 / (로그인 시) 미리보기+공유 링크 한 번에 (나란히) */}
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 type="submit"
                 disabled={!hasInput || loading || creating}
-                className="h-12 flex-1 rounded-xl bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-12 w-full rounded-xl bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
               >
-                {loading ? "미리보기 만드는 중…" : "미리보기 만들기"}
+                {loading ? "미리보기 생성 중…" : "미리보기 생성"}
               </button>
               {isLoggedIn === true && (
                 <button
                   type="button"
                   onClick={() => runMake(true)}
                   disabled={!hasInput || loading || creating}
-                  className="h-12 flex-1 rounded-xl border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="h-12 w-full rounded-xl border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
                 >
                   {creating
-                    ? "공유 링크 만드는 중…"
+                    ? "공유 링크 생성 중…"
                     : loading
-                      ? "만드는 중…"
-                      : "미리보기 + 공유 링크 만들기"}
+                      ? "생성 중…"
+                      : "미리보기 + 공유 링크 생성"}
                 </button>
               )}
             </div>
@@ -418,7 +424,7 @@ export default function Home() {
         )}
 
         {/* ① 공유 카드: 링크를 공유했을 때 보이는 이미지 */}
-        <section className="mt-6" aria-label="공유 카드 미리보기">
+        <section className="mt-5 sm:mt-6" aria-label="공유 카드 미리보기">
           <h2 className="mb-2 text-sm font-medium text-fg-muted">
             공유 카드{" "}
             <span className="font-normal text-fg-muted">— 링크를 공유하면 이렇게 보여요</span>
@@ -448,7 +454,7 @@ export default function Home() {
         </section>
 
         {/* ② 내 클립 저장 모습: 목록에서 보이는 카드(왼쪽 썸네일 = 원본 이미지) */}
-        <section className="mt-5" aria-label="내 클립 저장 미리보기">
+        <section className="mt-4 sm:mt-5" aria-label="내 클립 저장 미리보기">
           <h2 className="mb-2 text-sm font-medium text-fg-muted">
             내 클립에 저장하면{" "}
             <span className="font-normal text-fg-muted">— 목록에서 이렇게 보여요</span>
@@ -494,7 +500,7 @@ export default function Home() {
           </p>
         </section>
 
-        <section className="mt-5" aria-label="저장 및 공유">
+        <section className="mt-4 sm:mt-5" aria-label="저장 및 공유">
           {isLoggedIn === false ? (
             // 비로그인: 이 브라우저에 저장만 (공유 불가)
             <div className="flex flex-col gap-3">
@@ -567,7 +573,7 @@ export default function Home() {
 
         {/* SEO/GEO: 소개·기능·FAQ */}
         <section
-          className="mt-16 border-t border-border pt-10"
+          className="mt-12 border-t border-border pt-8 sm:mt-16 sm:pt-10"
           aria-labelledby="about-heading"
         >
           <h2 id="about-heading" className="text-xl font-bold text-fg">
@@ -581,14 +587,14 @@ export default function Home() {
             일반적으로 미리보기가 잘 안 잡히는 링크도 지원해요.
           </p>
 
-          <h2 className="mt-10 text-xl font-bold text-fg">이렇게 동작해요</h2>
+          <h2 className="mt-8 text-xl font-bold text-fg sm:mt-10">이렇게 동작해요</h2>
           <ol className="mt-3 flex flex-col gap-2 leading-relaxed text-fg-muted">
             <li>1. 공유하고 싶은 URL을 붙여넣어요.</li>
             <li>2. 제목·설명·대표 이미지를 자동으로 읽어와 카드를 만들어요.</li>
             <li>3. 로그인하면 짧은 공유 링크가 생기고, 공유 시 예쁜 카드로 떠요.</li>
           </ol>
 
-          <h2 className="mt-10 text-xl font-bold text-fg">자주 묻는 질문</h2>
+          <h2 className="mt-8 text-xl font-bold text-fg sm:mt-10">자주 묻는 질문</h2>
           <dl className="mt-3 flex flex-col gap-4">
             <div>
               <dt className="font-semibold text-fg">태그는 어떻게 쓰나요?</dt>
@@ -636,7 +642,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-5 py-6 text-center text-xs text-fg-muted">
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-5 py-5 text-center text-xs text-fg-muted sm:py-6">
           <span>© 2026 ClipNote</span>
           <span aria-hidden>·</span>
           <a href="/privacy" className="font-semibold hover:text-fg">
@@ -757,7 +763,7 @@ function ClearableInput({
       <input
         {...props}
         value={value}
-        className="h-12 w-full rounded-xl border border-border bg-bg pl-4 pr-12 text-base text-fg outline-none transition focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40"
+        className="h-11 w-full rounded-xl border border-border bg-bg pl-3.5 pr-12 text-base text-fg outline-none transition focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40 sm:h-12 sm:pl-4"
       />
       {hasValue && (
         <button
