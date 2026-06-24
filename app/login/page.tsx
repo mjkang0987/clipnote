@@ -146,27 +146,30 @@ export default function LoginPage() {
         </h2>
 
         <div className="mt-4 flex flex-col gap-3">
-          {/* 로그인 모드 */}
-          <div className="rounded-xl border border-border bg-surface p-4">
-            <p className="text-sm font-semibold text-fg">로그인하면 이런 게 좋아요</p>
+          {/* 로그인 하면 (메인 '이렇게 동작해요'와 동일 텍스트·강조) */}
+          <div className="rounded-xl border border-brand/30 bg-brand-soft p-4">
+            <p className="text-sm font-semibold text-brand-strong">로그인 하면</p>
             <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-              <li>· 짧은 공유 링크를 만들어 카카오톡·SNS에 보낼 수 있어요.</li>
-              <li>· 공유한 링크는 예쁜 미리보기 카드로 떠요.</li>
-              <li>· 저장한 클립이 계정에 쌓여 다른 기기에서도 그대로 보여요.</li>
-              <li>· 태그로 정리하고 모아 보기가 편해져요.</li>
+              <li>
+                · <strong className="font-semibold text-brand-strong">짧은 공유 링크</strong>를 만들어 카카오톡·SNS에 보낼 수 있어요.
+              </li>
+              <li>· 공유한 링크가 예쁜 미리보기 카드로 떠요.</li>
+              <li>
+                · 클립이 계정에 쌓여 <strong className="font-semibold text-brand-strong">다른 기기에서도</strong> 그대로 보이고, 태그로 정리돼요.
+              </li>
             </ul>
-            <p className="mt-3 text-xs leading-relaxed text-fg-muted">
-              비밀번호는 따로 만들지 않아도 돼요.
-            </p>
           </div>
 
-          {/* 게스트 모드 */}
+          {/* 로그인 안 해도 (게스트) */}
           <div className="rounded-xl border border-border bg-surface p-4">
-            <p className="text-sm font-semibold text-fg">게스트 모드는 이래요</p>
+            <p className="text-sm font-semibold text-fg">로그인 안 해도</p>
             <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-              <li>· 로그인 없이 미리보기 카드를 만들 수 있어요.</li>
-              <li>· 저장한 링크는 이 기기(브라우저)에만 남아요.</li>
-              <li>· 짧은 공유 링크는 만들 수 없어요. (로그인 필요)</li>
+              <li>· URL을 붙여넣어 미리보기 카드를 만들 수 있어요.</li>
+              <li>· 만든 클립을 이 브라우저에 저장하고 ‘내 클립’에서 다시 봐요.</li>
+              <li>
+                · 단, 저장은 <strong className="font-semibold text-fg">이 기기에만</strong> 남고{" "}
+                <strong className="font-semibold text-fg">짧은 공유 링크는 못 만들어요.</strong>
+              </li>
             </ul>
           </div>
         </div>

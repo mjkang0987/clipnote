@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { gradientCss, pickGradient } from "@/lib/gradients";
 import type { ClipMetadata } from "@/lib/metadata";
 import AuthNav from "@/app/_components/AuthNav";
@@ -12,6 +12,7 @@ export default function Home() {
   const [title, setTitle] = useState("");
   const [tagInput, setTagInput] = useState("");
 
+  // 메타 자동 추출 진행 중
   const [loading, setLoading] = useState(false);
   const [meta, setMeta] = useState<ClipMetadata | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +32,11 @@ export default function Home() {
 
   // 태그 자동완성: 과거에 쓴 태그
   const [knownTags, setKnownTags] = useState<string[]>([]);
+
+  // 자동 추출 추적: 마지막으로 받은 URL, 진행 중 요청 취소용
+  const fetchedUrlRef = useRef<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
     setKnownTags(getKnownTags());
   }, []);
@@ -84,49 +90,104 @@ export default function Home() {
 
   const hasInput = url.trim().length > 0;
 
-  // 미리보기 생성. withShare=true 면(로그인 시) 미리보기 직후 공유 링크까지 한 번에.
-  async function runMake(withShare: boolean) {
-    if (!hasInput || loading || creating) return;
+  // 자동 추출 대상이 될 만한 URL 인지(파싱 통과 + 호스트에 점).
+  function isFetchableUrl(raw: string): boolean {
+    const t = raw.trim();
+    if (!t) return false;
+    try {
+      const u = new URL(t.startsWith("http") ? t : `https://${t}`);
+      return u.hostname.includes(".");
+    } catch {
+      return false;
+    }
+  }
+
+  // 메타 추출(자동/수동 공용). 직전 진행 요청은 취소하고, 같은 URL 이면 캐시 재사용.
+  // 반환: 받은 메타(또는 null) — 호출부에서 이어서 공유 생성에 사용.
+  async function loadMeta(
+    rawUrl: string,
+    opts?: { force?: boolean },
+  ): Promise<ClipMetadata | null> {
+    const target = rawUrl.trim();
+    if (!isFetchableUrl(target)) return null;
+    if (!opts?.force && fetchedUrlRef.current === target && meta) return meta;
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     setLoading(true);
     setError(null);
-    setMeta(null);
-    setShareUrl(null);
-    setAdded(false);
-    let fetched: ClipMetadata | null = null;
     try {
-      const res = await fetch(`/api/metadata?url=${encodeURIComponent(url.trim())}`);
+      const res = await fetch(`/api/metadata?url=${encodeURIComponent(target)}`, {
+        signal: controller.signal,
+      });
       const data = (await res.json()) as ClipMetadata;
+      if (controller.signal.aborted) return null;
       setMeta(data);
-      fetched = data;
-      // 제목을 비워뒀고 자동으로 가져온 제목이 있으면 입력란에 채워줌(편집 가능)
-      if (!title.trim() && data.title) setTitle(data.title);
-    } catch {
+      fetchedUrlRef.current = target;
+      // 입력란이 비어 있으면 자동 제목으로 채움(함수형 업데이트 → stale 클로저 회피).
+      const fetchedTitle = data.title;
+      if (fetchedTitle) setTitle((prev) => (prev.trim() ? prev : fetchedTitle));
+      return data;
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return null;
       setError("내용을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+      return null;
     } finally {
-      setLoading(false);
-    }
-    // 미리보기 직후 공유 링크 생성. state(meta) 갱신을 기다리지 않도록
-    // 방금 받은 데이터를 직접 넘긴다.
-    if (fetched && withShare) {
-      if (isLoggedIn === false) {
-        // 게스트: 공유는 로그인 전용 — 미리보기만 보여주고 안내.
-        setError("공유 링크는 로그인 후 만들 수 있어요. 로그인하고 다시 시도해 주세요.");
-      } else {
-        // 로그인(또는 확인 중): 서버가 비로그인이면 401 로 막아준다.
-        await handleCreateShare(fetched);
-      }
+      // 더 새로운 요청으로 교체된 경우 loading 은 그 요청이 관리
+      if (abortRef.current === controller) setLoading(false);
     }
   }
 
-  // 폼 제출(Enter 포함)은 안전하게 미리보기만.
+  // URL 이 바뀌면 이전 메타 무효화 + 유효하면 디바운스(600ms) 후 자동 추출.
+  useEffect(() => {
+    const t = url.trim();
+    if (fetchedUrlRef.current && fetchedUrlRef.current !== t) {
+      fetchedUrlRef.current = null;
+      setMeta(null);
+      setShareUrl(null);
+      setAdded(false);
+      setTitle(""); // URL 바뀌면 제목 초기화 → 새 URL 제목으로 다시 채워짐
+    }
+    if (!isFetchableUrl(t) || fetchedUrlRef.current === t) return;
+    const id = setTimeout(() => {
+      void loadMeta(t);
+    }, 600);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url]);
+
+  // 붙여넣기: 디바운스 기다리지 말고 즉시 추출(전체 URL 을 붙였을 때만).
+  function handleUrlPaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    const pasted = e.clipboardData.getData("text");
+    if (pasted && isFetchableUrl(pasted)) {
+      e.preventDefault();
+      setUrl(pasted);
+      void loadMeta(pasted, { force: true });
+    }
+  }
+
+  // 1차 액션. 로그인=공유 링크 생성(메타 없으면 먼저 추출), 비로그인=이 브라우저에 저장.
+  async function handlePrimary() {
+    if (!hasInput || creating || adding) return;
+    if (isLoggedIn === false) {
+      handleSaveLocal();
+      return;
+    }
+    let m = meta;
+    if (!m || fetchedUrlRef.current !== url.trim()) {
+      m = await loadMeta(url.trim(), { force: !m });
+    }
+    await handleCreateShare(m ?? meta);
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    runMake(false);
+    void handlePrimary();
   }
 
-  // m: 사용할 메타데이터. 미리보기 직후 자동 호출 시엔 state(meta)가 아직 갱신
-  // 전이라 방금 받은 데이터를 직접 넘긴다. 버튼 클릭 시엔 state(meta) 사용.
+  // m: 사용할 메타데이터(기본 state). 자동 추출 직후 호출 시 방금 받은 값을 직접 넘긴다.
   async function handleCreateShare(m: ClipMetadata | null = meta) {
     const sendTitle = title.trim() || m?.title || "";
     if (!sendTitle) {
@@ -169,8 +230,7 @@ export default function Home() {
     }
   }
 
-  // 로그인: 내 클립 목록에 담기. 서버가 같은 URL 클립을 (user 기준) 중복 없이
-  // 재사용하므로, 이미 담겨 있으면 새로 만들지 않고 "이미 추가됨"으로 알려준다.
+  // 로그인: 내 클립 목록에 담기(결과 모달에서 호출). 같은 URL 은 서버가 중복 없이 재사용.
   async function handleAddClip() {
     const sendTitle = title.trim() || meta?.title || (url ? prettyHost(url) : "");
     if (!sendTitle) {
@@ -208,10 +268,6 @@ export default function Home() {
       setKnownTags(getKnownTags());
       setAlreadySaved(Boolean(data.alreadySaved));
       setAdded(true);
-      setTimeout(() => {
-        setAdded(false);
-        setAlreadySaved(false);
-      }, 2000);
     } catch {
       setError("클립 추가 중 문제가 발생했어요.");
     } finally {
@@ -254,10 +310,24 @@ export default function Home() {
 
   const noMeta = meta?.source === "none";
 
+  // 1차 버튼 라벨·비활성
+  const primaryLabel =
+    isLoggedIn === false
+      ? savedLocal
+        ? "저장됨 ✓"
+        : "이 브라우저에 저장"
+      : creating
+        ? "만드는 중…"
+        : loading
+          ? "불러오는 중…"
+          : "공유 링크 만들기";
+  const primaryDisabled =
+    !hasInput || creating || adding || loading || isLoggedIn === null;
+
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-border">
-        <nav className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5">
+      <header className="sticky top-0 z-40 border-b border-border bg-bg/60 backdrop-blur-md">
+        <nav className="mx-auto flex h-14 max-w-3xl items-center justify-between px-5">
           <a
             href="/"
             className="text-lg font-bold tracking-tight text-fg"
@@ -277,20 +347,19 @@ export default function Home() {
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-5 sm:py-8">
-        <section className="text-center">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3 sm:px-5 sm:py-8">
+        <section className="py-4 text-center sm:py-8">
           <h1 className="text-2xl font-bold leading-tight tracking-tight text-fg sm:text-3xl">
-            URL을 <span className="text-brand">예쁜 공유 카드</span>로
+            붙여넣으면 끝, <span className="text-brand">예쁜 공유 카드</span>
           </h1>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-muted sm:text-base">
-            링크만 붙여넣으면 제목·설명·이미지를 자동으로 읽어와 예쁜 공유 카드를
-            만들어요.
+            링크만 넣으면 미리보기 카드와 짧은 공유 링크가 한 번에 만들어져요.
           </p>
         </section>
 
         <form
           onSubmit={handleSubmit}
-          className="mt-4 rounded-2xl border border-border bg-surface p-4 shadow-soft sm:mt-5 sm:p-5"
+          className="mt-3 rounded-xl border border-border bg-surface p-3.5 shadow-soft sm:mt-5 sm:p-5"
           aria-label="클립 만들기"
         >
           <div className="flex flex-col gap-3 sm:gap-3.5">
@@ -307,8 +376,12 @@ export default function Home() {
                 placeholder="https://example.com/article"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
+                onPaste={handleUrlPaste}
                 onClear={() => setUrl("")}
               />
+              <p className="text-xs leading-relaxed text-fg-muted">
+                링크를 붙여넣으면 미리보기를 자동으로 불러와요.
+              </p>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -345,8 +418,11 @@ export default function Home() {
                 onClear={() => setTagInput("")}
               />
               <p className="text-xs leading-relaxed text-fg-muted">
-                태그를 달아두면 <a href="/clips" className="font-semibold text-brand-strong underline">내 클립</a>에서
-                같은 태그끼리 모아 볼 수 있어요. 쉼표(,)로 여러 개, 최대 6개까지요.
+                태그를 달아두면{" "}
+                <a href="/clips" className="font-semibold text-brand-strong underline">
+                  내 클립
+                </a>
+                에서 같은 태그끼리 모아 볼 수 있어요. 쉼표(,)로 여러 개, 최대 6개까지요.
               </p>
               {tags.length > 0 && (
                 <ul className="mt-1 flex flex-wrap gap-1.5">
@@ -378,37 +454,30 @@ export default function Home() {
               )}
             </div>
 
-            {/* 미리보기만 / (로그인 시) 미리보기+공유 링크 한 번에 (나란히) */}
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                type="submit"
-                disabled={!hasInput || loading || creating}
-                className="h-12 w-full rounded-xl bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
-              >
-                {loading ? "미리보기 생성 중…" : "미리보기 생성"}
-              </button>
-              {isLoggedIn === true && (
-                <button
-                  type="button"
-                  onClick={() => runMake(true)}
-                  disabled={!hasInput || loading || creating}
-                  className="h-12 w-full rounded-xl border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
-                >
-                  {creating
-                    ? "공유 링크 생성 중…"
-                    : loading
-                      ? "생성 중…"
-                      : "미리보기 + 공유 링크 생성"}
-                </button>
-              )}
-            </div>
+            {/* 1차 액션: 붙여넣기로 메타가 자동 추출되면 한 번 눌러 끝. */}
+            <button
+              type="submit"
+              disabled={primaryDisabled}
+              className="h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {primaryLabel}
+            </button>
+            {isLoggedIn === false && (
+              <p className="text-center text-xs text-fg-muted">
+                짧은 공유 링크를 만들려면{" "}
+                <a href="/login" className="font-semibold text-brand-strong underline">
+                  로그인
+                </a>
+                하세요.
+              </p>
+            )}
           </div>
         </form>
 
         {error && (
           <p
             role="alert"
-            className="mt-4 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger"
+            className="mt-4 rounded-[8px] bg-danger/10 px-4 py-3 text-sm text-danger"
           >
             {error}
           </p>
@@ -417,51 +486,104 @@ export default function Home() {
         {noMeta && meta?.reason && (
           <p
             role="status"
-            className="mt-4 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-fg"
+            className="mt-4 rounded-[8px] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-fg"
           >
             ⚠️ {meta.reason}
           </p>
         )}
 
+        {/* URL 입력 전엔 빈 카드를 숨기고, 링크가 들어오면 두 미리보기를 보여준다. */}
+        {hasInput && (
+          <>
         {/* ① 공유 카드: 링크를 공유했을 때 보이는 이미지 */}
-        <section className="mt-5 sm:mt-6" aria-label="공유 카드 미리보기">
-          <h2 className="mb-2 text-sm font-medium text-fg-muted">
-            공유 카드{" "}
-            <span className="font-normal text-fg-muted">— 링크를 공유하면 이렇게 보여요</span>
-          </h2>
-          <div
-            className="flex w-full flex-col gap-1 rounded-2xl px-5 py-4 shadow-soft"
-            style={{ background: gradientCss(gradient) }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider text-white/80">
-              {meta?.siteName ?? "ClipNote"}
-            </p>
-            <p className="line-clamp-2 text-xl font-bold leading-snug text-white drop-shadow-sm sm:text-2xl">
-              {effectiveTitle}
-            </p>
-            {description && (
-              <p className="line-clamp-2 text-sm leading-relaxed text-white/90">
-                {description}
+        <section className="mt-10 sm:mt-12" aria-label="공유 카드 미리보기">
+          <div className="mb-2">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-fg">
+              공유 카드
+              {loading && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-strong">
+                  <Spinner /> 불러오는 중
+                </span>
+              )}
+            </h2>
+            <p className="mt-0.5 text-xs text-fg-muted">링크를 공유하면 이렇게 보여요</p>
+          </div>
+          {/* 실제 OG(/api/og, 1200×630)의 비율·폰트·여백을 cqw 로 그대로 축소 복제 */}
+          <div className="overflow-hidden rounded-xl shadow-soft" style={{ containerType: "inline-size" }}>
+            <div
+              className="relative flex aspect-[1200/630] w-full flex-col justify-end"
+              style={{ background: gradientCss(gradient), padding: "6cqw" }}
+            >
+              {/* 하단 가독성 스크림 (실제 OG 와 동일) */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%]"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.28))",
+                }}
+              />
+              {meta?.siteName && (
+                <p
+                  className="relative truncate font-bold uppercase"
+                  style={{
+                    fontSize: "2.17cqw",
+                    letterSpacing: "0.17cqw",
+                    color: "rgba(255,255,255,0.92)",
+                  }}
+                >
+                  {meta.siteName}
+                </p>
+              )}
+              <p
+                className="relative line-clamp-3 font-bold text-white"
+                style={{
+                  fontSize: effectiveTitle.length > 40 ? "5cqw" : "6cqw",
+                  lineHeight: 1.15,
+                  marginTop: "1.5cqw",
+                }}
+              >
+                {effectiveTitle}
               </p>
-            )}
-            {url && (
-              <p className="truncate text-xs text-white/80">{prettyHost(url)}</p>
-            )}
+              {description && (
+                <p
+                  className="relative line-clamp-2"
+                  style={{
+                    fontSize: "2.5cqw",
+                    lineHeight: 1.4,
+                    marginTop: "1.83cqw",
+                    color: "rgba(255,255,255,0.9)",
+                  }}
+                >
+                  {description}
+                </p>
+              )}
+              <p
+                className="relative font-bold"
+                style={{
+                  fontSize: "2cqw",
+                  marginTop: "2.5cqw",
+                  color: "rgba(255,255,255,0.95)",
+                }}
+              >
+                ClipNote
+              </p>
+            </div>
           </div>
           <p className="mt-1.5 text-xs text-fg-muted">
-            배경색은 제목에 따라 자동으로 정해져요.
+            실제 공유 시 떠는 이미지예요. 배경색은 제목에 따라 자동으로 정해져요.
           </p>
         </section>
 
         {/* ② 내 클립 저장 모습: 목록에서 보이는 카드(왼쪽 썸네일 = 원본 이미지) */}
-        <section className="mt-4 sm:mt-5" aria-label="내 클립 저장 미리보기">
-          <h2 className="mb-2 text-sm font-medium text-fg-muted">
-            내 클립에 저장하면{" "}
-            <span className="font-normal text-fg-muted">— 목록에서 이렇게 보여요</span>
-          </h2>
-          <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-soft">
+        <section className="mt-10 sm:mt-12" aria-label="내 클립 저장 미리보기">
+          <div className="mb-2">
+            <h2 className="text-base font-semibold text-fg">내 클립에 저장하면</h2>
+            <p className="mt-0.5 text-xs text-fg-muted">목록에서 이렇게 보여요</p>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-soft">
             <div
-              className="h-14 w-14 shrink-0 overflow-hidden rounded-xl"
+              className="h-14 w-14 shrink-0 overflow-hidden rounded-[8px]"
               style={{ background: gradientCss(gradient) }}
               aria-hidden
             >
@@ -499,81 +621,34 @@ export default function Home() {
             왼쪽 썸네일은 원본 페이지의 대표 이미지예요. 없으면 그라디언트로 채워져요.
           </p>
         </section>
+          </>
+        )}
 
-        <section className="mt-4 sm:mt-5" aria-label="저장 및 공유">
-          {isLoggedIn === false ? (
-            // 비로그인: 이 브라우저에 저장만 (공유 불가)
-            <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={handleSaveLocal}
-                disabled={!hasInput}
-                className="h-12 w-full rounded-xl border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {savedLocal ? "저장됨 ✓" : "이 브라우저에 저장"}
-              </button>
-
-              {/* 로그인 전(게스트)에 쓸 수 있는 기능 안내 */}
-              <div className="rounded-xl border border-border bg-surface p-4">
-                <p className="text-sm font-semibold text-fg">
-                  로그인 안 해도 이만큼 돼요
-                </p>
-                <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-                  <li>· 링크를 붙여넣어 미리보기 카드를 만들 수 있어요.</li>
-                  <li>
-                    · 만든 카드를 이 브라우저에 저장하고{" "}
-                    <a href="/clips" className="font-semibold text-brand-strong underline">
-                      내 클립
-                    </a>
-                    에서 다시 볼 수 있어요.
-                  </li>
-                  <li>
-                    · 단, 저장한 클립은 이 기기에만 남고, 짧은 공유 링크는 만들 수
-                    없어요.
-                  </li>
-                </ul>
-                <p className="mt-3 text-sm text-fg-muted">
-                  공유 링크를 만들고 어디서나 보려면{" "}
-                  <a href="/login" className="font-semibold text-brand-strong underline">
-                    로그인
+        {/* 비로그인 안내: 게스트가 할 수 있는 것 */}
+        {isLoggedIn === false && (
+          <section className="mt-10 sm:mt-12" aria-label="로그인 안내">
+            <div className="rounded-[8px] border border-border bg-surface p-4">
+              <p className="text-sm font-semibold text-fg">로그인 안 해도 이만큼 돼요</p>
+              <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
+                <li>· 링크를 붙여넣어 미리보기 카드를 만들 수 있어요.</li>
+                <li>
+                  · 만든 카드를 이 브라우저에 저장하고{" "}
+                  <a href="/clips" className="font-semibold text-brand-strong underline">
+                    내 클립
                   </a>
-                  하세요.
-                </p>
-              </div>
+                  에서 다시 볼 수 있어요.
+                </li>
+                <li>
+                  · 단, 저장한 클립은 이 기기에만 남고, 짧은 공유 링크는 만들 수 없어요.
+                </li>
+              </ul>
             </div>
-          ) : (
-            // 로그인(또는 확인 중): 공유 링크 만들기 / 내 클립에 추가 (분리)
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => handleCreateShare()}
-                disabled={!hasInput || creating || isLoggedIn === null}
-                className="h-12 w-full rounded-xl border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {creating ? "만드는 중…" : "공유 링크 만들기"}
-              </button>
-              <button
-                type="button"
-                onClick={handleAddClip}
-                disabled={!hasInput || adding || isLoggedIn === null}
-                className="h-12 w-full rounded-xl border border-border bg-bg px-5 text-base font-semibold text-fg transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {adding
-                  ? "추가 중…"
-                  : added
-                    ? alreadySaved
-                      ? "이미 추가됨 ✓"
-                      : "추가됨 ✓"
-                    : "내 클립에 추가"}
-              </button>
-            </div>
-          )}
-
-        </section>
+          </section>
+        )}
 
         {/* SEO/GEO: 소개·기능·FAQ */}
         <section
-          className="mt-12 border-t border-border pt-8 sm:mt-16 sm:pt-10"
+          className="mt-8 border-t border-border pt-6 sm:mt-16 sm:pt-10"
           aria-labelledby="about-heading"
         >
           <h2 id="about-heading" className="text-xl font-bold text-fg">
@@ -593,6 +668,32 @@ export default function Home() {
             <li>2. 제목·설명·대표 이미지를 자동으로 읽어와 카드를 만들어요.</li>
             <li>3. 로그인하면 짧은 공유 링크가 생기고, 공유 시 예쁜 카드로 떠요.</li>
           </ol>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-border bg-surface p-4">
+              <p className="text-sm font-semibold text-fg">로그인 안 해도</p>
+              <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
+                <li>· URL을 붙여넣어 미리보기 카드를 만들 수 있어요.</li>
+                <li>· 만든 클립을 이 브라우저에 저장하고 ‘내 클립’에서 다시 봐요.</li>
+                <li>
+                  · 단, 저장은 <strong className="font-semibold text-fg">이 기기에만</strong> 남고{" "}
+                  <strong className="font-semibold text-fg">짧은 공유 링크는 못 만들어요.</strong>
+                </li>
+              </ul>
+            </div>
+            <div className="rounded-xl border border-brand/30 bg-brand-soft p-4">
+              <p className="text-sm font-semibold text-brand-strong">로그인 하면</p>
+              <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
+                <li>
+                  · <strong className="font-semibold text-brand-strong">짧은 공유 링크</strong>를 만들어 카카오톡·SNS에 보낼 수 있어요.
+                </li>
+                <li>· 공유한 링크가 예쁜 미리보기 카드로 떠요.</li>
+                <li>
+                  · 클립이 계정에 쌓여 <strong className="font-semibold text-brand-strong">다른 기기에서도</strong> 그대로 보이고, 태그로 정리돼요.
+                </li>
+              </ul>
+            </div>
+          </div>
 
           <h2 className="mt-8 text-xl font-bold text-fg sm:mt-10">자주 묻는 질문</h2>
           <dl className="mt-3 flex flex-col gap-4">
@@ -656,6 +757,10 @@ export default function Home() {
           url={shareUrl}
           copied={copied}
           onCopy={handleCopy}
+          onSave={handleAddClip}
+          saving={adding}
+          saved={added}
+          alreadySaved={alreadySaved}
           onClose={() => {
             setShareUrl(null);
             setCopied(false);
@@ -666,16 +771,24 @@ export default function Home() {
   );
 }
 
-/** 공유 링크 생성 결과 레이어(모달). 링크 복사·열기·닫기. */
+/** 공유 링크 생성 결과 레이어(모달). 링크 복사·열기·내 클립 저장·닫기. */
 function ShareResultLayer({
   url,
   copied,
   onCopy,
+  onSave,
+  saving,
+  saved,
+  alreadySaved,
   onClose,
 }: {
   url: string;
   copied: boolean;
   onCopy: () => void;
+  onSave: () => void;
+  saving: boolean;
+  saved: boolean;
+  alreadySaved: boolean;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -690,6 +803,14 @@ function ShareResultLayer({
     };
   }, [onClose]);
 
+  const saveLabel = saved
+    ? alreadySaved
+      ? "이미 추가됨 ✓"
+      : "내 클립에 저장됨 ✓"
+    : saving
+      ? "저장 중…"
+      : "내 클립에 저장";
+
   return (
     <div
       role="presentation"
@@ -701,7 +822,7 @@ function ShareResultLayer({
         aria-modal="true"
         aria-labelledby="share-title"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm rounded-t-2xl bg-surface p-6 shadow-soft sm:rounded-2xl"
+        className="w-full max-w-sm rounded-t-xl bg-surface p-6 shadow-soft sm:rounded-xl"
       >
         <h2 id="share-title" className="text-lg font-bold text-fg">
           공유 링크가 만들어졌어요 🎉
@@ -715,13 +836,13 @@ function ShareResultLayer({
           value={url}
           aria-label="공유 링크"
           onFocus={(e) => e.currentTarget.select()}
-          className="mt-4 h-11 w-full rounded-lg border border-border bg-bg px-3 text-sm text-fg outline-none"
+          className="mt-4 h-11 w-full rounded-[8px] border border-border bg-bg px-3 text-sm text-fg outline-none"
         />
         <div className="mt-3 flex gap-2">
           <button
             type="button"
             onClick={onCopy}
-            className="h-11 flex-1 rounded-lg bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50"
+            className="h-11 flex-1 rounded-[8px] bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50"
           >
             {copied ? "복사됨 ✓" : "링크 복사"}
           </button>
@@ -729,20 +850,56 @@ function ShareResultLayer({
             href={url}
             target="_blank"
             rel="noreferrer"
-            className="flex h-11 items-center justify-center rounded-lg border border-border px-4 text-sm font-semibold text-fg transition hover:bg-bg"
+            className="flex h-11 items-center justify-center rounded-[8px] border border-border px-4 text-sm font-semibold text-fg transition hover:bg-bg"
           >
             열기
           </a>
         </div>
         <button
           type="button"
+          onClick={onSave}
+          disabled={saving || saved}
+          className="mt-2 h-11 w-full rounded-[8px] border border-brand bg-brand-soft px-4 text-sm font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {saveLabel}
+        </button>
+        <button
+          type="button"
           onClick={onClose}
-          className="mt-2 h-11 w-full rounded-lg text-sm font-semibold text-fg-muted transition hover:bg-bg"
+          className="mt-2 h-11 w-full rounded-[8px] text-sm font-semibold text-fg-muted transition hover:bg-bg"
         >
           닫기
         </button>
       </div>
     </div>
+  );
+}
+
+/** 작은 로딩 스피너(자동 추출 중 표시). */
+function Spinner() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="h-3.5 w-3.5 animate-spin"
+      aria-hidden="true"
+    >
+      <circle
+        cx="8"
+        cy="8"
+        r="6"
+        fill="none"
+        stroke="currentColor"
+        strokeOpacity="0.25"
+        strokeWidth="2"
+      />
+      <path
+        d="M8 2a6 6 0 0 1 6 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 
@@ -763,7 +920,7 @@ function ClearableInput({
       <input
         {...props}
         value={value}
-        className="h-11 w-full rounded-xl border border-border bg-bg pl-3.5 pr-12 text-base text-fg outline-none transition focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40 sm:h-12 sm:pl-4"
+        className="h-11 w-full rounded-[8px] border border-border bg-bg pl-3.5 pr-12 text-base text-fg outline-none transition focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40 sm:h-12 sm:pl-4"
       />
       {hasValue && (
         <button

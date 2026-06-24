@@ -33,7 +33,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const title = stripEmoji(searchParams.get("title") ?? "ClipNote").slice(0, 90);
   const desc = stripEmoji(searchParams.get("desc") ?? "").slice(0, 140);
-  const site = stripEmoji(searchParams.get("site") ?? "ClipNote").slice(0, 40);
+  // 사이트명이 없으면 비워둔다(하단 ClipNote 워터마크와 중복 방지).
+  const site = stripEmoji(searchParams.get("site") ?? "").slice(0, 40);
   const gradient = resolveGradient(searchParams.get("g"));
 
   const { bold, regular } = await loadFonts();
@@ -66,18 +67,20 @@ export async function GET(request: Request) {
           }}
         />
 
-        <div
-          style={{
-            display: "flex",
-            fontSize: 26,
-            fontWeight: 700,
-            letterSpacing: 2,
-            textTransform: "uppercase",
-            color: "rgba(255,255,255,0.92)",
-          }}
-        >
-          {site}
-        </div>
+        {site ? (
+          <div
+            style={{
+              display: "flex",
+              fontSize: 26,
+              fontWeight: 700,
+              letterSpacing: 2,
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.92)",
+            }}
+          >
+            {site}
+          </div>
+        ) : null}
 
         <div
           style={{
