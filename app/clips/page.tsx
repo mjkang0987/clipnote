@@ -282,7 +282,11 @@ export default function ClipsPage() {
     <div className="flex flex-1 flex-col">
       <Header showClipsLink={false} />
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-10">
+      <main
+        className={`mx-auto w-full max-w-3xl flex-1 px-5 py-10 ${
+          selectMode ? "pb-28" : ""
+        }`}
+      >
         <div className="flex items-baseline justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-fg">내 클립</h1>
           <a href="/" className="text-sm font-semibold text-brand-strong hover:underline">
@@ -295,49 +299,16 @@ export default function ClipsPage() {
             : "내 계정에 저장된 클립이에요."}
         </p>
 
-        {/* 선택/일괄 도구 (로그인 클립만) */}
-        {loggedIn && items.length > 0 && (
-          <div className="mt-4 flex min-h-9 items-center justify-between gap-2">
-            {selectMode ? (
-              <>
-                <span className="text-sm font-medium text-fg">
-                  {selected.size}개 선택됨
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={selected.size === 0 || busy}
-                    onClick={() => setBulkTagOpen(true)}
-                    className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-fg transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    태그 적용
-                  </button>
-                  <button
-                    type="button"
-                    disabled={selected.size === 0 || busy}
-                    onClick={() => setPendingBulkDelete(true)}
-                    className="rounded-lg border border-danger/40 px-3 py-1.5 text-sm font-semibold text-danger transition hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    삭제
-                  </button>
-                  <button
-                    type="button"
-                    onClick={exitSelect}
-                    className="rounded-lg px-3 py-1.5 text-sm font-semibold text-fg-muted transition hover:bg-surface"
-                  >
-                    취소
-                  </button>
-                </div>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setSelectMode(true)}
-                className="ml-auto rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-fg transition hover:bg-surface"
-              >
-                선택
-              </button>
-            )}
+        {/* 선택 모드 진입 버튼(상단). 선택 시 도구는 하단 고정바로. */}
+        {loggedIn && items.length > 0 && !selectMode && (
+          <div className="mt-4 flex min-h-9 items-center justify-end">
+            <button
+              type="button"
+              onClick={() => setSelectMode(true)}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-fg transition hover:bg-surface"
+            >
+              선택
+            </button>
           </div>
         )}
 
@@ -412,6 +383,42 @@ export default function ClipsPage() {
           </div>
         )}
       </main>
+
+      {/* 선택 모드 하단 고정 도구바 — 스크롤해도 항상 보이게 */}
+      {selectMode && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 backdrop-blur-md">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-5 py-3">
+            <span className="text-sm font-medium text-fg">
+              {selected.size}개 선택됨
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={selected.size === 0 || busy}
+                onClick={() => setBulkTagOpen(true)}
+                className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-fg transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                태그 적용
+              </button>
+              <button
+                type="button"
+                disabled={selected.size === 0 || busy}
+                onClick={() => setPendingBulkDelete(true)}
+                className="rounded-lg border border-danger/40 px-3 py-1.5 text-sm font-semibold text-danger transition hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                삭제
+              </button>
+              <button
+                type="button"
+                onClick={exitSelect}
+                className="rounded-lg px-3 py-1.5 text-sm font-semibold text-fg-muted transition hover:bg-surface"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {pendingDelete && (
         <DeleteConfirmLayer
