@@ -1,7 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, ogImagePath } from "@/lib/site";
 import ServiceWorkerRegister from "@/app/_components/ServiceWorkerRegister";
+
+// 구글 애드센스 퍼블리셔 ID(ca-pub-...). 공개값이라 코드에 둔다.
+const ADSENSE_CLIENT = "ca-pub-5655041057903258";
 
 const ogImage = ogImagePath({
   title: "URL을 예쁜 공유 카드로",
@@ -56,6 +60,8 @@ export const metadata: Metadata = {
     icon: "/icon-192.png",
     apple: "/apple-icon-180.png",
   },
+  // 애드센스 사이트 소유 확인용 메타태그
+  other: { "google-adsense-account": ADSENSE_CLIENT },
   appleWebApp: {
     capable: true,
     title: "ClipNote",
@@ -99,6 +105,14 @@ export default function RootLayout({
   return (
     <html lang="ko" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
+        {/* 구글 애드센스 로더 */}
+        <Script
+          id="adsbygoogle-init"
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
