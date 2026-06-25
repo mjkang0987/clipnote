@@ -40,6 +40,24 @@ export function removeLocalClip(url: string): LocalClip[] {
   return list;
 }
 
+/** 로컬 클립의 제목·태그 수정(게스트 편집). url 로 식별. */
+export function updateLocalClip(
+  url: string,
+  patch: { title?: string; tags?: string[] },
+): LocalClip[] {
+  const list = getLocalClips().map((c) =>
+    c.url === url
+      ? {
+          ...c,
+          ...(patch.title !== undefined ? { title: patch.title } : {}),
+          ...(patch.tags !== undefined ? { tags: patch.tags } : {}),
+        }
+      : c,
+  );
+  save(list);
+  return list;
+}
+
 function save(list: LocalClip[]) {
   if (typeof window === "undefined") return;
   try {

@@ -6,9 +6,10 @@ import { gradientCss, pickGradient } from "@/lib/gradients";
 import {
   getLocalClips,
   removeLocalClip,
+  updateLocalClip,
   type LocalClip,
 } from "@/lib/local-clips";
-import AuthNav from "@/app/_components/AuthNav";
+import Header from "@/app/_components/Header";
 
 type Item = {
   key: string;
@@ -118,10 +119,21 @@ export default function ClipsPage() {
     }
   }
 
-  // A: 단건 편집 저장(제목·태그) → PATCH
+  // A: 단건 편집 저장(제목·태그). 로그인=PATCH, 게스트=localStorage 갱신.
   async function saveEdit(title: string, tags: string[]) {
     const target = editing;
-    if (!target?.slug) return;
+    if (!target) return;
+
+    // 게스트(로컬) 클립: 서버 없이 localStorage 만 갱신
+    if (!target.slug) {
+      updateLocalClip(target.url, { title, tags });
+      setItems((cur) =>
+        cur.map((i) => (i.key === target.key ? { ...i, title, tags } : i)),
+      );
+      setEditing(null);
+      return;
+    }
+
     setBusy(true);
     try {
       const res = await fetch(`/api/clip/${target.slug}`, {
@@ -218,14 +230,7 @@ export default function ClipsPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-border">
-        <nav className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5">
-          <a href="/" className="text-lg font-bold tracking-tight text-fg">
-            Clip<span className="text-brand">Note</span>
-          </a>
-          <AuthNav />
-        </nav>
-      </header>
+      <Header showClipsLink={false} />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-10">
         <div className="flex items-baseline justify-between">
@@ -479,7 +484,6 @@ function ClipCard({
   onToggleSelect: () => void;
 }) {
   const [copied, setCopied] = useState(false);
-  const [copiedOriginal, setCopiedOriginal] = useState(false);
   const [sharing, setSharing] = useState(false);
   // 선택 모드는 공유 슬러그가 있는 로그인 클립만 대상
   const selectable = selectMode && Boolean(item.slug);
@@ -519,125 +523,126 @@ function ClipCard({
     }
   }
 
-  async function copyOriginal() {
-    try {
-      await navigator.clipboard.writeText(item.url);
-      setCopiedOriginal(true);
-      setTimeout(() => setCopiedOriginal(false), 1500);
-    } catch {
-      // 클립보드 접근 실패는 무시
-    }
-  }
-
   return (
     <li
-      className={`flex gap-3 rounded-2xl border bg-surface p-4 transition ${
+      className={`overflow-hidden rounded-2xl border bg-surface transition ${
         selected ? "border-brand ring-2 ring-brand/30" : "border-border"
       }`}
     >
-      {selectable && (
-        <input
-          type="checkbox"
-          checked={selected}
-          onChange={onToggleSelect}
-          aria-label={`${item.title} 선택`}
-          className="mt-1 h-4 w-4 shrink-0 accent-brand"
-        />
-      )}
-      <div
-        className="h-16 w-16 shrink-0 overflow-hidden rounded-xl"
-        style={{ background: gradientCss(pickGradient(item.gradient)) }}
-        aria-hidden
-      >
-        {item.image && (
-          // 원본 썸네일. 실패하면 숨겨져 그라디언트 노출
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.image}
-            alt=""
-            className="h-full w-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
+      {/* 상단: 썸네일 + 제목·호스트·태그 + (편집/삭제) */}
+      <div className="flex items-center gap-3 p-4">
+        {selectable && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={onToggleSelect}
+            aria-label={`${item.title} 선택`}
+            className="h-4 w-4 shrink-0 accent-brand"
           />
         )}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <p className="truncate font-semibold text-fg">{item.title}</p>
-        <p className="truncate text-sm text-fg-muted">{item.host}</p>
-        {item.tags.length > 0 && (
-          <ul className="mt-1 flex flex-wrap gap-1">
-            {item.tags.map((t) => (
-              <li
-                key={t}
-                className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-strong"
-              >
-                {t}
-              </li>
-            ))}
-          </ul>
-        )}
-        {/* 선택 모드에선 액션 숨김(체크박스로 선택만) */}
+        <div
+          className="h-16 w-16 shrink-0 overflow-hidden rounded-xl"
+          style={{ background: gradientCss(pickGradient(item.gradient)) }}
+          aria-hidden
+        >
+          {item.image && (
+            // 원본 썸네일. 실패하면 숨겨져 그라디언트 노출
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.image}
+              alt=""
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          )}
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <p className="line-clamp-2 font-semibold text-fg sm:line-clamp-1">
+            {item.title}
+          </p>
+          <p className="truncate text-sm text-fg-muted">{item.host}</p>
+          {item.tags.length > 0 && (
+            <ul className="mt-1 flex flex-wrap gap-1">
+              {item.tags.map((t) => (
+                <li
+                  key={t}
+                  className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-strong"
+                >
+                  {t}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {/* 편집·삭제는 우측 상단에 작게 나란히 */}
         {!selectMode && (
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
-            <span className="text-fg-muted">{formatDate(item.date)}</span>
-            {item.slug ? (
-              item.shared ? (
-                <button
-                  type="button"
-                  onClick={copyShare}
-                  className="font-semibold text-brand-strong hover:underline"
-                >
-                  {copied ? "복사됨 ✓" : "공유 링크 복사"}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={makeShare}
-                  disabled={sharing}
-                  className="font-semibold text-brand-strong hover:underline disabled:opacity-60"
-                >
-                  {sharing ? "만드는 중…" : copied ? "복사됨 ✓" : "공유 링크 만들기"}
-                </button>
-              )
-            ) : null}
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noreferrer"
-              className="font-semibold text-fg hover:underline"
-            >
-              바로가기
-            </a>
+          <div className="flex shrink-0 items-center gap-3 self-start text-xs">
             <button
               type="button"
-              onClick={copyOriginal}
-              className="font-semibold text-fg hover:underline"
+              onClick={onEdit}
+              className="font-medium text-fg-muted transition hover:text-fg"
             >
-              {copiedOriginal ? "복사됨 ✓" : "원본 링크 복사"}
+              편집
             </button>
-            {item.slug ? (
-              <button
-                type="button"
-                onClick={onEdit}
-                className="font-semibold text-fg hover:underline"
-              >
-                편집
-              </button>
-            ) : null}
             <button
               type="button"
               onClick={() => onRequestDelete(item)}
-              className="font-semibold text-danger hover:underline"
+              className="font-medium text-danger/80 transition hover:text-danger"
             >
               삭제
             </button>
           </div>
         )}
-        {selectMode && (
-          <span className="mt-2 text-xs text-fg-muted">{formatDate(item.date)}</span>
-        )}
       </div>
+
+      {/* 하단: 구분선으로 나뉜 액션 버튼바 (이미지 레이아웃) */}
+      {!selectMode && (
+        <div className="border-t border-border text-sm font-semibold">
+          {/* 공유 링크(복사/만들기) · 바로가기. 게스트(로컬)는 바로가기만. */}
+          {/* 공유 링크 관련 버튼만 보라색, 나머지(바로가기)는 기본색. */}
+          <div className="flex items-stretch text-fg">
+            {item.slug && (
+              <>
+                {item.shared ? (
+                  <button
+                    type="button"
+                    onClick={copyShare}
+                    className="flex-1 py-3 text-center text-brand-strong transition hover:bg-bg"
+                  >
+                    {copied ? "복사됨 ✓" : "공유 링크 복사"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={makeShare}
+                    disabled={sharing}
+                    className="flex-1 py-3 text-center text-brand-strong transition hover:bg-bg disabled:opacity-60"
+                  >
+                    {sharing ? "만드는 중…" : copied ? "복사됨 ✓" : "공유 링크 만들기"}
+                  </button>
+                )}
+                <span className="w-px bg-border" aria-hidden />
+              </>
+            )}
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 py-3 text-center transition hover:bg-bg"
+            >
+              바로가기
+            </a>
+          </div>
+        </div>
+      )}
+
+      {selectMode && (
+        <div className="px-4 pb-3 pl-[6.5rem]">
+          <span className="text-xs text-fg-muted">{formatDate(item.date)}</span>
+        </div>
+      )}
     </li>
   );
 }
