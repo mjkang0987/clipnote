@@ -470,7 +470,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={primaryDisabled}
-                  className="h-12 flex-1 rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
                 >
                   {primaryLabel}
                 </button>
@@ -478,7 +478,7 @@ export default function Home() {
                   type="button"
                   onClick={handleSaveToClips}
                   disabled={saveClipDisabled}
-                  className="h-12 flex-1 rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="h-12 w-full rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-1"
                 >
                   {saveClipLabel}
                 </button>
