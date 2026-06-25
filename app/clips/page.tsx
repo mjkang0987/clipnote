@@ -16,6 +16,7 @@ type Item = {
   url: string;
   host: string;
   slug: string | null; // DB(로그인)만 공유 슬러그 존재
+  shared: boolean; // 공개 브릿지 링크(/[slug])가 켜졌는지. 저장만 한 클립은 false
   image: string | null; // 원본 대표이미지(있으면 썸네일)
   tags: string[];
   gradient: string;
@@ -338,6 +339,13 @@ export default function ClipsPage() {
                       item={item}
                       onRequestDelete={setPendingDelete}
                       onEdit={() => setEditing(item)}
+                      onShareMade={() =>
+                        setItems((cur) =>
+                          cur.map((i) =>
+                            i.key === item.key ? { ...i, shared: true } : i,
+                          ),
+                        )
+                      }
                       selectMode={selectMode}
                       selected={selected.has(item.key)}
                       onToggleSelect={() => toggleSelect(item.key)}
@@ -457,6 +465,7 @@ function ClipCard({
   item,
   onRequestDelete,
   onEdit,
+  onShareMade,
   selectMode,
   selected,
   onToggleSelect,
@@ -464,11 +473,14 @@ function ClipCard({
   item: Item;
   onRequestDelete: (item: Item) => void;
   onEdit: () => void;
+  onShareMade: () => void;
   selectMode: boolean;
   selected: boolean;
   onToggleSelect: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [copiedOriginal, setCopiedOriginal] = useState(false);
+  const [sharing, setSharing] = useState(false);
   // 선택 모드는 공유 슬러그가 있는 로그인 클립만 대상
   const selectable = selectMode && Boolean(item.slug);
 
@@ -478,6 +490,40 @@ function ClipCard({
       await navigator.clipboard.writeText(`${window.location.origin}/${item.slug}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // 클립보드 접근 실패는 무시
+    }
+  }
+
+  // 브릿지 없던 클립에 공개 공유 링크를 켜고, 곧바로 복사까지.
+  async function makeShare() {
+    if (!item.slug || sharing) return;
+    setSharing(true);
+    try {
+      const res = await fetch(`/api/clip/${item.slug}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shared: true }),
+      });
+      if (!res.ok) return;
+      onShareMade();
+      await navigator.clipboard
+        .writeText(`${window.location.origin}/${item.slug}`)
+        .catch(() => {});
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // 실패는 무시
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  async function copyOriginal() {
+    try {
+      await navigator.clipboard.writeText(item.url);
+      setCopiedOriginal(true);
+      setTimeout(() => setCopiedOriginal(false), 1500);
     } catch {
       // 클립보드 접근 실패는 무시
     }
@@ -536,21 +582,24 @@ function ClipCard({
           <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
             <span className="text-fg-muted">{formatDate(item.date)}</span>
             {item.slug ? (
-              <a
-                href={`/${item.slug}`}
-                className="font-semibold text-brand-strong hover:underline"
-              >
-                공유 페이지
-              </a>
-            ) : null}
-            {item.slug ? (
-              <button
-                type="button"
-                onClick={copyShare}
-                className="font-semibold text-brand-strong hover:underline"
-              >
-                {copied ? "복사됨 ✓" : "공유 링크 복사"}
-              </button>
+              item.shared ? (
+                <button
+                  type="button"
+                  onClick={copyShare}
+                  className="font-semibold text-brand-strong hover:underline"
+                >
+                  {copied ? "복사됨 ✓" : "공유 링크 복사"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={makeShare}
+                  disabled={sharing}
+                  className="font-semibold text-brand-strong hover:underline disabled:opacity-60"
+                >
+                  {sharing ? "만드는 중…" : copied ? "복사됨 ✓" : "공유 링크 만들기"}
+                </button>
+              )
             ) : null}
             <a
               href={item.url}
@@ -558,8 +607,15 @@ function ClipCard({
               rel="noreferrer"
               className="font-semibold text-fg hover:underline"
             >
-              원본 열기
+              바로가기
             </a>
+            <button
+              type="button"
+              onClick={copyOriginal}
+              className="font-semibold text-fg hover:underline"
+            >
+              {copiedOriginal ? "복사됨 ✓" : "원본 링크 복사"}
+            </button>
             {item.slug ? (
               <button
                 type="button"
@@ -857,6 +913,7 @@ function dbToItem(c: Clip): Item {
     url: c.url,
     host: prettyHost(c.url),
     slug: c.slug,
+    shared: c.shared,
     image: c.image,
     tags: c.tags,
     gradient: c.gradient,
@@ -872,6 +929,7 @@ function localToItem(c: LocalClip): Item {
     url: c.url,
     host: prettyHost(c.url),
     slug: null,
+    shared: false, // 로컬(브라우저) 클립은 공개 브릿지 없음
     image: c.image,
     tags: c.tags,
     gradient: c.gradient,
