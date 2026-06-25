@@ -45,7 +45,9 @@ export async function GET(request: Request) {
     });
   };
   const fail = (reason: string) =>
-    isWeb ? finishWeb("/login?error=naver") : finishApp({ error: reason });
+    isWeb
+      ? finishWeb(`/login?error=naver&stage=${encodeURIComponent(reason)}`)
+      : finishApp({ error: reason });
 
   if (naverError || !code) return fail("naver_denied");
 
@@ -110,7 +112,7 @@ export async function GET(request: Request) {
         type: "magiclink",
         token_hash: tokenHash,
       });
-      if (otpErr) return finishWeb("/login?error=naver");
+      if (otpErr) return finishWeb("/login?error=naver&stage=verify_otp");
       return finishWeb("/");
     }
     return finishApp({ token_hash: tokenHash, type: "magiclink" });
