@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import Header from "@/app/_components/Header";
 
 type Provider = "google" | "kakao";
 
@@ -62,7 +63,9 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 py-12">
+    <div className="flex flex-1 flex-col">
+      <Header showClipsLink={false} />
+      <main className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 py-12">
       {/* ── 로그인 화면(실제 동작 영역) ── */}
       <h1 className="text-center text-2xl font-bold tracking-tight text-fg">
         Clip<span className="text-brand">Note</span> 로그인
@@ -174,7 +177,8 @@ export default function LoginPage() {
           </div>
         </div>
       </section>
-    </main>
+      </main>
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import AuthNav from "@/app/_components/AuthNav";
+import Header from "@/app/_components/Header";
 
 export const metadata: Metadata = {
   title: "개인정보처리방침",
@@ -17,18 +17,7 @@ const EFFECTIVE_DATE = "2026년 6월 19일";
 export default function PrivacyPage() {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-border">
-        <nav className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5">
-          <a
-            href="/"
-            className="text-lg font-bold tracking-tight text-fg"
-            aria-label="ClipNote 홈"
-          >
-            Clip<span className="text-brand">Note</span>
-          </a>
-          <AuthNav />
-        </nav>
-      </header>
+      <Header />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-12">
         <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">

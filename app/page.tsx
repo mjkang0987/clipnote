@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { gradientCss, pickGradient } from "@/lib/gradients";
 import type { ClipMetadata } from "@/lib/metadata";
-import AuthNav from "@/app/_components/AuthNav";
+import Header from "@/app/_components/Header";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { addLocalClip, getKnownTags, recordTags } from "@/lib/local-clips";
 
@@ -347,26 +347,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="sticky top-0 z-40 border-b border-border bg-bg/60 backdrop-blur-md">
-        <nav className="mx-auto flex h-14 max-w-3xl items-center justify-between px-5">
-          <a
-            href="/"
-            className="text-lg font-bold tracking-tight text-fg"
-            aria-label="ClipNote 홈"
-          >
-            Clip<span className="text-brand">Note</span>
-          </a>
-          <div className="flex items-center gap-3">
-            <a
-              href="/clips"
-              className="text-sm font-semibold text-fg-muted transition hover:text-fg"
-            >
-              내 클립
-            </a>
-            <AuthNav />
-          </div>
-        </nav>
-      </header>
+      <Header />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3 sm:px-5 sm:py-8">
         <section className="py-4 text-center sm:py-8">
