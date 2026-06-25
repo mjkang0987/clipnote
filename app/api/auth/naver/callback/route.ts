@@ -22,13 +22,25 @@ export async function GET(request: Request) {
   const isWeb = Boolean(webState && state && state === webState);
 
   // 앱 복귀 딥링크(state 에 JSON 으로 인코딩). 웹이면 사용 안 함.
+  // state 가 URL 인코딩돼 올 수 있어 원본·디코딩본 둘 다 시도(디코딩은 throw 가드).
   let returnUrl = "clipnote://auth/naver";
   if (!isWeb && state) {
+    const candidates = [state];
     try {
-      const parsed = JSON.parse(state) as { returnUrl?: string };
-      if (parsed?.returnUrl) returnUrl = parsed.returnUrl;
+      candidates.push(decodeURIComponent(state));
     } catch {
-      // 기본 returnUrl 사용
+      // 디코딩 실패 시 원본만 사용
+    }
+    for (const s of candidates) {
+      try {
+        const parsed = JSON.parse(s) as { returnUrl?: string };
+        if (parsed?.returnUrl) {
+          returnUrl = parsed.returnUrl;
+          break;
+        }
+      } catch {
+        // 다음 후보 시도
+      }
     }
   }
 
