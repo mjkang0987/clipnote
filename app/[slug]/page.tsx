@@ -30,7 +30,8 @@ function ogImageUrl(p: {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const clip = await getClip(slug);
-  if (!clip) return { title: "찾을 수 없는 링크 · ClipNote" };
+  // 공유 안 된(저장만 한) 클립은 공개 브릿지 없음 — 없는 링크로 취급.
+  if (!clip || !clip.shared) return { title: "찾을 수 없는 링크 · ClipNote" };
 
   const image = ogImageUrl(clip);
   const description = clip.description ?? `${clip.siteName ?? "ClipNote"} 공유 링크`;
@@ -58,7 +59,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function SharePage({ params }: Params) {
   const { slug } = await params;
   const clip = await getClip(slug);
-  if (!clip) notFound();
+  // 공유 안 된(저장만 한) 클립은 공개 브릿지 없음 — 404.
+  if (!clip || !clip.shared) notFound();
 
   // 조회수 증가는 렌더를 막을 이유가 없음 — 응답 후 실행(after).
   // 서버리스에서도 함수가 살아있는 동안 실행이 보장됨(bare void 는 동결될 수 있음).
