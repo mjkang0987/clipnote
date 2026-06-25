@@ -160,7 +160,7 @@ export default function PrivacyPage() {
 
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-6 text-xs text-fg-muted">
-          <span>© 2026 ClipNote</span>
+          <span>© 2026 PIKAWORKS</span>
           <a href="/" className="font-semibold hover:text-fg">
             홈으로
           </a>
