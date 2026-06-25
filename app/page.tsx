@@ -230,9 +230,11 @@ export default function Home() {
     }
   }
 
-  // 로그인: 내 클립 목록에 담기(결과 모달에서 호출). 같은 URL 은 서버가 중복 없이 재사용.
-  async function handleAddClip() {
-    const sendTitle = title.trim() || meta?.title || (url ? prettyHost(url) : "");
+  // 로그인: 내 클립 목록에 담기(폼의 '내 클립에 저장' 또는 결과 모달에서 호출).
+  // m: 사용할 메타데이터(기본 state). 자동 추출 직후 호출 시 방금 받은 값을 직접 넘긴다.
+  // 같은 URL 은 서버가 중복 없이 재사용.
+  async function handleAddClip(m: ClipMetadata | null = meta) {
+    const sendTitle = title.trim() || m?.title || (url ? prettyHost(url) : "");
     if (!sendTitle) {
       setError("클립을 추가하려면 제목이 필요해요. 제목을 입력해 주세요.");
       return;
@@ -247,9 +249,9 @@ export default function Home() {
         body: JSON.stringify({
           url: url.trim(),
           title: sendTitle,
-          description: meta?.description ?? null,
-          image: meta?.image ?? null,
-          siteName: meta?.siteName ?? null,
+          description: m?.description ?? null,
+          image: m?.image ?? null,
+          siteName: m?.siteName ?? null,
           tags,
           gradient: gradient.name,
           save: true,
@@ -273,6 +275,16 @@ export default function Home() {
     } finally {
       setAdding(false);
     }
+  }
+
+  // 내 클립에 저장만: 공유 링크 모달 없이 바로 저장. 메타 없으면 먼저 추출.
+  async function handleSaveToClips() {
+    if (!hasInput || creating || adding) return;
+    let m = meta;
+    if (!m || fetchedUrlRef.current !== url.trim()) {
+      m = await loadMeta(url.trim(), { force: !m });
+    }
+    await handleAddClip(m ?? meta);
   }
 
   async function handleCopy() {
@@ -323,6 +335,15 @@ export default function Home() {
           : "공유 링크 만들기";
   const primaryDisabled =
     !hasInput || creating || adding || loading || isLoggedIn === null;
+  // '내 클립에 저장' 버튼(로그인 사용자용) 라벨·비활성
+  const saveClipLabel = adding
+    ? "저장 중…"
+    : added
+      ? alreadySaved
+        ? "이미 있음 ✓"
+        : "저장됨 ✓"
+      : "내 클립에 저장";
+  const saveClipDisabled = primaryDisabled || added;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -454,14 +475,34 @@ export default function Home() {
               )}
             </div>
 
-            {/* 1차 액션: 붙여넣기로 메타가 자동 추출되면 한 번 눌러 끝. */}
-            <button
-              type="submit"
-              disabled={primaryDisabled}
-              className="h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {primaryLabel}
-            </button>
+            {/* 1차 액션. 로그인 사용자는 공유 링크 만들기 / 내 클립에 저장으로 분기. */}
+            {isLoggedIn === false ? (
+              <button
+                type="submit"
+                disabled={primaryDisabled}
+                className="h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {primaryLabel}
+              </button>
+            ) : (
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="submit"
+                  disabled={primaryDisabled}
+                  className="h-12 flex-1 rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {primaryLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveToClips}
+                  disabled={saveClipDisabled}
+                  className="h-12 flex-1 rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {saveClipLabel}
+                </button>
+              </div>
+            )}
             {isLoggedIn === false && (
               <p className="text-center text-xs text-fg-muted">
                 짧은 공유 링크를 만들려면{" "}
@@ -757,7 +798,7 @@ export default function Home() {
           url={shareUrl}
           copied={copied}
           onCopy={handleCopy}
-          onSave={handleAddClip}
+          onSave={() => handleAddClip()}
           saving={adding}
           saved={added}
           alreadySaved={alreadySaved}
