@@ -51,9 +51,21 @@ export async function GET(request: Request) {
   const finishApp = (params: Record<string, string>) => {
     const q = new URLSearchParams(params).toString();
     const sep = returnUrl.includes("?") ? "&" : "?";
-    return new Response(null, {
-      status: 302,
-      headers: { Location: `${returnUrl}${sep}${q}` },
+    const target = `${returnUrl}${sep}${q}`;
+    // 커스텀 스킴(exp://, clipnote://)으로의 302 는 인앱 인증 브라우저가
+    // 따라가지 않아 result=cancel 이 되는 경우가 있어, HTML 에서 딥링크로 이동시킨다.
+    const attr = target.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+    const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="0;url=${attr}">
+<script>location.replace(${JSON.stringify(target)})</script>
+</head><body style="font-family:sans-serif;text-align:center;padding:40px;color:#333">
+<p>앱으로 돌아가는 중…</p>
+<a href="${attr}" style="color:#5b3fe0;font-weight:600">열리지 않으면 여기를 누르세요</a>
+</body></html>`;
+    return new Response(html, {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   };
   const fail = (reason: string) =>
