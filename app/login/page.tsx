@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import Header from "@/app/_components/Header";
 
-type Provider = "google" | "kakao";
+type Provider = "google" | "kakao" | "naver";
 
 // 마지막으로 사용한 로그인 수단(이 브라우저 기준)을 기억해 "최근 로그인" 배지로 보여준다.
 const LAST_PROVIDER_KEY = "clipnote:last-login-provider";
@@ -26,7 +26,7 @@ export default function LoginPage() {
     }
     try {
       const v = localStorage.getItem(LAST_PROVIDER_KEY);
-      if (v === "google" || v === "kakao") setLastProvider(v);
+      if (v === "google" || v === "kakao" || v === "naver") setLastProvider(v);
     } catch {
       // localStorage 미사용 환경이면 무시
     }
@@ -44,6 +44,11 @@ export default function LoginPage() {
       localStorage.setItem(LAST_PROVIDER_KEY, provider);
     } catch {
       // 무시
+    }
+    // 네이버는 Supabase 미지원 — 커스텀 OAuth 서버 라우트로 전체 페이지 이동
+    if (provider === "naver") {
+      window.location.href = "/api/auth/naver";
+      return;
     }
     try {
       const supabase = createSupabaseBrowserClient();
@@ -121,6 +126,16 @@ export default function LoginPage() {
             {lastProvider === "kakao" && <RecentBadge />}
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={() => signIn("naver")}
+          disabled={loading !== null || !agreed}
+          className="relative flex h-12 items-center justify-center gap-2 rounded-xl bg-[#03C75A] px-4 text-base font-semibold text-white transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading === "naver" ? "이동 중…" : "네이버로 계속하기"}
+          {lastProvider === "naver" && <RecentBadge />}
+        </button>
       </div>
 
       {error && (
