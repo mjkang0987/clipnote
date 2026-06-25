@@ -39,6 +39,9 @@ export default function ClipsPage() {
   const [bulkTagOpen, setBulkTagOpen] = useState(false);
   const [pendingBulkDelete, setPendingBulkDelete] = useState(false);
   const [busy, setBusy] = useState(false);
+  // 게스트→로그인 시 계정으로 옮길 로컬 클립(있으면 배너 노출)
+  const [localPending, setLocalPending] = useState<LocalClip[]>([]);
+  const [migrating, setMigrating] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -61,11 +64,14 @@ export default function ClipsPage() {
         const json = (await res.json()) as { loggedIn: boolean; clips: Clip[] };
         if (!active) return;
         setLoggedIn(json.loggedIn);
-        setItems(
-          json.loggedIn
-            ? json.clips.map(dbToItem)
-            : getLocalClips().map(localToItem),
-        );
+        if (json.loggedIn) {
+          setItems(json.clips.map(dbToItem));
+          // 로그인 상태인데 이 기기에 로컬 클립이 남아있으면 계정으로 옮기도록 제안
+          const locals = getLocalClips();
+          if (locals.length > 0) setLocalPending(locals);
+        } else {
+          setItems(getLocalClips().map(localToItem));
+        }
       } catch {
         // 네트워크 실패: 게스트 폴백
         if (!active) return;
@@ -152,6 +158,50 @@ export default function ClipsPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  // 게스트 로컬 클립을 계정(DB)으로 업로드 후 로컬에서 제거.
+  async function migrateLocal() {
+    if (migrating || localPending.length === 0) return;
+    setMigrating(true);
+    const moved: string[] = [];
+    for (const c of localPending) {
+      try {
+        const res = await fetch("/api/clip", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: c.url,
+            title: c.title,
+            description: c.description,
+            image: c.image,
+            siteName: c.siteName,
+            tags: c.tags,
+            gradient: c.gradient,
+            save: true, // 내 클립에 저장만(공개 브릿지 없음)
+          }),
+        });
+        if (res.ok) moved.push(c.url);
+      } catch {
+        // 개별 실패는 건너뜀(다음 방문 때 다시 제안)
+      }
+    }
+    moved.forEach((url) => removeLocalClip(url));
+    setLocalPending(getLocalClips());
+    // 업로드 결과를 반영해 DB 목록 새로고침
+    try {
+      const res = await fetch("/api/clips");
+      const json = (await res.json()) as { loggedIn: boolean; clips: Clip[] };
+      if (json.loggedIn) setItems(json.clips.map(dbToItem));
+    } catch {
+      // 무시(다음 로드 때 반영)
+    }
+    setMigrating(false);
+  }
+
+  // "나중에": 이번 세션에선 배너만 닫음(로컬 클립은 유지)
+  function dismissMigrate() {
+    setLocalPending([]);
   }
 
   function toggleSelect(key: string) {
@@ -377,6 +427,15 @@ export default function ClipsPage() {
           busy={busy}
           onCancel={() => setEditing(null)}
           onSave={saveEdit}
+        />
+      )}
+
+      {loggedIn && localPending.length > 0 && (
+        <MigrateLocalLayer
+          count={localPending.length}
+          migrating={migrating}
+          onMigrate={migrateLocal}
+          onDismiss={dismissMigrate}
         />
       )}
 
@@ -693,6 +752,51 @@ function ModalShell({
         {children}
       </div>
     </div>
+  );
+}
+
+/** 게스트 로컬 클립을 계정으로 옮길지 묻는 레이어 */
+function MigrateLocalLayer({
+  count,
+  migrating,
+  onMigrate,
+  onDismiss,
+}: {
+  count: number;
+  migrating: boolean;
+  onMigrate: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <ModalShell labelledBy="migrate-title" onClose={migrating ? () => {} : onDismiss}>
+      <h2 id="migrate-title" className="text-lg font-bold text-fg">
+        이 기기의 클립을 옮길까요?
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-fg-muted">
+        이 기기에 저장된{" "}
+        <strong className="font-semibold text-brand-strong">{count}개</strong> 클립을
+        계정으로 옮기면 다른 기기에서도 보이고 정리돼요. 옮긴 클립은 ‘내 클립에
+        저장’ 상태가 돼요.
+      </p>
+      <div className="mt-5 flex gap-2">
+        <button
+          type="button"
+          onClick={onMigrate}
+          disabled={migrating}
+          className="h-11 flex-1 rounded-lg bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {migrating ? "옮기는 중…" : `${count}개 옮기기`}
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          disabled={migrating}
+          className="h-11 flex-1 rounded-lg border border-border px-4 text-sm font-semibold text-fg transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          나중에
+        </button>
+      </div>
+    </ModalShell>
   );
 }
 
