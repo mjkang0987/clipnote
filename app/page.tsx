@@ -456,16 +456,14 @@ export default function Home() {
               )}
             </div>
 
-            {/* 1차 액션. 로그인 사용자는 공유 링크 만들기 / 내 클립에 저장으로 분기. */}
-            {isLoggedIn === false ? (
-              <button
-                type="submit"
-                disabled={primaryDisabled}
-                className="h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {primaryLabel}
-              </button>
-            ) : (
+            {/* 1차 액션. 확인 중=스켈레톤, 로그인=공유/저장 2버튼, 게스트=저장 1버튼. */}
+            {isLoggedIn === null ? (
+              // 인증 확인 전 잘못된 버튼이 깜빡이지 않도록 자리표시
+              <div
+                className="h-12 w-full animate-pulse rounded-[8px] bg-surface"
+                aria-hidden
+              />
+            ) : isLoggedIn ? (
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                   type="submit"
@@ -483,6 +481,14 @@ export default function Home() {
                   {saveClipLabel}
                 </button>
               </div>
+            ) : (
+              <button
+                type="submit"
+                disabled={primaryDisabled}
+                className="h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {primaryLabel}
+              </button>
             )}
             {isLoggedIn === false && (
               <p className="text-center text-xs text-fg-muted">
