@@ -1,4 +1,5 @@
 import AuthNav from "@/app/_components/AuthNav";
+import Brand from "@/app/_components/Brand";
 
 // 페이지 공통 헤더. 모든 페이지에서 동일한 높이·동작(sticky)을 갖도록 한 곳에서 관리.
 // showClipsLink: 우측 '내 클립' 링크 노출 여부(클립 목록 페이지에선 숨김).
@@ -12,14 +13,10 @@ export default function Header({
       <nav className="mx-auto flex h-14 max-w-3xl items-center justify-between px-5">
         <a
           href="/"
-          className="flex items-center gap-2 text-lg font-bold tracking-tight text-fg"
+          className="text-lg font-bold tracking-tight text-fg"
           aria-label="ClipNote 홈"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon-192.png" alt="" className="h-7 w-7 rounded-md" />
-          <span>
-            Clip<span className="text-brand">Note</span>
-          </span>
+          <Brand />
         </a>
         <div className="flex items-center gap-3">
           {showClipsLink && (

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { gradientCss, pickGradient } from "@/lib/gradients";
 import type { ClipMetadata } from "@/lib/metadata";
 import Header from "@/app/_components/Header";
+import Brand from "@/app/_components/Brand";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { addLocalClip, getKnownTags, recordTags } from "@/lib/local-clips";
 
@@ -680,7 +681,7 @@ export default function Home() {
           aria-labelledby="about-heading"
         >
           <h2 id="about-heading" className="text-xl font-bold text-fg">
-            ClipNote란?
+            <Brand iconClassName="h-6 w-6">란?</Brand>
           </h2>
           <p className="mt-3 leading-relaxed text-fg-muted">
             ClipNote(클립노트)는 긴 URL을 공유하기 좋은 형태로 바꿔 주는 무료 웹

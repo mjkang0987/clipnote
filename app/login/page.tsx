@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import Header from "@/app/_components/Header";
+import Brand from "@/app/_components/Brand";
 
 type Provider = "google" | "kakao" | "naver";
 
@@ -72,8 +73,9 @@ export default function LoginPage() {
       <Header showClipsLink={false} />
       <main className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 py-12">
       {/* ── 로그인 화면(실제 동작 영역) ── */}
-      <h1 className="text-center text-2xl font-bold tracking-tight text-fg">
-        Clip<span className="text-brand">Note</span> 로그인
+      <h1 className="flex items-center justify-center gap-2 text-2xl font-bold tracking-tight text-fg">
+        <Brand iconClassName="h-8 w-8" />
+        <span>로그인</span>
       </h1>
       <p className="mt-2 text-center text-sm text-fg-muted">
         {KAKAO_ENABLED
