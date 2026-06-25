@@ -20,6 +20,7 @@ export type Clip = {
   tags: string[];
   userId: string | null; // 작성자(로그인 사용자). 공유 클립은 항상 존재
   saved: boolean; // 내 클립 목록에 담겼는지(공유만 만든 건 false)
+  shared: boolean; // 공개 브릿지 링크(/[slug])가 켜졌는지. 저장만 한 클립은 false
   createdAt: string; // ISO
   viewCount: number;
 };
@@ -28,7 +29,7 @@ export type NewClip = Omit<Clip, "slug" | "createdAt" | "viewCount">;
 
 /** 수정 가능한 필드(부분). */
 export type ClipPatch = Partial<
-  Pick<Clip, "title" | "description" | "tags" | "gradient" | "saved">
+  Pick<Clip, "title" | "description" | "tags" | "gradient" | "saved" | "shared">
 >;
 
 export interface ClipStore {
@@ -112,6 +113,7 @@ function createMemoryStore(): ClipStore {
       if (patch.tags !== undefined) clip.tags = patch.tags;
       if (patch.gradient !== undefined) clip.gradient = patch.gradient;
       if (patch.saved !== undefined) clip.saved = patch.saved;
+      if (patch.shared !== undefined) clip.shared = patch.shared;
       return clip;
     },
 

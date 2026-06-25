@@ -25,6 +25,20 @@ alter table public.clips add column if not exists saved boolean not null default
 -- 옛 행은 null → findByUserUrl 의 레거시 폴백(JS 정규화)이 처리.
 alter table public.clips add column if not exists canonical_url text;
 
+-- 공개 브릿지 링크(/[slug]) on/off. 신규 행은 기본 false(저장만 하면 브릿지 없음).
+-- 컬럼을 "처음 추가하는 순간에만" 기존 행을 true 로 백필 — 옛 클립은 전부
+-- 공개 브릿지가 살아있었으므로. (스키마 재실행 시 저장만 한 클립을 덮어쓰지 않도록 DO 가드)
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'clips' and column_name = 'shared'
+  ) then
+    alter table public.clips add column shared boolean not null default false;
+    update public.clips set shared = true;
+  end if;
+end $$;
+
 create index if not exists clips_created_at_idx on public.clips (created_at desc);
 create index if not exists clips_user_id_idx on public.clips (user_id);
 create index if not exists clips_user_canonical_idx on public.clips (user_id, canonical_url);

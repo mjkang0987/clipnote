@@ -47,8 +47,9 @@ export async function POST(request: Request) {
         .slice(0, 6)
     : [];
 
-  // save=true 면 내 클립 목록에 담음(클립에 추가). 기본은 공유 링크만(false).
+  // save=true 면 내 클립에 저장만(브릿지 링크 없음). 그 외(기본)는 공유 링크 만들기.
   const save = body.save === true;
+  const shared = !save; // 공유 요청이면 공개 브릿지(/[slug]) 켜기, 저장만이면 끔
   const normalizedUrl = canonicalizeUrl(url);
   const origin = new URL(request.url).origin;
 
@@ -56,14 +57,19 @@ export async function POST(request: Request) {
   const existing = await clipStore.findByUserUrl(user.id, normalizedUrl);
   if (existing) {
     const alreadySaved = existing.saved;
-    // 공유 링크만 있던(미저장) 클립을 "내 클립에 추가"하면 그 클립을 저장 처리.
+    // 저장만 한 클립을 공유하거나, 공유만 한 클립을 저장 — 필요한 플래그만 켠다.
     if (save && !existing.saved) {
       await clipStore.setSaved(existing.slug, user.id, true);
     }
+    if (shared && !existing.shared) {
+      await clipStore.update(existing.slug, user.id, { shared: true });
+    }
+    const nowShared = existing.shared || shared;
     return NextResponse.json({
       slug: existing.slug,
-      shareUrl: `${origin}/${existing.slug}`,
+      shareUrl: nowShared ? `${origin}/${existing.slug}` : null,
       saved: save || existing.saved,
+      shared: nowShared,
       existed: true,
       alreadySaved: save && alreadySaved, // 이미 내 클립에 있던 경우
     });
@@ -80,11 +86,13 @@ export async function POST(request: Request) {
     tags,
     userId: user.id,
     saved: save,
+    shared,
   });
 
   return NextResponse.json({
     slug: clip.slug,
-    shareUrl: `${origin}/${clip.slug}`,
+    shareUrl: clip.shared ? `${origin}/${clip.slug}` : null,
     saved: clip.saved,
+    shared: clip.shared,
   });
 }

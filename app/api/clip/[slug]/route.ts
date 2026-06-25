@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 
 // 본인 클립 한 건 변경/삭제. 로그인 + 소유자 확인.
-// PATCH { title?, tags?, saved? } → 온 필드만 수정(편집/담기·빼기)
+// PATCH { title?, tags?, saved?, shared? } → 온 필드만 수정(편집/담기·빼기/공유 켜기)
 // DELETE → 클립 삭제
 
 export async function PATCH(
@@ -26,7 +26,12 @@ export async function PATCH(
     return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
   }
 
-  const patch: { title?: string; tags?: string[]; saved?: boolean } = {};
+  const patch: {
+    title?: string;
+    tags?: string[];
+    saved?: boolean;
+    shared?: boolean;
+  } = {};
 
   if (typeof body.title === "string") {
     const t = body.title.trim();
@@ -46,6 +51,10 @@ export async function PATCH(
 
   if (typeof body.saved === "boolean") {
     patch.saved = body.saved;
+  }
+
+  if (typeof body.shared === "boolean") {
+    patch.shared = body.shared;
   }
 
   if (Object.keys(patch).length === 0) {

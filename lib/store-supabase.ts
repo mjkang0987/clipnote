@@ -32,6 +32,7 @@ type Row = {
   tags: string[] | null;
   user_id: string | null;
   saved: boolean | null;
+  shared: boolean | null; // 공개 브릿지 링크 on/off. 마이그레이션 백필로 옛 행은 true
   canonical_url: string | null; // 옛 행은 null(레거시 폴백 대상)
   view_count: number;
   created_at: string;
@@ -49,6 +50,7 @@ function rowToClip(row: Row): Clip {
     tags: row.tags ?? [],
     userId: row.user_id,
     saved: row.saved ?? false,
+    shared: row.shared ?? false,
     viewCount: row.view_count,
     createdAt: row.created_at,
   };
@@ -73,6 +75,7 @@ export function createSupabaseStore(): ClipStore {
           tags: data.tags,
           user_id: data.userId,
           saved: data.saved,
+          shared: data.shared,
         };
         // 컬럼이 있을 때만 채움(마이그레이션 전이면 생략 → insert 가 깨지지 않음).
         // data.url 은 이미 정규화돼 들어오지만 멱등하므로 한 번 더 정규화해 저장.
@@ -225,6 +228,7 @@ export function createSupabaseStore(): ClipStore {
       if (patch.tags !== undefined) row.tags = patch.tags;
       if (patch.gradient !== undefined) row.gradient = patch.gradient;
       if (patch.saved !== undefined) row.saved = patch.saved;
+      if (patch.shared !== undefined) row.shared = patch.shared;
       if (Object.keys(row).length === 0) {
         return this.get(slug); // 변경 없음
       }
