@@ -353,10 +353,10 @@ export default function Home() {
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3 sm:px-5 sm:py-8">
         <section className="py-4 text-center sm:py-8">
           <h1 className="text-2xl font-bold leading-tight tracking-tight text-fg sm:text-3xl">
-            붙여넣으면 끝, <span className="text-brand">예쁜 공유 카드</span>
+            붙여넣기 한 번, <span className="text-brand">클릭을 부르는 공유 카드</span>
           </h1>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-muted sm:text-base">
-            링크만 넣으면 미리보기 카드와 짧은 공유 링크가 한 번에 만들어져요.
+            밋밋한 링크 대신 제목·대표 이미지가 담긴 카드와 짧은 링크를 한 번에. 카카오톡·SNS에서 확 눈에 띄어요.
           </p>
         </section>
 
@@ -684,25 +684,25 @@ export default function Home() {
             <Brand iconClassName="h-6 w-6">란?</Brand>
           </h2>
           <p className="mt-3 leading-relaxed text-fg-muted">
-            ClipNote(클립노트)는 긴 URL을 공유하기 좋은 형태로 바꿔 주는 무료 웹
-            서비스예요. 링크를 붙여넣으면 페이지의 제목·설명·대표 이미지를 자동으로
-            읽어와 카드 미리보기를 만들고, 카카오톡이나 SNS에 공유했을 때 보기 좋은
-            이미지와 짧은 링크를 제공합니다. 네이버 카페 게시글, 인스타그램 릴처럼
-            일반적으로 미리보기가 잘 안 잡히는 링크도 지원해요.
+            ClipNote(클립노트)는 밋밋하고 긴 링크를 클릭하고 싶어지는 공유 카드로
+            바꿔 주는 무료 웹 서비스예요. 링크만 붙여넣으면 페이지의 제목·설명·대표
+            이미지를 자동으로 읽어와 카드 미리보기를 만들고, 카카오톡이나 SNS에
+            올렸을 때 한눈에 들어오는 이미지와 짧은 링크를 만들어 드려요. 네이버 카페
+            게시글, 인스타그램 릴처럼 미리보기가 잘 안 잡히는 링크도 문제없어요.
           </p>
 
           <h2 className="mt-8 text-xl font-bold text-fg sm:mt-10">이렇게 동작해요</h2>
           <ol className="mt-3 flex flex-col gap-2 leading-relaxed text-fg-muted">
-            <li>1. 공유하고 싶은 URL을 붙여넣어요.</li>
-            <li>2. 제목·설명·대표 이미지를 자동으로 읽어와 카드를 만들어요.</li>
-            <li>3. 로그인하면 짧은 공유 링크가 생기고, 공유 시 예쁜 카드로 떠요.</li>
+            <li>1. 공유할 URL을 붙여넣어요. 붙여넣기만 하면 끝이에요.</li>
+            <li>2. 제목·설명·대표 이미지를 자동으로 읽어와 카드를 완성해요.</li>
+            <li>3. 로그인하면 짧은 공유 링크까지 — 어디에 올려도 예쁜 카드로 떠요.</li>
           </ol>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-border bg-surface p-4">
               <p className="text-sm font-semibold text-fg">로그인 안 해도</p>
               <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-                <li>· URL을 붙여넣어 미리보기 카드를 만들 수 있어요.</li>
+                <li>· URL을 붙여넣어 미리보기 카드를 바로 만들 수 있어요.</li>
                 <li>· 만든 클립을 이 브라우저에 저장하고 ‘내 클립’에서 다시 봐요.</li>
                 <li>
                   · 단, 저장은 <strong className="font-semibold text-fg">이 기기에만</strong> 남고{" "}
@@ -714,11 +714,11 @@ export default function Home() {
               <p className="text-sm font-semibold text-brand-strong">로그인 하면</p>
               <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
                 <li>
-                  · <strong className="font-semibold text-brand-strong">짧은 공유 링크</strong>를 만들어 카카오톡·SNS에 보낼 수 있어요.
+                  · <strong className="font-semibold text-brand-strong">짧은 공유 링크</strong>로 카카오톡·SNS에 바로 보낼 수 있어요.
                 </li>
-                <li>· 공유한 링크가 예쁜 미리보기 카드로 떠요.</li>
+                <li>· 공유한 링크가 클릭을 부르는 미리보기 카드로 떠요.</li>
                 <li>
-                  · 클립이 계정에 쌓여 <strong className="font-semibold text-brand-strong">다른 기기에서도</strong> 그대로 보이고, 태그로 정리돼요.
+                  · 클립이 계정에 쌓여 <strong className="font-semibold text-brand-strong">어느 기기에서나</strong> 그대로 보이고, 태그로 깔끔하게 정리돼요.
                 </li>
               </ul>
             </div>
@@ -754,7 +754,7 @@ export default function Home() {
             <div>
               <dt className="font-semibold text-fg">공유 링크를 열면 어떻게 되나요?</dt>
               <dd className="mt-1 leading-relaxed text-fg-muted">
-                예쁜 미리보기 카드가 잠깐 보인 뒤 원본 페이지로 자연스럽게 이동해요.
+                클릭하면 예쁜 미리보기 카드가 잠깐 보였다가, 원본 페이지로 자연스럽게 넘어가요.
               </dd>
             </div>
             <div>
@@ -1006,7 +1006,7 @@ const faqJsonLd = {
       name: "공유 링크를 열면 어떻게 되나요?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "예쁜 미리보기 카드가 잠깐 보인 뒤 원본 페이지로 자연스럽게 이동해요.",
+        text: "클릭하면 예쁜 미리보기 카드가 잠깐 보였다가, 원본 페이지로 자연스럽게 넘어가요.",
       },
     },
     {
