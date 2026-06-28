@@ -42,7 +42,13 @@ export default function AuthNav() {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
+      <a
+        href="/settings"
+        className="text-sm font-semibold text-fg-muted transition hover:text-fg"
+      >
+        설정
+      </a>
       <form action="/auth/signout" method="post">
         <button
           type="submit"
