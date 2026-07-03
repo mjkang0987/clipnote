@@ -13,7 +13,7 @@ export default function Header({
       <nav className="mx-auto flex h-14 max-w-3xl items-center justify-between px-5">
         <a
           href="/"
-          className="text-lg font-bold tracking-tight text-fg"
+          className="flex items-center text-lg font-bold tracking-tight text-fg"
           aria-label="ClipNote 홈"
         >
           <Brand />
