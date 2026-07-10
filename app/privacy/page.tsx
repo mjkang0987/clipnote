@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 // ── 운영자 정보 ──────────────────────────────────
 const CONTACT_EMAIL = "pikaworks.help@gmail.com";
 const PRIVACY_OFFICER = "pikaworks 운영자";
-const EFFECTIVE_DATE = "2026년 6월 19일";
+const EFFECTIVE_DATE = "2026년 7월 10일";
 
 export default function PrivacyPage() {
   return (
@@ -57,9 +57,10 @@ export default function PrivacyPage() {
 
         <Section title="3. 보유 및 이용 기간">
           <p>
-            수집한 개인정보는 회원 탈퇴 시까지 보유하며, 탈퇴 요청 시 지체 없이
-            파기합니다. 다만 관계 법령에 따라 보존이 필요한 경우 해당 기간 동안
-            보관합니다.
+            수집한 개인정보는 회원 탈퇴 시까지 보유합니다. 이용자는 서비스 내
+            설정 화면의 회원 탈퇴 기능으로 직접 탈퇴할 수 있으며, 탈퇴 시 저장한
+            모든 클립과 계정 정보가 즉시 영구 삭제되어 복구할 수 없습니다. 다만
+            관계 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관합니다.
           </p>
         </Section>
 
@@ -108,8 +109,9 @@ export default function PrivacyPage() {
           <p>
             이용자는 언제든지 자신의 개인정보에 대해 열람·정정·삭제·처리정지를
             요청할 수 있습니다. 요청은 아래 연락처로 문의해 주시면 지체 없이
-            조치합니다. 서비스 내 로그아웃·클립 삭제 기능으로도 직접 처리할 수
-            있습니다.
+            조치합니다. 서비스 내 로그아웃·클립 삭제 기능으로 직접 처리할 수
+            있으며, 설정 화면의 회원 탈퇴 기능으로 계정과 저장한 모든 데이터를
+            직접 영구 삭제할 수 있습니다.
           </p>
         </Section>
 
