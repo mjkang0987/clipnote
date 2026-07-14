@@ -55,12 +55,14 @@ export async function fetchInstagramMetadata(
   const ogDesc = metaContent(html, "og:description");
   const ogImage = metaContent(html, "og:image");
 
-  // og 가 전혀 없으면 로그인 벽으로 판단 → 폴백
+  // og 가 전혀 없으면 로그인 벽으로 판단 → 폴백. 운영 서버 IP 는 IG 가 크롤러 UA 에도
+  // 로그인 벽을 주는 경우가 많다. (Meta oEmbed 는 2025-04 이후 thumbnail_url·author_name
+  // 을 더는 안 줘서 미리보기 용도로는 쓸 수 없다 → 프록시/서드파티 없이는 대안 없음.)
   if (!ogTitle && !ogDesc && !ogImage) return null;
 
   return {
     url,
-    title: cleanTitle(ogTitle) ?? "인스타그램 릴",
+    title: cleanTitle(ogTitle) ?? "인스타그램 게시물",
     description: ogDesc ?? null,
     image: ogImage ?? null,
     siteName: "Instagram",
