@@ -290,8 +290,11 @@ export default function Home() {
 
   async function handleCopy() {
     if (!shareUrl) return;
+    // 제목 + 설명 + 링크 순서로 복사(빈 값은 줄에서 제외). 붙여넣으면 텍스트도 보인다.
+    const copyTitle = title.trim() || meta?.title || "";
+    const text = [copyTitle, description, shareUrl].filter(Boolean).join("\n");
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
