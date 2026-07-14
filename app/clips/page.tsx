@@ -14,6 +14,7 @@ import Header from "@/app/_components/Header";
 type Item = {
   key: string;
   title: string;
+  desc: string | null; // 공유 복사 텍스트에 제목과 함께 붙는 설명
   url: string;
   host: string;
   slug: string | null; // DB(로그인)만 공유 슬러그 존재
@@ -554,10 +555,16 @@ function ClipCard({
   // 선택 모드는 공유 슬러그가 있는 로그인 클립만 대상
   const selectable = selectMode && Boolean(item.slug);
 
+  // 복사 텍스트: 제목 + 설명 + 링크(빈 값은 줄에서 제외). 붙여넣으면 텍스트도 보임.
+  function shareText() {
+    const url = `${window.location.origin}/${item.slug}`;
+    return [item.title, item.desc, url].filter(Boolean).join("\n");
+  }
+
   async function copyShare() {
     if (!item.slug) return;
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/${item.slug}`);
+      await navigator.clipboard.writeText(shareText());
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -577,9 +584,7 @@ function ClipCard({
       });
       if (!res.ok) return;
       onShareMade();
-      await navigator.clipboard
-        .writeText(`${window.location.origin}/${item.slug}`)
-        .catch(() => {});
+      await navigator.clipboard.writeText(shareText()).catch(() => {});
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -1026,6 +1031,7 @@ function dbToItem(c: Clip): Item {
   return {
     key: c.slug,
     title: c.title,
+    desc: c.description,
     url: c.url,
     host: prettyHost(c.url),
     slug: c.slug,
@@ -1042,6 +1048,7 @@ function localToItem(c: LocalClip): Item {
   return {
     key: c.url,
     title: c.title,
+    desc: c.description,
     url: c.url,
     host: prettyHost(c.url),
     slug: null,
