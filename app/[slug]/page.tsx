@@ -33,7 +33,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // 공유 안 된(저장만 한) 클립은 공개 브릿지 없음 — 없는 링크로 취급.
   if (!clip || !clip.shared) return { title: "찾을 수 없는 링크 · ClipNote" };
 
-  const image = ogImageUrl(clip);
+  // 원본 글에 대표 이미지가 있으면 그걸 그대로 OG 이미지로 쓰고,
+  // 없을 때만 그라디언트 카드(/api/og)를 생성해서 쓴다.
+  // 생성 카드는 1200×630 이 확정이라 크기를 명시하지만, 원본 이미지는
+  // 실제 크기를 알 수 없으므로 크기를 붙이지 않는다(잘못 붙이면 미리보기가 깨질 수 있음).
+  const image = clip.image
+    ? { url: clip.image }
+    : { url: ogImageUrl(clip), width: 1200, height: 630 };
   const description = clip.description ?? `${clip.siteName ?? "ClipNote"} 공유 링크`;
 
   return {
@@ -44,14 +50,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     openGraph: {
       title: clip.title,
       description,
-      images: [{ url: image, width: 1200, height: 630 }],
+      images: [image],
       type: "article",
     },
     twitter: {
       card: "summary_large_image",
       title: clip.title,
       description,
-      images: [image],
+      images: [image.url],
     },
   };
 }
