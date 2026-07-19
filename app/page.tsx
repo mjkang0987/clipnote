@@ -546,13 +546,27 @@ export default function Home() {
               className="relative flex aspect-[1200/630] w-full flex-col justify-end"
               style={{ background: gradientCss(gradient), padding: "6cqw" }}
             >
-              {/* 하단 가독성 스크림 (실제 OG 와 동일) */}
+              {/* 원본 대표 이미지가 있으면 배경으로 깔고, 로드 실패 시 숨겨 그라디언트가 보이게 함 */}
+              {image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={image}
+                  alt=""
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              )}
+              {/* 하단 가독성 스크림 (실제 OG 와 동일). 이미지 위에서도 텍스트가 잘 보이도록 조금 진하게. */}
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%]"
                 style={{
-                  backgroundImage:
-                    "linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.28))",
+                  backgroundImage: image
+                    ? "linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.55))"
+                    : "linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.28))",
                 }}
               />
               {meta?.siteName && (
@@ -603,7 +617,7 @@ export default function Home() {
             </div>
           </div>
           <p className="mt-1.5 text-xs text-fg-muted">
-            실제 공유 시 떠는 이미지예요. 배경색은 제목에 따라 자동으로 정해져요.
+            실제 공유 시 떠는 이미지예요. 원본 대표 이미지가 있으면 배경으로 쓰고, 없으면 제목에 따라 정해지는 그라디언트로 채워져요.
           </p>
         </section>
 
