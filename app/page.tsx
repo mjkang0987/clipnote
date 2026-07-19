@@ -86,6 +86,10 @@ export default function Home() {
   const description = meta?.description ?? null;
   const image = meta?.image ?? null;
 
+  // 미리보기 썸네일은 원본 이미지를 브라우저가 직접 부르면 hotlink/referer·혼합콘텐츠로
+  // 자주 막히므로, 우리 서버 프록시(/api/image)를 거쳐 불러온다.
+  const proxiedImage = image ? `/api/image?url=${encodeURIComponent(image)}` : null;
+
   const seed = title.trim() || meta?.title || url || "clipnote";
   const gradient = useMemo(() => pickGradient(seed), [seed]);
 
@@ -547,10 +551,10 @@ export default function Home() {
               style={{ background: gradientCss(gradient), padding: "6cqw" }}
             >
               {/* 원본 대표 이미지가 있으면 배경으로 깔고, 로드 실패 시 숨겨 그라디언트가 보이게 함 */}
-              {image && (
+              {proxiedImage && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={image}
+                  src={proxiedImage}
                   alt=""
                   aria-hidden
                   className="pointer-events-none absolute inset-0 h-full w-full object-cover"
@@ -633,11 +637,11 @@ export default function Home() {
               style={{ background: gradientCss(gradient) }}
               aria-hidden
             >
-              {image && (
+              {proxiedImage && (
                 // 원본 대표 이미지 = 목록 썸네일. 로드 실패 시 그라디언트가 보임.
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={image}
+                  src={proxiedImage}
                   alt=""
                   className="h-full w-full object-cover"
                   onError={(e) => {
