@@ -13,6 +13,15 @@ const MAX_BYTES = 8 * 1024 * 1024; // 8MB 까지만 중계
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
+/** 이미지 호스트별로 붙일 Referer. 네이버 CDN 은 네이버 referer 를 요구한다. */
+function refererFor(u: URL): string | undefined {
+  const h = u.hostname.toLowerCase();
+  if (/(^|\.)(pstatic\.net|naver\.net|naver\.com)$/.test(h)) {
+    return "https://cafe.naver.com/";
+  }
+  return undefined;
+}
+
 export async function GET(request: NextRequest) {
   const target = request.nextUrl.searchParams.get("url");
   if (!target) {
@@ -33,11 +42,20 @@ export async function GET(request: NextRequest) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
+    const headers: Record<string, string> = {
+      "User-Agent": BROWSER_UA,
+      Accept: "image/*,*/*;q=0.8",
+    };
+    // 네이버 이미지 CDN(pstatic.net 등)은 referer 가 네이버 도메인일 때만 내주는
+    // hotlink 차단을 한다. 해당 호스트에는 네이버 referer 를 붙여 통과시킨다.
+    // (그 외 호스트는 referer 없이 요청 → 오히려 외부 referer 차단을 피함)
+    const referer = refererFor(u);
+    if (referer) headers.Referer = referer;
+
     const res = await fetch(u.toString(), {
       signal: controller.signal,
       redirect: "follow",
-      // referer 를 붙이지 않아 hotlink 차단을 피한다.
-      headers: { "User-Agent": BROWSER_UA, Accept: "image/*,*/*;q=0.8" },
+      headers,
     });
     if (!res.ok) {
       return new Response("원본 이미지를 가져오지 못했습니다.", { status: 502 });
