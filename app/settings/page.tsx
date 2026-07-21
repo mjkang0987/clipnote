@@ -67,14 +67,8 @@ export default function SettingsPage() {
         <p className="mt-1 text-sm text-fg-muted">로그인 정보와 계정을 관리합니다.</p>
 
         {/* 계정 정보 + 로그아웃 */}
-        <section className="mt-6 border-t border-border pt-5">
+        <section className="mt-6 border-t border-border py-5">
           <div className="flex items-center gap-3">
-            <span
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand-strong"
-              aria-hidden
-            >
-              {accountLabel.slice(0, 1).toUpperCase()}
-            </span>
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold text-fg">{accountLabel}</p>
               <p className="truncate text-sm text-fg-muted">
