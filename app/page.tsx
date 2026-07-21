@@ -415,7 +415,7 @@ export default function Home() {
                 type="url"
                 required
                 inputMode="url"
-                placeholder="https://example.com/article"
+                placeholder="공유할 링크 붙여넣기"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 onPaste={handleUrlPaste}
@@ -615,61 +615,65 @@ export default function Home() {
                   }}
                 />
               )}
-              {/* 하단 가독성 스크림 (실제 OG 와 동일). 이미지 위에서도 텍스트가 잘 보이도록 조금 진하게. */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%]"
-                style={{
-                  backgroundImage: image
-                    ? "linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.55))"
-                    : "linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.28))",
-                }}
-              />
-              {meta?.siteName && (
-                <p
-                  className="relative truncate font-bold uppercase"
-                  style={{
-                    fontSize: "2.17cqw",
-                    letterSpacing: "0.17cqw",
-                    color: "rgba(255,255,255,0.92)",
-                  }}
-                >
-                  {meta.siteName}
-                </p>
+              {/* 원본 이미지가 있으면 실제 공유 시 그 이미지가 그대로 뜬다(ClipNote 텍스트 오버레이 없음).
+                  이미지 위 텍스트는 가독성이 떨어지므로 이미지가 없을 때만 스크림·텍스트를 그린다. */}
+              {!image && (
+                <>
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%]"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.28))",
+                    }}
+                  />
+                  {meta?.siteName && (
+                    <p
+                      className="relative truncate font-bold uppercase"
+                      style={{
+                        fontSize: "2.17cqw",
+                        letterSpacing: "0.17cqw",
+                        color: "rgba(255,255,255,0.92)",
+                      }}
+                    >
+                      {meta.siteName}
+                    </p>
+                  )}
+                  <p
+                    className="relative line-clamp-3 font-bold text-white"
+                    style={{
+                      fontSize: effectiveTitle.length > 40 ? "5cqw" : "6cqw",
+                      lineHeight: 1.15,
+                      marginTop: "1.5cqw",
+                    }}
+                  >
+                    {effectiveTitle}
+                  </p>
+                  {description && (
+                    <p
+                      className="relative line-clamp-2"
+                      style={{
+                        fontSize: "2.5cqw",
+                        lineHeight: 1.4,
+                        marginTop: "1.83cqw",
+                        color: "rgba(255,255,255,0.9)",
+                      }}
+                    >
+                      {description}
+                    </p>
+                  )}
+                  <p
+                    className="relative font-bold"
+                    style={{
+                      fontSize: "2cqw",
+                      marginTop: "2.5cqw",
+                      color: "rgba(255,255,255,0.95)",
+                    }}
+                  >
+                    ClipNote
+                  </p>
+                </>
               )}
-              <p
-                className="relative line-clamp-3 font-bold text-white"
-                style={{
-                  fontSize: effectiveTitle.length > 40 ? "5cqw" : "6cqw",
-                  lineHeight: 1.15,
-                  marginTop: "1.5cqw",
-                }}
-              >
-                {effectiveTitle}
-              </p>
-              {description && (
-                <p
-                  className="relative line-clamp-2"
-                  style={{
-                    fontSize: "2.5cqw",
-                    lineHeight: 1.4,
-                    marginTop: "1.83cqw",
-                    color: "rgba(255,255,255,0.9)",
-                  }}
-                >
-                  {description}
-                </p>
-              )}
-              <p
-                className="relative font-bold"
-                style={{
-                  fontSize: "2cqw",
-                  marginTop: "2.5cqw",
-                  color: "rgba(255,255,255,0.95)",
-                }}
-              >
-                ClipNote
-              </p>
             </div>
           </div>
           <p className="mt-1.5 text-xs text-fg-muted">
