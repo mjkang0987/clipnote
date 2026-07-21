@@ -21,6 +21,7 @@ export default function Home() {
   const [creating, setCreating] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [guestCopied, setGuestCopied] = useState(false);
 
   // 클립에 추가(내 클립 목록에 담기)
   const [adding, setAdding] = useState(false);
@@ -306,6 +307,37 @@ export default function Home() {
     }
   }
 
+  // 게스트 공유/복사 텍스트 — 카드 생성 없이 스크랩된 제목 + 원본 URL.
+  function guestShareText() {
+    const t = title.trim() || meta?.title || "";
+    return [t, url.trim()].filter(Boolean).join("\n");
+  }
+
+  async function handleGuestCopy() {
+    if (!hasInput) return;
+    try {
+      await navigator.clipboard.writeText(guestShareText());
+      setGuestCopied(true);
+      setTimeout(() => setGuestCopied(false), 1500);
+    } catch {
+      setGuestCopied(false);
+    }
+  }
+
+  async function handleGuestShare() {
+    if (!hasInput) return;
+    // 지원 기기: 네이티브 공유 시트. 미지원(주로 데스크톱): 복사로 폴백.
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: guestShareText() });
+      } catch {
+        // 사용자 취소 등은 무시
+      }
+      return;
+    }
+    await handleGuestCopy();
+  }
+
   // 비로그인: 이 브라우저(localStorage)에만 저장
   function handleSaveLocal() {
     const saveTitle = title.trim() || meta?.title || (url ? prettyHost(url) : "");
@@ -490,21 +522,41 @@ export default function Home() {
                 </button>
               </div>
             ) : (
-              <button
-                type="submit"
-                disabled={primaryDisabled}
-                className="h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {primaryLabel}
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="submit"
+                  disabled={primaryDisabled}
+                  className="h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {primaryLabel}
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleGuestShare}
+                    disabled={!hasInput}
+                    className="h-12 w-full rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
+                  >
+                    공유하기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGuestCopy}
+                    disabled={!hasInput}
+                    className="h-12 w-full rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
+                  >
+                    {guestCopied ? "복사됨 ✓" : "복사하기"}
+                  </button>
+                </div>
+              </div>
             )}
             {isLoggedIn === false && (
               <p className="text-center text-xs text-fg-muted">
-                짧은 공유 링크를 만들려면{" "}
+                예쁜 공유 카드·짧은 링크는{" "}
                 <a href="/login" className="font-semibold text-brand-strong underline">
                   로그인
                 </a>
-                하세요.
+                하면 만들어져요.
               </p>
             )}
           </div>
