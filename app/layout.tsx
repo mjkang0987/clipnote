@@ -8,7 +8,7 @@ import ServiceWorkerRegister from "@/app/_components/ServiceWorkerRegister";
 const ADSENSE_CLIENT = "ca-pub-5655041057903258";
 
 const ogImage = ogImagePath({
-  title: "URL을 예쁜 공유 카드로",
+  title: "URL을 깔끔한 공유 카드로",
   desc: "링크 하나로 공유 카드와 짧은 링크를 만들어요",
   site: "ClipNote",
   g: "grape",
@@ -17,7 +17,7 @@ const ogImage = ogImagePath({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "ClipNote — URL을 예쁜 공유 카드로",
+    default: "ClipNote — URL을 깔끔한 공유 카드로",
     template: "%s · ClipNote",
   },
   description: SITE_DESCRIPTION,
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: "ClipNote — URL을 예쁜 공유 카드로",
+    title: "ClipNote — URL을 깔끔한 공유 카드로",
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     locale: "ko_KR",
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ClipNote — URL을 예쁜 공유 카드로",
+    title: "ClipNote — URL을 깔끔한 공유 카드로",
     description: SITE_DESCRIPTION,
     images: [ogImage],
   },

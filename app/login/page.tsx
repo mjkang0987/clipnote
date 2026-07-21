@@ -173,7 +173,7 @@ export default function LoginPage() {
               <li>
                 · <strong className="font-semibold text-brand-strong">짧은 공유 링크</strong>를 만들어 카카오톡·SNS에 보낼 수 있어요.
               </li>
-              <li>· 공유한 링크가 예쁜 미리보기 카드로 떠요.</li>
+              <li>· 공유한 링크가 제목·이미지가 담긴 미리보기 카드로 떠요.</li>
               <li>
                 · 클립이 계정에 쌓여 <strong className="font-semibold text-brand-strong">다른 기기에서도</strong> 그대로 보이고, 태그로 정리돼요.
               </li>
