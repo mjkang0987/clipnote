@@ -67,14 +67,8 @@ export default function SettingsPage() {
         <p className="mt-1 text-sm text-fg-muted">로그인 정보와 계정을 관리합니다.</p>
 
         {/* 계정 정보 + 로그아웃 */}
-        <section className="mt-6 border-t border-border pt-5">
+        <section className="mt-6 border-t border-border py-5">
           <div className="flex items-center gap-3">
-            <span
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand-strong"
-              aria-hidden
-            >
-              {accountLabel.slice(0, 1).toUpperCase()}
-            </span>
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold text-fg">{accountLabel}</p>
               <p className="truncate text-sm text-fg-muted">
@@ -102,6 +96,22 @@ export default function SettingsPage() {
               보기 ›
             </span>
           </a>
+        </section>
+
+        {/* 문의 */}
+        <section className="mt-1 border-t border-border py-4">
+          <a
+            href="mailto:pikaworks.help@gmail.com"
+            className="flex items-center justify-between text-sm font-semibold text-fg transition hover:text-brand-strong"
+          >
+            <span>문의하기</span>
+            <span className="text-fg-muted" aria-hidden>
+              메일 보내기 ›
+            </span>
+          </a>
+          <p className="mt-1 text-xs text-fg-muted">
+            오류 제보·기능 요청은 pikaworks.help@gmail.com 로 보내 주세요.
+          </p>
         </section>
 
         {/* 위험 구역: 회원 탈퇴 */}
