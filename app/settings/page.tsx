@@ -98,6 +98,22 @@ export default function SettingsPage() {
           </a>
         </section>
 
+        {/* 문의 */}
+        <section className="mt-1 border-t border-border py-4">
+          <a
+            href="mailto:pikaworks.help@gmail.com"
+            className="flex items-center justify-between text-sm font-semibold text-fg transition hover:text-brand-strong"
+          >
+            <span>문의하기</span>
+            <span className="text-fg-muted" aria-hidden>
+              메일 보내기 ›
+            </span>
+          </a>
+          <p className="mt-1 text-xs text-fg-muted">
+            오류 제보·기능 요청은 pikaworks.help@gmail.com 로 보내 주세요.
+          </p>
+        </section>
+
         {/* 위험 구역: 회원 탈퇴 */}
         <section className="mt-4 rounded-2xl border border-danger/30 bg-danger/5 p-5">
           <h2 className="text-sm font-semibold text-danger">계정 삭제</h2>
