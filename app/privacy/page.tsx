@@ -164,15 +164,6 @@ export default function PrivacyPage() {
           ※ 본 방침은 시행일 기준 내용이며, 변경 시 서비스 화면에 공지합니다.
         </p>
       </main>
-
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-6 text-xs text-fg-muted">
-          <span>© 2026 PIKAWORKS</span>
-          <a href="/" className="font-semibold hover:text-fg">
-            홈으로
-          </a>
-        </div>
-      </footer>
     </div>
   );
 }

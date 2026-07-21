@@ -3,6 +3,7 @@ import Script from "next/script";
 import "./globals.css";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, ogImagePath } from "@/lib/site";
 import ServiceWorkerRegister from "@/app/_components/ServiceWorkerRegister";
+import Footer from "@/app/_components/Footer";
 
 // 구글 애드센스 퍼블리셔 ID(ca-pub-...). 공개값이라 코드에 둔다.
 const ADSENSE_CLIENT = "ca-pub-5655041057903258";
@@ -120,6 +121,7 @@ export default function RootLayout({
         />
         <ServiceWorkerRegister />
         {children}
+        <Footer />
       </body>
     </html>
   );
