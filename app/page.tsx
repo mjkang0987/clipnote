@@ -392,10 +392,10 @@ export default function Home() {
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3 sm:px-5 sm:py-8">
         <section className="py-4 text-center sm:py-8">
           <h1 className="text-2xl font-bold leading-tight tracking-tight text-fg sm:text-3xl">
-            붙여넣기 한 번, <span className="text-brand">클릭을 부르는 공유 카드</span>
+            밋밋한 링크를 <span className="text-brand">카드 한 장으로</span>
           </h1>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-muted sm:text-base">
-            밋밋한 링크 대신 제목·대표 이미지가 담긴 카드와 짧은 링크를 한 번에. 카카오톡·SNS에서 확 눈에 띄어요.
+            제목·대표 이미지가 담긴 카드와 짧은 링크를 한 번에. 카카오톡·SNS에서 깔끔하게 보여요.
           </p>
         </section>
 
@@ -552,7 +552,7 @@ export default function Home() {
             )}
             {isLoggedIn === false && (
               <p className="text-center text-xs text-fg-muted">
-                예쁜 공유 카드·짧은 링크는{" "}
+                공유 카드·짧은 링크는{" "}
                 <a href="/login" className="font-semibold text-brand-strong underline">
                   로그인
                 </a>
@@ -768,7 +768,7 @@ export default function Home() {
           <ol className="mt-3 flex flex-col gap-2 leading-relaxed text-fg-muted">
             <li>1. 공유할 URL을 붙여넣어요. 붙여넣기만 하면 끝이에요.</li>
             <li>2. 제목·설명·대표 이미지를 자동으로 읽어와 카드를 완성해요.</li>
-            <li>3. 로그인하면 짧은 공유 링크까지 — 어디에 올려도 예쁜 카드로 떠요.</li>
+            <li>3. 로그인하면 짧은 공유 링크까지 — 어디에 올려도 깔끔한 카드로 떠요.</li>
           </ol>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -789,7 +789,7 @@ export default function Home() {
                 <li>
                   · <strong className="font-semibold text-brand-strong">짧은 공유 링크</strong>로 카카오톡·SNS에 바로 보낼 수 있어요.
                 </li>
-                <li>· 공유한 링크가 클릭을 부르는 미리보기 카드로 떠요.</li>
+                <li>· 공유한 링크가 제목·이미지가 담긴 미리보기 카드로 떠요.</li>
                 <li>
                   · 클립이 계정에 쌓여 <strong className="font-semibold text-brand-strong">어느 기기에서나</strong> 그대로 보이고, 태그로 깔끔하게 정리돼요.
                 </li>
@@ -827,7 +827,7 @@ export default function Home() {
             <div>
               <dt className="font-semibold text-fg">공유 링크를 열면 어떻게 되나요?</dt>
               <dd className="mt-1 leading-relaxed text-fg-muted">
-                클릭하면 예쁜 미리보기 카드가 잠깐 보였다가, 원본 페이지로 자연스럽게 넘어가요.
+                클릭하면 미리보기 카드가 잠깐 보였다가, 원본 페이지로 자연스럽게 넘어가요.
               </dd>
             </div>
             <div>
@@ -1079,7 +1079,7 @@ const faqJsonLd = {
       name: "공유 링크를 열면 어떻게 되나요?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "클릭하면 예쁜 미리보기 카드가 잠깐 보였다가, 원본 페이지로 자연스럽게 넘어가요.",
+        text: "클릭하면 미리보기 카드가 잠깐 보였다가, 원본 페이지로 자연스럽게 넘어가요.",
       },
     },
     {
