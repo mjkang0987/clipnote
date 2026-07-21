@@ -673,7 +673,7 @@ export default function Home() {
             </div>
           </div>
           <p className="mt-1.5 text-xs text-fg-muted">
-            실제 공유 시 떠는 이미지예요. 원본 대표 이미지가 있으면 배경으로 쓰고, 없으면 제목에 따라 정해지는 그라디언트로 채워져요.
+            실제 공유 시 뜨는 이미지예요. 원본 대표 이미지가 있으면 배경으로 쓰고, 없으면 제목에 맞춰 만든 그라디언트로 채워져요.
           </p>
         </section>
 
