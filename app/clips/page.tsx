@@ -209,6 +209,15 @@ export default function ClipsPage() {
     setMigrateStep("discard");
   }
 
+  /**
+   * 확인·취소를 누르지 않고 그냥 닫은 경우(배경 클릭·ESC) — 결정을 미룬 것으로 본다.
+   * 로컬 클립은 그대로 두므로 다음 접속 때 목록을 읽어 레이어가 다시 뜬다.
+   */
+  function deferMigrate() {
+    setLocalPending([]);
+    setMigrateStep("offer");
+  }
+
   /** 경고에서 확인 — 이 브라우저의 클립을 전부 지운다. 되돌릴 수 없다(서버 사본 없음). */
   function discardLocal() {
     clearLocalClips();
@@ -455,6 +464,7 @@ export default function ClipsPage() {
           migrating={migrating}
           onMigrate={migrateLocal}
           onDismiss={askDiscardLocal}
+          onClose={deferMigrate}
         />
       )}
 
@@ -797,14 +807,18 @@ function MigrateLocalLayer({
   migrating,
   onMigrate,
   onDismiss,
+  onClose,
 }: {
   count: number;
   migrating: boolean;
   onMigrate: () => void;
+  /** `취소` 버튼 — 옮기지 않겠다는 의사 표시 → 삭제 확인으로 넘어간다. */
   onDismiss: () => void;
+  /** 배경 클릭·ESC — 결정을 미룬 것으로 보고 그냥 닫는다(로컬 클립 유지, 다음 접속 때 다시 뜸). */
+  onClose: () => void;
 }) {
   return (
-    <ModalShell labelledBy="migrate-title" onClose={migrating ? () => {} : onDismiss}>
+    <ModalShell labelledBy="migrate-title" onClose={migrating ? () => {} : onClose}>
       <h2 id="migrate-title" className="text-lg font-bold text-fg">
         이 기기의 클립을 옮길까요?
       </h2>
