@@ -305,6 +305,9 @@ URL마다 메타 품질이 천차만별. 아래 순서로 시도해 첫 성공�
 
 ## 9. 변경 이력
 
+- 2026-07-30: 공유 텍스트 제목 길이 제한 도입 — `lib/shareText.ts` 신설(`SHARE_TITLE_MAX=80`, 말줄임 `…`, 공백·개행을 한 칸으로 정리, `Intl.Segmenter`로 그래핌 단위 계산). 인라인으로 흩어져 있던 3곳(`app/page.tsx` 복사·게스트공유, `app/clips/page.tsx` 복사)을 공용 유틸 호출로 교체. 배경: 인스타 어댑터가 `og:title`(=캡션 전문)을 제목으로 쓰기 때문에(`lib/adapters/instagram.ts`) 공유문이 캡션 통째로 길어졌다. iOS `ClipNote/Util/ShareText.swift`가 같은 규칙·같은 상수를 구현하므로 **한쪽만 바꾸지 않는다**.
+- 2026-07-30: AdMob `public/app-ads.txt` 추가(`pub-3019917862455282`). app-ads.txt 가 없어 AdMob 앱 인증(ClipNote by pikaworks, Apple ID 6792600343)이 실패하고 광고가 게재되지 않았다. 기존 `public/ads.txt`는 퍼블리셔 ID가 다른(`pub-5655041057903258`) 웹 인벤토리용이라 그대로 둔다 — 앱 인증은 `ads.txt`를 보지 않는다.
+- 2026-07-30: `develop`이 `main`보다 21커밋 뒤처지고 2커밋 앞선 채 갈라져 있어(7/15 이후 방치) `main`을 `develop`에 머지해 최신화. `develop`에만 있던 `CLAUDE.md`·`REVIEW.md`·`.github/workflows/pr-review.yml`은 유지 — 이 3개는 `main`에 아직 없다.
 - 2026-06-18: 최초 작성. 스택 확정(Next.js+TS+Tailwind+Supabase), 리다이렉트=스마트링크, 정리=태그 방식.
 - 2026-06-18: 익명 허용 확정. 사용자 지정 제목 추가. 메타 추출 단계별 폴백 전략(8장) 추가 — 인스타·네이버 카페 등 JS렌더/로그인월 한계 명시, 수동 입력 안전망.
 - 2026-06-18: MVP 핵심 구현·검증·푸시 완료(main). 이후 작업은 `feat/*` 브랜치로 진행. GitHub Issues 는 환경상 API 차단되어 이 문서 "작업 보드"에서 추적.
