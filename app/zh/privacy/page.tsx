@@ -1,4 +1,19 @@
-// 중국어(간체) 로케일 라우트 — 구조만 먼저 세운다(plan.md 14장 3단계).
-// 문자열 사전화와 내부 링크 로컬라이즈는 다음 슬라이스에서 붙인다. 그때까지 내용은 한국어다.
-export { PENDING_TRANSLATION_METADATA as metadata } from "@/lib/i18n/pendingMetadata";
-export { default } from "@/app/privacy/page";
+import type { Metadata } from "next";
+
+import PrivacyPage from "@/app/_components/PrivacyPage";
+
+// 중국어(간체) 로케일. **본문은 한국어로 유지**하고 안내문만 이 언어로 보여준다
+// (법적 문서라 기계 번역 게시가 위험 — `PrivacyPage` 주석 참고).
+//
+// 그래서 이 경로는 번역이 채워진 뒤에도 색인 대상이 아니다. 한국어 원문 하나만 색인되면 되고,
+// `/privacy` 를 canonical 로 가리켜 중복으로 잡히는 것도 막는다.
+export const metadata: Metadata = {
+  // 본문이 한국어이므로 제목도 한국어 — 사이트 기본 제목(홈)으로 폴백하지 않게 명시한다.
+  title: "개인정보처리방침",
+  alternates: { canonical: "/privacy" },
+  robots: { index: false, follow: true },
+};
+
+export default function Page() {
+  return <PrivacyPage locale="zh" />;
+}
