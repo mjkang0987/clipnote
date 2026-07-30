@@ -54,5 +54,6 @@ export {
   isLocale,
   localizePath,
   stripLocale,
+  switchLocalePath,
 } from "./locales";
 export type { Locale } from "./locales";

@@ -63,3 +63,24 @@ export function stripLocale(path: string): { locale: Locale; path: string } {
   const remainder = rest.join("/");
   return { locale: first, path: remainder ? `/${remainder}` : "/" };
 }
+
+/**
+ * 로케일별 판본이 있는 경로. 공유 링크(`/{slug}`)는 여기에 없다 — 로케일과 무관하게
+ * 하나의 URL 을 유지하기로 했고, `/en/aB3xY9` 같은 경로는 존재하지 않는다.
+ */
+const LOCALIZED_ROUTES = ["/", "/clips", "/settings", "/login", "/privacy"];
+
+/**
+ * 언어 선택 UI 가 이동할 주소. 지금 보고 있는 화면의 같은 로케일 판본으로 보낸다.
+ *
+ *   switchLocalePath("/en/clips", "ja") → "/ja/clips"
+ *   switchLocalePath("/clips", "ko")    → "/clips"
+ *   switchLocalePath("/aB3xY9", "en")   → "/en"      (공유 링크에는 판본이 없다 → 홈)
+ *
+ * 판본이 없는 경로에서 그대로 prefix 를 붙이면 404 가 된다. 그래서 아는 경로만 유지하고
+ * 나머지는 그 언어의 홈으로 보낸다.
+ */
+export function switchLocalePath(currentPath: string, locale: Locale): string {
+  const { path } = stripLocale(currentPath);
+  return localizePath(LOCALIZED_ROUTES.includes(path) ? path : "/", locale);
+}
