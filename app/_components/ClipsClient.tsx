@@ -11,6 +11,7 @@ import {
   updateLocalClip,
   type LocalClip,
 } from "@/lib/local-clips";
+import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import Header from "@/app/_components/Header";
 
 type Item = {
@@ -41,6 +42,8 @@ export default function ClipsClient({
   /** 서버에서 목록 조회가 실패했는지 — 빈 목록과 구분해 재시도를 제안한다. */
   initialLoadFailed: boolean;
 }) {
+  // 내부 링크는 현재 로케일을 유지한다(`/en/clips` 에서 홈으로 나갈 때 `/en` 으로).
+  const path = useLocalizedPath();
   // 게스트 목록은 localStorage 라 서버에서 알 수 없다 → 마운트 후 채운다.
   const [items, setItems] = useState<Item[]>(() =>
     initialLoggedIn ? initialClips.map(dbToItem) : [],
@@ -323,7 +326,7 @@ export default function ClipsClient({
       >
         <div className="flex items-baseline justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-fg">내 클립</h1>
-          <a href="/" className="text-sm font-semibold text-brand-strong hover:underline">
+          <a href={path("/")} className="text-sm font-semibold text-brand-strong hover:underline">
             + 새 클립
           </a>
         </div>
@@ -389,7 +392,7 @@ export default function ClipsClient({
           <div className="mt-10 rounded-2xl border border-dashed border-border bg-surface p-10 text-center">
             <p className="text-sm text-fg-muted">아직 저장한 클립이 없어요.</p>
             <a
-              href="/"
+              href={path("/")}
               className="mt-3 inline-block rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong"
             >
               첫 클립 만들기

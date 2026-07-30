@@ -11,6 +11,7 @@ import { gradientCss, pickGradient } from "@/lib/gradients";
 import type { ClipMetadata } from "@/lib/metadata";
 import { buildShareText } from "@/lib/shareText";
 import type { Messages } from "@/lib/i18n";
+import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import Header from "@/app/_components/Header";
 import Brand from "@/app/_components/Brand";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -78,6 +79,8 @@ export default function HomeClient({
   initialLoggedIn: boolean;
 }) {
   const t = messages.homeActions;
+  // 본문 안내문의 내부 링크도 현재 로케일을 유지한다(`/en` 에서 한국어 페이지로 새지 않게).
+  const path = useLocalizedPath();
   // 데스크톱 등 미지원 환경에서는 공유하기 버튼을 아예 노출하지 않는다(복사하기만 남는다).
   const canShare = useCanShare();
   const [url, setUrl] = useState("");
@@ -546,7 +549,7 @@ export default function HomeClient({
               />
               <p className="text-xs leading-relaxed text-fg-muted">
                 태그를 달아두면{" "}
-                <a href="/clips" className="font-semibold text-brand-strong underline">
+                <a href={path("/clips")} className="font-semibold text-brand-strong underline">
                   내 클립
                 </a>
                 에서 같은 태그끼리 모아 볼 수 있어요. 쉼표(,)로 여러 개, 최대 6개까지요.
@@ -647,7 +650,7 @@ export default function HomeClient({
             {isLoggedIn === false && (
               <p className="text-center text-xs text-fg-muted">
                 공유 카드·짧은 링크는{" "}
-                <a href="/login" className="font-semibold text-brand-strong underline">
+                <a href={path("/login")} className="font-semibold text-brand-strong underline">
                   로그인
                 </a>
                 하면 만들어져요.
@@ -840,7 +843,7 @@ export default function HomeClient({
                 <li>· 링크를 붙여넣어 미리보기 카드를 만들 수 있어요.</li>
                 <li>
                   · 만든 카드를 이 브라우저에 저장하고{" "}
-                  <a href="/clips" className="font-semibold text-brand-strong underline">
+                  <a href={path("/clips")} className="font-semibold text-brand-strong underline">
                     내 클립
                   </a>
                   에서 다시 볼 수 있어요.

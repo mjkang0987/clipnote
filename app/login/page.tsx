@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import Header from "@/app/_components/Header";
 import Brand from "@/app/_components/Brand";
 
@@ -15,6 +16,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [lastProvider, setLastProvider] = useState<Provider | null>(null);
+  // 처리방침·게스트 링크도 현재 로케일을 유지한다.
+  const path = useLocalizedPath();
 
   // 카카오 로그인 활성화. 카카오 동의항목(이메일·닉네임·프로필) 설정 완료 후 켬.
   // Supabase 기본 scope(account_email·profile_image·profile_nickname)를 그대로 사용한다.
@@ -95,7 +98,7 @@ export default function LoginPage() {
           로그인 시 회원 식별을 위해 소셜 계정 정보(고유 식별자, 이메일, 프로필
           닉네임·이미지)가 수집되는 데 동의합니다.{" "}
           <a
-            href="/privacy"
+            href={path("/privacy")}
             target="_blank"
             rel="noreferrer"
             className="font-semibold text-brand-strong underline"
@@ -153,7 +156,7 @@ export default function LoginPage() {
       </div>
 
       <a
-        href="/"
+        href={path("/")}
         className="mt-4 flex h-12 items-center justify-center rounded-xl px-4 text-base font-semibold text-fg-muted transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40"
       >
         게스트로 계속하기

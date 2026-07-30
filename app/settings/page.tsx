@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import Header from "@/app/_components/Header";
 
 // 계정 설정 페이지: 로그인 정보 확인 · 로그아웃 · 회원 탈퇴.
@@ -10,24 +11,26 @@ export default function SettingsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  // 이동 경로도 현재 로케일을 유지한다 — `/en/settings` 에서 로그아웃하면 `/en` 으로.
+  const path = useLocalizedPath();
 
   useEffect(() => {
     // 인증 env 가 없으면(게스트 전용 빌드) 로그인 페이지로.
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-      window.location.replace("/login");
+      window.location.replace(path("/login"));
       return;
     }
     const supabase = createSupabaseBrowserClient();
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) {
         // 비로그인: 로그인 페이지로 보냄
-        window.location.replace("/login");
+        window.location.replace(path("/login"));
         return;
       }
       setUser(data.user);
       setReady(true);
     });
-  }, []);
+  }, [path]);
 
   async function signOut() {
     try {
@@ -42,7 +45,7 @@ export default function SettingsPage() {
     } catch {
       // 무시
     }
-    window.location.href = "/";
+    window.location.href = path("/");
   }
 
   if (!ready || !user) {
@@ -88,7 +91,7 @@ export default function SettingsPage() {
         {/* 개인정보처리방침 */}
         <section className="mt-1 border-t border-border py-4">
           <a
-            href="/privacy"
+            href={path("/privacy")}
             className="flex items-center justify-between text-sm font-semibold text-fg transition hover:text-brand-strong"
           >
             <span>개인정보처리방침</span>
@@ -135,7 +138,7 @@ export default function SettingsPage() {
         <WithdrawConfirmLayer
           onCancel={() => setConfirming(false)}
           onDone={() => {
-            window.location.href = "/";
+            window.location.href = path("/");
           }}
         />
       )}
