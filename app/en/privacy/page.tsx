@@ -3,5 +3,5 @@
 //
 // `app/privacy/page.tsx` 의 `metadata`(제목·설명)는 default 재export 로 따라오지 않는다.
 // 지금은 색인 제외 상태라 문제 없고, 로케일별 메타데이터는 4단계에서 한 번에 붙인다.
-export { EN_PENDING_METADATA as metadata } from "@/app/en/_pending";
+export { PENDING_TRANSLATION_METADATA as metadata } from "@/lib/i18n/pendingMetadata";
 export { default } from "@/app/privacy/page";
