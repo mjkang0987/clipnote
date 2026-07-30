@@ -22,6 +22,13 @@ import { addLocalClip, getKnownTags, recordTags } from "@/lib/local-clips";
  */
 const COARSE_POINTER = "(pointer: coarse)";
 
+// 1차 액션 버튼 스타일. 모바일에서도 좌우로 나란히 놓으므로 폭이 좁다 →
+// 글자를 한 단계 줄이고(sm 이상에서 원래 크기) 줄바꿈을 막아 라벨이 잘리지 않게 한다.
+const PRIMARY_BUTTON =
+  "h-12 flex-1 whitespace-nowrap rounded-[8px] bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:text-base";
+const SECONDARY_BUTTON =
+  "h-12 flex-1 whitespace-nowrap rounded-[8px] border border-brand bg-brand-soft px-4 text-sm font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:text-base";
+
 function subscribePointer(onStoreChange: () => void): () => void {
   if (typeof window === "undefined") return () => {};
   const query = window.matchMedia(COARSE_POINTER);
@@ -71,16 +78,18 @@ export default function HomeClient({
 
   const [creating, setCreating] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  // 결과 레이어 표시 여부. `shareUrl` 과 분리한다 — 레이어를 닫아도 링크는 남아 있어야
+  // 1차 버튼이 `링크 복사` 로 바뀔 수 있다(닫을 때 shareUrl 을 지우면 링크를 잃는다).
+  const [layerOpen, setLayerOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [guestCopied, setGuestCopied] = useState(false);
+  const [plainCopied, setPlainCopied] = useState(false);
 
   // 클립에 추가(내 클립 목록에 담기)
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
   const [alreadySaved, setAlreadySaved] = useState(false);
 
-  // 로그인 상태: null=확인중, true/false
-  // 서버 판정값으로 시작하므로 "확인 중"(null) 상태가 없다 → 자리표시 스켈레톤 불필요.
+  // 로그인 상태 — 서버 판정값으로 시작하므로 "확인 중" 구간이 없다(자리표시 스켈레톤 불필요).
   const [isLoggedIn, setIsLoggedIn] = useState(initialLoggedIn);
   const [savedLocal, setSavedLocal] = useState(false);
 
@@ -208,7 +217,10 @@ export default function HomeClient({
     if (fetchedUrlRef.current && fetchedUrlRef.current !== t) {
       fetchedUrlRef.current = null;
       setMeta(null);
+      // URL 이 바뀌면 이전 링크는 더 이상 이 입력과 맞지 않으므로 버린다 → 1차 버튼이
+      // `링크 복사` 에서 `링크 만들기` 로 되돌아간다.
       setShareUrl(null);
+      setLayerOpen(false);
       setAdded(false);
       setTitle(""); // URL 바뀌면 제목 초기화 → 새 URL 제목으로 다시 채워짐
     }
@@ -283,6 +295,7 @@ export default function HomeClient({
         return;
       }
       setShareUrl(data.shareUrl);
+      setLayerOpen(true);
       recordTags(tags);
       setKnownTags(getKnownTags());
     } catch {
@@ -365,34 +378,34 @@ export default function HomeClient({
   }
 
   // 게스트 공유/복사 텍스트 — 카드 생성 없이 스크랩된 제목 + 원본 URL.
-  function guestShareText() {
+  function plainShareText() {
     const t = title.trim() || meta?.title || "";
     return buildShareText(t, url.trim());
   }
 
-  async function handleGuestCopy() {
+  async function handlePlainCopy() {
     if (!hasInput) return;
     try {
-      await navigator.clipboard.writeText(guestShareText());
-      setGuestCopied(true);
-      setTimeout(() => setGuestCopied(false), 1500);
+      await navigator.clipboard.writeText(plainShareText());
+      setPlainCopied(true);
+      setTimeout(() => setPlainCopied(false), 1500);
     } catch {
-      setGuestCopied(false);
+      setPlainCopied(false);
     }
   }
 
-  async function handleGuestShare() {
+  async function handleNativeShare() {
     if (!hasInput) return;
     // 지원 기기: 네이티브 공유 시트. 미지원(주로 데스크톱): 복사로 폴백.
     if (navigator.share) {
       try {
-        await navigator.share({ text: guestShareText() });
+        await navigator.share({ text: plainShareText() });
       } catch {
         // 사용자 취소 등은 무시
       }
       return;
     }
-    await handleGuestCopy();
+    await handlePlainCopy();
   }
 
   // 비로그인: 이 브라우저(localStorage)에만 저장
@@ -429,7 +442,9 @@ export default function HomeClient({
         ? "만드는 중…"
         : loading
           ? "불러오는 중…"
-          : "공유 링크 만들기";
+          // "공유"를 빼서 짧게 — 링크 생성 후 바뀌는 `링크 복사` 와 어휘를 맞추고,
+          // 모바일 좌우 배치의 좁은 폭에도 들어간다. 성격 설명은 버튼 아래 안내문에서 한다.
+          : "링크 만들기";
   const primaryDisabled =
     !hasInput || creating || adding || loading;
   // '내 클립에 저장' 버튼(로그인 사용자용) 라벨·비활성
@@ -555,68 +570,76 @@ export default function HomeClient({
 
             {/* 1차 액션. 로그인 상태는 서버에서 받아 첫 렌더부터 확정이라 자리표시가 없다. */}
             {isLoggedIn ? (
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="submit"
-                  disabled={primaryDisabled}
-                  className="h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
-                >
-                  {primaryLabel}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveToClips}
-                  disabled={saveClipDisabled}
-                  className="h-12 w-full rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-1"
-                >
-                  {saveClipLabel}
-                </button>
+              // 링크 없음 → `링크 만들기` + `복사하기`(제목+원본 URL)
+              // 링크 있음 → `링크 복사`(짧은 주소) + `내 클립에 저장`
+              // 복사 버튼이 두 개 공존하지 않으므로 무엇이 복사되는지 헷갈리지 않는다.
+              <div className="flex gap-2">
+                {shareUrl ? (
+                  <button type="button" onClick={handleCopy} className={PRIMARY_BUTTON}>
+                    {copied ? "복사됨 ✓" : "링크 복사"}
+                  </button>
+                ) : (
+                  <button type="submit" disabled={primaryDisabled} className={PRIMARY_BUTTON}>
+                    {primaryLabel}
+                  </button>
+                )}
+                {shareUrl ? (
+                  <button
+                    type="button"
+                    onClick={handleSaveToClips}
+                    disabled={saveClipDisabled}
+                    className={SECONDARY_BUTTON}
+                  >
+                    {saveClipLabel}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handlePlainCopy}
+                    disabled={!hasInput}
+                    className={SECONDARY_BUTTON}
+                  >
+                    {plainCopied ? "복사됨 ✓" : "복사하기"}
+                  </button>
+                )}
               </div>
             ) : (
               // 네이티브 공유가 가능한 기기(터치)는 저장 위에 공유·복사 두 개를 한 줄로 둔다.
               // 데스크톱은 공유하기가 없으므로 저장 + 복사하기를 한 줄에 나란히 둔다
               // (로그인 상태의 2버튼 배치와 같은 모양).
-              <div
-                className={
-                  canShare ? "flex flex-col gap-2" : "flex flex-col gap-2 sm:flex-row"
-                }
-              >
-                <button
-                  type="submit"
-                  disabled={primaryDisabled}
-                  className={`h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50${
-                    canShare ? "" : " sm:flex-1"
-                  }`}
-                >
+              // 네이티브 공유가 가능한 기기(터치)만 `공유하기` 가 붙어 3개가 되므로 2줄로 나눈다.
+              // 데스크톱은 2개라 로그인 상태와 같은 한 줄 배치.
+              <div className={canShare ? "flex flex-col gap-2" : "flex gap-2"}>
+                <button type="submit" disabled={primaryDisabled} className={PRIMARY_BUTTON}>
                   {primaryLabel}
                 </button>
                 {canShare ? (
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={handleGuestShare}
+                      onClick={handleNativeShare}
                       disabled={!hasInput}
-                      className="h-12 w-full rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
+                      className={SECONDARY_BUTTON}
                     >
                       공유하기
                     </button>
                     <button
                       type="button"
-                      onClick={handleGuestCopy}
+                      onClick={handlePlainCopy}
                       disabled={!hasInput}
-                      className="h-12 w-full rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
+                      className={SECONDARY_BUTTON}
                     >
-                      {guestCopied ? "복사됨 ✓" : "복사하기"}
+                      {plainCopied ? "복사됨 ✓" : "복사하기"}
                     </button>
                   </div>
                 ) : (
                   <button
                     type="button"
-                    onClick={handleGuestCopy}
+                    onClick={handlePlainCopy}
                     disabled={!hasInput}
-                    className="h-12 w-full rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
+                    className={SECONDARY_BUTTON}
                   >
-                    {guestCopied ? "복사됨 ✓" : "복사하기"}
+                    {plainCopied ? "복사됨 ✓" : "복사하기"}
                   </button>
                 )}
               </div>
@@ -628,6 +651,16 @@ export default function HomeClient({
                   로그인
                 </a>
                 하면 만들어져요.
+              </p>
+            )}
+            {/* 버튼 이름만으로는 두 동작의 차이를 알 수 없어 한 줄로 설명한다.
+                링크를 만든 뒤에는 결과 레이어가 같은 설명을 담고 있어 반복하지 않는다. */}
+            {isLoggedIn && !shareUrl && (
+              <p className="text-center text-xs leading-relaxed text-fg-muted">
+                <strong className="font-semibold text-fg">링크 만들기</strong>는 공유 카드가
+                먼저 보이는 짧은 주소를 만들고,{" "}
+                <strong className="font-semibold text-fg">복사하기</strong>는 제목과 원본
+                주소를 복사해요.
               </p>
             )}
           </div>
@@ -919,7 +952,7 @@ export default function HomeClient({
         />
       </main>
 
-      {shareUrl && (
+      {shareUrl && layerOpen && (
         <ShareResultLayer
           url={shareUrl}
           copied={copied}
@@ -929,7 +962,9 @@ export default function HomeClient({
           saved={added}
           alreadySaved={alreadySaved}
           onClose={() => {
-            setShareUrl(null);
+            // 링크는 남긴다 — 레이어를 닫으면 1차 버튼이 `링크 복사` 로 바뀌어야 한다.
+            // (URL 을 바꾸면 그때 shareUrl 을 버려 `링크 만들기` 로 되돌아간다.)
+            setLayerOpen(false);
             setCopied(false);
           }}
         />
