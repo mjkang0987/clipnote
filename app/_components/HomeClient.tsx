@@ -10,6 +10,7 @@ import {
 import { gradientCss, pickGradient } from "@/lib/gradients";
 import type { ClipMetadata } from "@/lib/metadata";
 import { buildShareText } from "@/lib/shareText";
+import type { Messages } from "@/lib/i18n";
 import Header from "@/app/_components/Header";
 import Brand from "@/app/_components/Brand";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -69,10 +70,14 @@ function useCanShare(): boolean {
  * 화면이 밀린다(CLS). 서버가 쿠키로 먼저 판정하면 SSR 출력에 올바른 버튼이 처음부터 들어간다.
  */
 export default function HomeClient({
+  messages,
   initialLoggedIn,
 }: {
+  /** 서버에서 고른 사전 — 클라이언트 번들에 모든 언어가 실리지 않게 props 로 받는다. */
+  messages: Messages;
   initialLoggedIn: boolean;
 }) {
+  const t = messages.homeActions;
   // 데스크톱 등 미지원 환경에서는 공유하기 버튼을 아예 노출하지 않는다(복사하기만 남는다).
   const canShare = useCanShare();
   const [url, setUrl] = useState("");
@@ -444,25 +449,25 @@ export default function HomeClient({
   const primaryLabel =
     isLoggedIn === false
       ? savedLocal
-        ? "저장됨 ✓"
-        : "이 브라우저에 저장"
+        ? t.saved
+        : t.saveHere
       : creating
-        ? "만드는 중…"
+        ? t.creating
         : loading
-          ? "불러오는 중…"
+          ? t.loadingMeta
           // "공유"를 빼서 짧게 — 링크 생성 후 바뀌는 `링크 복사` 와 어휘를 맞추고,
           // 모바일 좌우 배치의 좁은 폭에도 들어간다. 성격 설명은 버튼 아래 안내문에서 한다.
-          : "링크 만들기";
+          : t.createLink;
   const primaryDisabled =
     !hasInput || creating || adding || loading;
   // '내 클립에 저장' 버튼(로그인 사용자용) 라벨·비활성
   const saveClipLabel = adding
-    ? "저장 중…"
+    ? t.saving
     : added
       ? alreadySaved
-        ? "이미 있음 ✓"
-        : "저장됨 ✓"
-      : "내 클립에 저장";
+        ? t.alreadySaved
+        : t.saved
+      : t.saveToClips;
   const saveClipDisabled = primaryDisabled || added;
 
   return (
@@ -585,7 +590,7 @@ export default function HomeClient({
                 <div className="flex gap-2">
                   {shareUrl ? (
                     <button type="button" onClick={handleCopy} className={SECONDARY_BUTTON}>
-                      {copied ? "복사됨 ✓" : "링크 복사"}
+                      {copied ? t.copied : t.copyLink}
                     </button>
                   ) : (
                     <button type="submit" disabled={primaryDisabled} className={SECONDARY_BUTTON}>
@@ -598,7 +603,7 @@ export default function HomeClient({
                     disabled={!hasInput}
                     className={SECONDARY_BUTTON}
                   >
-                    {plainCopied ? "복사됨 ✓" : "원본 복사"}
+                    {plainCopied ? t.copied : t.copyOriginal}
                   </button>
                 </div>
                 <button
@@ -622,7 +627,7 @@ export default function HomeClient({
                       disabled={!hasInput}
                       className={SECONDARY_BUTTON}
                     >
-                      공유하기
+                      {t.share}
                     </button>
                   )}
                   <button
@@ -631,7 +636,7 @@ export default function HomeClient({
                     disabled={!hasInput}
                     className={SECONDARY_BUTTON}
                   >
-                    {plainCopied ? "복사됨 ✓" : "원본 복사"}
+                    {plainCopied ? t.copied : t.copyOriginal}
                   </button>
                 </div>
                 <button type="submit" disabled={primaryDisabled} className={PRIMARY_BUTTON}>
@@ -652,21 +657,7 @@ export default function HomeClient({
                 링크를 만든 뒤에는 결과 레이어가 같은 설명을 담고 있어 반복하지 않는다. */}
             {isLoggedIn && (
               <p className="text-center text-xs leading-relaxed text-fg-muted">
-                {shareUrl ? (
-                  <>
-                    <strong className="font-semibold text-fg">링크 복사</strong>는 방금 만든
-                    짧은 주소를,{" "}
-                    <strong className="font-semibold text-fg">원본 복사</strong>는 제목과
-                    원본 주소를 복사해요.
-                  </>
-                ) : (
-                  <>
-                    <strong className="font-semibold text-fg">링크 만들기</strong>는 공유
-                    카드가 먼저 보이는 짧은 주소를 만들고,{" "}
-                    <strong className="font-semibold text-fg">원본 복사</strong>는 제목과
-                    원본 주소를 복사해요.
-                  </>
-                )}
+                {shareUrl ? t.hintAfterLink : t.hintBeforeLink}
               </p>
             )}
           </div>
