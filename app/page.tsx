@@ -21,6 +21,7 @@ export default function Home() {
   const [creating, setCreating] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [guestCopied, setGuestCopied] = useState(false);
 
   // 클립에 추가(내 클립 목록에 담기)
   const [adding, setAdding] = useState(false);
@@ -85,6 +86,10 @@ export default function Home() {
     title.trim() || meta?.title || (url ? prettyHost(url) : "여기에 제목이 표시됩니다");
   const description = meta?.description ?? null;
   const image = meta?.image ?? null;
+
+  // 미리보기 썸네일은 원본 이미지를 브라우저가 직접 부르면 hotlink/referer·혼합콘텐츠로
+  // 자주 막히므로, 우리 서버 프록시(/api/image)를 거쳐 불러온다.
+  const proxiedImage = image ? `/api/image?url=${encodeURIComponent(image)}` : null;
 
   const seed = title.trim() || meta?.title || url || "clipnote";
   const gradient = useMemo(() => pickGradient(seed), [seed]);
@@ -290,13 +295,47 @@ export default function Home() {
 
   async function handleCopy() {
     if (!shareUrl) return;
+    // 제목 + 링크만 복사(빈 값은 줄에서 제외). 설명은 길어서 제외.
+    const copyTitle = title.trim() || meta?.title || "";
+    const text = [copyTitle, shareUrl].filter(Boolean).join("\n");
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
       setCopied(false);
     }
+  }
+
+  // 게스트 공유/복사 텍스트 — 카드 생성 없이 스크랩된 제목 + 원본 URL.
+  function guestShareText() {
+    const t = title.trim() || meta?.title || "";
+    return [t, url.trim()].filter(Boolean).join("\n");
+  }
+
+  async function handleGuestCopy() {
+    if (!hasInput) return;
+    try {
+      await navigator.clipboard.writeText(guestShareText());
+      setGuestCopied(true);
+      setTimeout(() => setGuestCopied(false), 1500);
+    } catch {
+      setGuestCopied(false);
+    }
+  }
+
+  async function handleGuestShare() {
+    if (!hasInput) return;
+    // 지원 기기: 네이티브 공유 시트. 미지원(주로 데스크톱): 복사로 폴백.
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: guestShareText() });
+      } catch {
+        // 사용자 취소 등은 무시
+      }
+      return;
+    }
+    await handleGuestCopy();
   }
 
   // 비로그인: 이 브라우저(localStorage)에만 저장
@@ -353,10 +392,10 @@ export default function Home() {
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3 sm:px-5 sm:py-8">
         <section className="py-4 text-center sm:py-8">
           <h1 className="text-2xl font-bold leading-tight tracking-tight text-fg sm:text-3xl">
-            붙여넣기 한 번, <span className="text-brand">클릭을 부르는 공유 카드</span>
+            밋밋한 링크를 <span className="text-brand">카드 한 장으로</span>
           </h1>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-muted sm:text-base">
-            밋밋한 링크 대신 제목·대표 이미지가 담긴 카드와 짧은 링크를 한 번에. 카카오톡·SNS에서 확 눈에 띄어요.
+            제목·대표 이미지가 담긴 카드와 짧은 링크를 한 번에. 카카오톡·SNS에서 깔끔하게 보여요.
           </p>
         </section>
 
@@ -376,7 +415,7 @@ export default function Home() {
                 type="url"
                 required
                 inputMode="url"
-                placeholder="https://example.com/article"
+                placeholder="공유할 링크 붙여넣기"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 onPaste={handleUrlPaste}
@@ -483,21 +522,41 @@ export default function Home() {
                 </button>
               </div>
             ) : (
-              <button
-                type="submit"
-                disabled={primaryDisabled}
-                className="h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {primaryLabel}
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="submit"
+                  disabled={primaryDisabled}
+                  className="h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {primaryLabel}
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleGuestShare}
+                    disabled={!hasInput}
+                    className="h-12 w-full rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
+                  >
+                    공유하기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGuestCopy}
+                    disabled={!hasInput}
+                    className="h-12 w-full rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
+                  >
+                    {guestCopied ? "복사됨 ✓" : "복사하기"}
+                  </button>
+                </div>
+              </div>
             )}
             {isLoggedIn === false && (
               <p className="text-center text-xs text-fg-muted">
-                짧은 공유 링크를 만들려면{" "}
+                공유 카드·짧은 링크는{" "}
                 <a href="/login" className="font-semibold text-brand-strong underline">
                   로그인
                 </a>
-                하세요.
+                하면 만들어져요.
               </p>
             )}
           </div>
@@ -543,64 +602,82 @@ export default function Home() {
               className="relative flex aspect-[1200/630] w-full flex-col justify-end"
               style={{ background: gradientCss(gradient), padding: "6cqw" }}
             >
-              {/* 하단 가독성 스크림 (실제 OG 와 동일) */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%]"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.28))",
-                }}
-              />
-              {meta?.siteName && (
-                <p
-                  className="relative truncate font-bold uppercase"
-                  style={{
-                    fontSize: "2.17cqw",
-                    letterSpacing: "0.17cqw",
-                    color: "rgba(255,255,255,0.92)",
+              {/* 원본 대표 이미지가 있으면 배경으로 깔고, 로드 실패 시 숨겨 그라디언트가 보이게 함 */}
+              {proxiedImage && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={proxiedImage}
+                  alt=""
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
                   }}
-                >
-                  {meta.siteName}
-                </p>
+                />
               )}
-              <p
-                className="relative line-clamp-3 font-bold text-white"
-                style={{
-                  fontSize: effectiveTitle.length > 40 ? "5cqw" : "6cqw",
-                  lineHeight: 1.15,
-                  marginTop: "1.5cqw",
-                }}
-              >
-                {effectiveTitle}
-              </p>
-              {description && (
-                <p
-                  className="relative line-clamp-2"
-                  style={{
-                    fontSize: "2.5cqw",
-                    lineHeight: 1.4,
-                    marginTop: "1.83cqw",
-                    color: "rgba(255,255,255,0.9)",
-                  }}
-                >
-                  {description}
-                </p>
+              {/* 원본 이미지가 있으면 실제 공유 시 그 이미지가 그대로 뜬다(ClipNote 텍스트 오버레이 없음).
+                  이미지 위 텍스트는 가독성이 떨어지므로 이미지가 없을 때만 스크림·텍스트를 그린다. */}
+              {!image && (
+                <>
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%]"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.28))",
+                    }}
+                  />
+                  {meta?.siteName && (
+                    <p
+                      className="relative truncate font-bold uppercase"
+                      style={{
+                        fontSize: "2.17cqw",
+                        letterSpacing: "0.17cqw",
+                        color: "rgba(255,255,255,0.92)",
+                      }}
+                    >
+                      {meta.siteName}
+                    </p>
+                  )}
+                  <p
+                    className="relative line-clamp-3 font-bold text-white"
+                    style={{
+                      fontSize: effectiveTitle.length > 40 ? "5cqw" : "6cqw",
+                      lineHeight: 1.15,
+                      marginTop: "1.5cqw",
+                    }}
+                  >
+                    {effectiveTitle}
+                  </p>
+                  {description && (
+                    <p
+                      className="relative line-clamp-2"
+                      style={{
+                        fontSize: "2.5cqw",
+                        lineHeight: 1.4,
+                        marginTop: "1.83cqw",
+                        color: "rgba(255,255,255,0.9)",
+                      }}
+                    >
+                      {description}
+                    </p>
+                  )}
+                  <p
+                    className="relative font-bold"
+                    style={{
+                      fontSize: "2cqw",
+                      marginTop: "2.5cqw",
+                      color: "rgba(255,255,255,0.95)",
+                    }}
+                  >
+                    ClipNote
+                  </p>
+                </>
               )}
-              <p
-                className="relative font-bold"
-                style={{
-                  fontSize: "2cqw",
-                  marginTop: "2.5cqw",
-                  color: "rgba(255,255,255,0.95)",
-                }}
-              >
-                ClipNote
-              </p>
             </div>
           </div>
           <p className="mt-1.5 text-xs text-fg-muted">
-            실제 공유 시 떠는 이미지예요. 배경색은 제목에 따라 자동으로 정해져요.
+            실제 공유 시 뜨는 이미지예요. 원본 대표 이미지가 있으면 배경으로 쓰고, 없으면 제목에 맞춰 만든 그라디언트로 채워져요.
           </p>
         </section>
 
@@ -616,11 +693,11 @@ export default function Home() {
               style={{ background: gradientCss(gradient) }}
               aria-hidden
             >
-              {image && (
+              {proxiedImage && (
                 // 원본 대표 이미지 = 목록 썸네일. 로드 실패 시 그라디언트가 보임.
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={image}
+                  src={proxiedImage}
                   alt=""
                   className="h-full w-full object-cover"
                   onError={(e) => {
@@ -695,7 +772,7 @@ export default function Home() {
           <ol className="mt-3 flex flex-col gap-2 leading-relaxed text-fg-muted">
             <li>1. 공유할 URL을 붙여넣어요. 붙여넣기만 하면 끝이에요.</li>
             <li>2. 제목·설명·대표 이미지를 자동으로 읽어와 카드를 완성해요.</li>
-            <li>3. 로그인하면 짧은 공유 링크까지 — 어디에 올려도 예쁜 카드로 떠요.</li>
+            <li>3. 로그인하면 짧은 공유 링크까지 — 어디에 올려도 깔끔한 카드로 떠요.</li>
           </ol>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -716,7 +793,7 @@ export default function Home() {
                 <li>
                   · <strong className="font-semibold text-brand-strong">짧은 공유 링크</strong>로 카카오톡·SNS에 바로 보낼 수 있어요.
                 </li>
-                <li>· 공유한 링크가 클릭을 부르는 미리보기 카드로 떠요.</li>
+                <li>· 공유한 링크가 제목·이미지가 담긴 미리보기 카드로 떠요.</li>
                 <li>
                   · 클립이 계정에 쌓여 <strong className="font-semibold text-brand-strong">어느 기기에서나</strong> 그대로 보이고, 태그로 깔끔하게 정리돼요.
                 </li>
@@ -754,7 +831,7 @@ export default function Home() {
             <div>
               <dt className="font-semibold text-fg">공유 링크를 열면 어떻게 되나요?</dt>
               <dd className="mt-1 leading-relaxed text-fg-muted">
-                클릭하면 예쁜 미리보기 카드가 잠깐 보였다가, 원본 페이지로 자연스럽게 넘어가요.
+                클릭하면 미리보기 카드가 잠깐 보였다가, 원본 페이지로 자연스럽게 넘어가요.
               </dd>
             </div>
             <div>
@@ -770,16 +847,6 @@ export default function Home() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
         />
       </main>
-
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-5 py-5 text-center text-xs text-fg-muted sm:py-6">
-          <span>© 2026 PIKAWORKS</span>
-          <span aria-hidden>·</span>
-          <a href="/privacy" className="font-semibold hover:text-fg">
-            개인정보처리방침
-          </a>
-        </div>
-      </footer>
 
       {shareUrl && (
         <ShareResultLayer
@@ -1006,7 +1073,7 @@ const faqJsonLd = {
       name: "공유 링크를 열면 어떻게 되나요?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "클릭하면 예쁜 미리보기 카드가 잠깐 보였다가, 원본 페이지로 자연스럽게 넘어가요.",
+        text: "클릭하면 미리보기 카드가 잠깐 보였다가, 원본 페이지로 자연스럽게 넘어가요.",
       },
     },
     {

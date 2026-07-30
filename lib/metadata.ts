@@ -40,6 +40,22 @@ const BROWSER_UA =
 const CRAWLER_UA =
   "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
 
+// 봇/챌린지 차단 페이지(Cloudflare 등) 감지. 이런 페이지는 <title>이 있어 파싱이 성공처럼
+// 보이지만 실제 콘텐츠가 아니다 → 크롤러 UA로 재시도하고, 그래도 막히면 안내로 처리한다.
+const BLOCK_TITLE_MARKERS = [
+  "attention required",
+  "just a moment",
+  "checking your browser",
+  "access denied",
+  "403 forbidden",
+  "enable javascript and cookies",
+  "verify you are human",
+];
+function looksBlocked(m: ClipMetadata): boolean {
+  const t = (m.title ?? "").toLowerCase();
+  return BLOCK_TITLE_MARKERS.some((k) => t.includes(k));
+}
+
 /** 사용자가 스킴 없이 입력해도 https 로 보정. */
 export function normalizeUrl(raw: string): string {
   const trimmed = raw.trim();
@@ -115,11 +131,20 @@ export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
   // 1) 일반 브라우저 UA 로 받아 파싱.
   let result = await fetchAndParse(url, BROWSER_UA);
 
-  // 2) 메타를 못 얻으면(로그인 벽/JS 로 그리는 페이지 추정) 크롤러 UA 로 한 번 더.
-  //    공유 미리보기용 OG 를 서버에서 내려주는 사이트를 노리는 폴백.
-  if (result.source === "none") {
+  // 2) 메타를 못 얻거나(로그인 벽/JS 렌더) 봇 차단 페이지(Cloudflare 등)면 크롤러 UA 로 한 번 더.
+  //    다수 사이트가 facebookexternalhit 등 공유 크롤러에는 OG 를 열어준다.
+  if (result.source === "none" || looksBlocked(result)) {
     const crawled = await fetchAndParse(url, CRAWLER_UA);
-    if (crawled.source !== "none") result = crawled;
+    if (crawled.source !== "none" && !looksBlocked(crawled)) result = crawled;
+  }
+
+  // 3) 그래도 봇 차단 페이지 제목이면(예: "Attention Required! | Cloudflare")
+  //    그 제목을 클립 제목으로 쓰지 않도록 비우고 안내한다.
+  if (looksBlocked(result)) {
+    result = blank(
+      result.url,
+      "이 사이트가 봇 접근을 막아 내용을 읽지 못했어요. 제목을 직접 입력해 주세요.",
+    );
   }
 
   // 원본이 og:image 를 선언만 해두고 실제 파일은 404 인 경우가 흔하다.

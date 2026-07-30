@@ -254,5 +254,16 @@ export function createSupabaseStore(): ClipStore {
       if (error) throw new Error(`클립 삭제 실패: ${error.message}`);
       return (data?.length ?? 0) > 0;
     },
+
+    async removeAllByUser(userId: string): Promise<number> {
+      const supabase = getSupabaseAdmin();
+      const { data, error } = await supabase
+        .from(TABLE)
+        .delete()
+        .eq("user_id", userId)
+        .select("slug");
+      if (error) throw new Error(`클립 일괄 삭제 실패: ${error.message}`);
+      return data?.length ?? 0;
+    },
   };
 }

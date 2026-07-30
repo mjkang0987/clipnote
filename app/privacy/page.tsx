@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 // ── 운영자 정보 ──────────────────────────────────
 const CONTACT_EMAIL = "pikaworks.help@gmail.com";
 const PRIVACY_OFFICER = "pikaworks 운영자";
-const EFFECTIVE_DATE = "2026년 6월 19일";
+const EFFECTIVE_DATE = "2026년 7월 10일";
 
 export default function PrivacyPage() {
   return (
@@ -42,9 +42,13 @@ export default function PrivacyPage() {
             <li>선택: 프로필 닉네임, 프로필 이미지(공급자가 제공하는 경우)</li>
             <li>
               자동 생성: 서비스 이용 과정에서 만들어지는 클립 정보(저장한 URL,
-              제목, 태그 등)와 로그인 유지를 위한 쿠키
+              제목, 태그 등)와 로그인 유지를 위한 세션 정보
             </li>
           </ul>
+          <p className="mt-3">
+            비로그인 상태로 이용하는 경우, 저장한 클립과 태그는 서버로 전송되지
+            않고 이용자의 기기 내 저장소에만 보관됩니다.
+          </p>
         </Section>
 
         <Section title="2. 개인정보의 수집·이용 목적">
@@ -57,9 +61,10 @@ export default function PrivacyPage() {
 
         <Section title="3. 보유 및 이용 기간">
           <p>
-            수집한 개인정보는 회원 탈퇴 시까지 보유하며, 탈퇴 요청 시 지체 없이
-            파기합니다. 다만 관계 법령에 따라 보존이 필요한 경우 해당 기간 동안
-            보관합니다.
+            수집한 개인정보는 회원 탈퇴 시까지 보유합니다. 이용자는 서비스 내
+            설정 화면의 회원 탈퇴 기능으로 직접 탈퇴할 수 있으며, 탈퇴 시 저장한
+            모든 클립과 계정 정보가 즉시 영구 삭제되어 복구할 수 없습니다. 다만
+            관계 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관합니다.
           </p>
         </Section>
 
@@ -108,8 +113,9 @@ export default function PrivacyPage() {
           <p>
             이용자는 언제든지 자신의 개인정보에 대해 열람·정정·삭제·처리정지를
             요청할 수 있습니다. 요청은 아래 연락처로 문의해 주시면 지체 없이
-            조치합니다. 서비스 내 로그아웃·클립 삭제 기능으로도 직접 처리할 수
-            있습니다.
+            조치합니다. 서비스 내 로그아웃·클립 삭제 기능으로 직접 처리할 수
+            있으며, 설정 화면의 회원 탈퇴 기능으로 계정과 저장한 모든 데이터를
+            직접 영구 삭제할 수 있습니다.
           </p>
         </Section>
 
@@ -120,11 +126,12 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
-        <Section title="8. 쿠키 사용">
+        <Section title="8. 세션 정보 및 로컬 저장소">
           <p>
-            서비스는 로그인 상태 유지를 위해 세션 쿠키를 사용합니다. 이용자는
-            브라우저 설정에서 쿠키 저장을 거부할 수 있으나, 이 경우 로그인이
-            제한될 수 있습니다.
+            서비스는 로그인 상태 유지를 위해 세션 정보를 이용자의 기기 내
+            저장소(웹은 세션 쿠키, 앱은 로컬 저장소)에 보관합니다. 이 정보는
+            로그아웃하거나 앱을 삭제할 때 제거됩니다. 웹 이용 시 브라우저 설정에서
+            쿠키 저장을 거부할 수 있으나, 이 경우 로그인이 제한될 수 있습니다.
           </p>
         </Section>
 
@@ -157,15 +164,6 @@ export default function PrivacyPage() {
           ※ 본 방침은 시행일 기준 내용이며, 변경 시 서비스 화면에 공지합니다.
         </p>
       </main>
-
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-6 text-xs text-fg-muted">
-          <span>© 2026 PIKAWORKS</span>
-          <a href="/" className="font-semibold hover:text-fg">
-            홈으로
-          </a>
-        </div>
-      </footer>
     </div>
   );
 }

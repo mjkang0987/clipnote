@@ -6,7 +6,7 @@ export const SITE_URL = (
 
 export const SITE_NAME = "ClipNote";
 export const SITE_DESCRIPTION =
-  "URL을 입력하면 제목·설명을 자동으로 읽어와 예쁜 공유 카드와 짧은 링크를 만들어 드려요. 네이버 카페·인스타그램도 지원합니다.";
+  "URL을 입력하면 제목·설명을 자동으로 읽어와 깔끔한 공유 카드와 짧은 링크를 만들어 드려요. 네이버 카페·인스타그램도 지원합니다.";
 
 /** OG 이미지 URL (동적 생성). 상대경로 — metadataBase 기준으로 절대화됨. */
 export function ogImagePath(params: {

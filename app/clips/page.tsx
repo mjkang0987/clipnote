@@ -554,10 +554,16 @@ function ClipCard({
   // 선택 모드는 공유 슬러그가 있는 로그인 클립만 대상
   const selectable = selectMode && Boolean(item.slug);
 
+  // 복사 텍스트: 제목 + 링크(빈 값은 줄에서 제외). 설명은 길어서 제외.
+  function shareText() {
+    const url = `${window.location.origin}/${item.slug}`;
+    return [item.title, url].filter(Boolean).join("\n");
+  }
+
   async function copyShare() {
     if (!item.slug) return;
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/${item.slug}`);
+      await navigator.clipboard.writeText(shareText());
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -577,9 +583,7 @@ function ClipCard({
       });
       if (!res.ok) return;
       onShareMade();
-      await navigator.clipboard
-        .writeText(`${window.location.origin}/${item.slug}`)
-        .catch(() => {});
+      await navigator.clipboard.writeText(shareText()).catch(() => {});
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

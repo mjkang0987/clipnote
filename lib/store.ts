@@ -46,6 +46,8 @@ export interface ClipStore {
   update(slug: string, userId: string, patch: ClipPatch): Promise<Clip | null>;
   /** 본인 클립 삭제. 대상이 없거나 소유자가 아니면 false. */
   remove(slug: string, userId: string): Promise<boolean>;
+  /** 회원 탈퇴: 해당 사용자의 모든 클립 삭제. 삭제한 개수를 반환. */
+  removeAllByUser(userId: string): Promise<number>;
 }
 
 function createMemoryStore(): ClipStore {
@@ -121,6 +123,14 @@ function createMemoryStore(): ClipStore {
       const clip = clips.get(slug);
       if (!clip || clip.userId !== userId) return false;
       return clips.delete(slug);
+    },
+
+    async removeAllByUser(userId) {
+      let removed = 0;
+      for (const [slug, clip] of clips) {
+        if (clip.userId === userId && clips.delete(slug)) removed += 1;
+      }
+      return removed;
     },
   };
 }
