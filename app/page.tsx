@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { gradientCss, pickGradient } from "@/lib/gradients";
 import type { ClipMetadata } from "@/lib/metadata";
 import { buildShareText } from "@/lib/shareText";
@@ -9,7 +15,27 @@ import Brand from "@/app/_components/Brand";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { addLocalClip, getKnownTags, recordTags } from "@/lib/local-clips";
 
+/** Web Share API 지원 여부는 런타임 중 변하지 않으므로 구독은 no-op. */
+const noopSubscribe = () => () => {};
+
+/**
+ * 네이티브 공유 시트를 쓸 수 있는 환경인지.
+ *
+ * 서버에는 `navigator` 가 없어 렌더 중에 읽으면 하이드레이션이 어긋난다. 서버 스냅샷을
+ * `false` 로 두고 클라이언트에서만 실제 값을 읽는다(`useSyncExternalStore` — 효과 안에서
+ * setState 하지 않아도 되고 하이드레이션도 안전하다).
+ */
+function useCanShare(): boolean {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => typeof navigator !== "undefined" && typeof navigator.share === "function",
+    () => false,
+  );
+}
+
 export default function Home() {
+  // 데스크톱 등 미지원 환경에서는 공유하기 버튼을 아예 노출하지 않는다(복사하기만 남는다).
+  const canShare = useCanShare();
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [tagInput, setTagInput] = useState("");
@@ -533,14 +559,18 @@ export default function Home() {
                   {primaryLabel}
                 </button>
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleGuestShare}
-                    disabled={!hasInput}
-                    className="h-12 w-full rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
-                  >
-                    공유하기
-                  </button>
+                  {/* 네이티브 공유 시트가 없는 환경(주로 데스크톱)에서는 숨긴다 — 눌러도
+                      복사로 폴백될 뿐이라 복사하기와 구분이 안 된다. */}
+                  {canShare && (
+                    <button
+                      type="button"
+                      onClick={handleGuestShare}
+                      disabled={!hasInput}
+                      className="h-12 w-full rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
+                    >
+                      공유하기
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={handleGuestCopy}
