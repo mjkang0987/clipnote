@@ -16,6 +16,7 @@ import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
 import Brand from "@/app/_components/Brand";
+import CompareBoxes from "@/app/_components/CompareBoxes";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { addLocalClip, getKnownTags, recordTags } from "@/lib/local-clips";
 
@@ -91,8 +92,6 @@ export default function HomeClient({
   const c = messages.common;
   const a = messages.about;
   const f = messages.faq;
-  // 로그인/게스트 비교는 `/login` 과 같은 사전을 쓴다(표시 순서만 화면이 정한다).
-  const cmp = messages.compare;
   // FAQ 는 화면과 JSON-LD 가 같은 배열을 쓴다(문구가 어긋나지 않게).
   const faqs = useMemo(() => faqItems(messages), [messages]);
   // 본문 안내문의 내부 링크도 현재 로케일을 유지한다(`/en` 에서 한국어 페이지로 새지 않게).
@@ -958,58 +957,11 @@ export default function HomeClient({
             </li>
           </ol>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-border bg-surface p-4">
-              <p className="text-sm font-semibold text-fg">{cmp.guestTitle}</p>
-              <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-                <li>· {cmp.guestItem1}</li>
-                <li>· {interpolate(cmp.guestItem2, { clips: c.myClips })}</li>
-                <li>
-                  ·{" "}
-                  {interpolateNode(cmp.guestItem3, {
-                    device: (
-                      <strong className="font-semibold text-fg">
-                        {cmp.guestItem3Device}
-                      </strong>
-                    ),
-                    noLink: (
-                      <strong className="font-semibold text-fg">
-                        {cmp.guestItem3NoLink}
-                      </strong>
-                    ),
-                  })}
-                </li>
-              </ul>
-            </div>
-            <div className="rounded-xl border border-brand/30 bg-brand-soft p-4">
-              <p className="text-sm font-semibold text-brand-strong">
-                {cmp.signedInTitle}
-              </p>
-              <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-                <li>
-                  ·{" "}
-                  {interpolateNode(cmp.signedInItem1, {
-                    emphasis: (
-                      <strong className="font-semibold text-brand-strong">
-                        {cmp.signedInItem1Emphasis}
-                      </strong>
-                    ),
-                  })}
-                </li>
-                <li>· {cmp.signedInItem2}</li>
-                <li>
-                  ·{" "}
-                  {interpolateNode(cmp.signedInItem3, {
-                    emphasis: (
-                      <strong className="font-semibold text-brand-strong">
-                        {cmp.signedInItem3Emphasis}
-                      </strong>
-                    ),
-                  })}
-                </li>
-              </ul>
-            </div>
-          </div>
+          {/* 로그인/게스트 비교 — `/login` 과 같은 컴포넌트·같은 문구를 쓴다. */}
+          <CompareBoxes
+            messages={messages}
+            className="mt-5 grid gap-3 sm:grid-cols-2"
+          />
 
           <h2 className="mt-8 text-xl font-bold text-fg sm:mt-10">{f.title}</h2>
           {/* 질문·답변은 `faqItems()` 하나에서 나온다 — 아래 JSON-LD 도 같은 값을 쓴다. */}

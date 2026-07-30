@@ -10,6 +10,7 @@ import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import Header from "@/app/_components/Header";
 import Brand from "@/app/_components/Brand";
+import CompareBoxes from "@/app/_components/CompareBoxes";
 
 type Provider = "google" | "kakao" | "naver";
 
@@ -19,8 +20,6 @@ const LAST_PROVIDER_KEY = "clipnote:last-login-provider";
 // 사전은 서버(`LoginPage`)에서 골라 받는다.
 export default function LoginClient({ messages }: { messages: LoginMessages }) {
   const t = messages.login;
-  // 로그인/게스트 비교는 홈 소개와 같은 사전을 쓴다(표시 순서만 이 화면이 정한다).
-  const cmp = messages.compare;
   const [loading, setLoading] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
@@ -182,66 +181,11 @@ export default function LoginClient({ messages }: { messages: LoginMessages }) {
             {t.compareTitle}
           </h2>
 
-          <div className="mt-4 flex flex-col gap-3">
-            {/* 로그인 하면 (메인 '이렇게 동작해요'와 동일 텍스트·강조) */}
-            <div className="rounded-xl border border-brand/30 bg-brand-soft p-4">
-              <p className="text-sm font-semibold text-brand-strong">
-                {cmp.signedInTitle}
-              </p>
-              <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-                <li>
-                  ·{" "}
-                  {interpolateNode(cmp.signedInItem1, {
-                    emphasis: (
-                      <strong className="font-semibold text-brand-strong">
-                        {cmp.signedInItem1Emphasis}
-                      </strong>
-                    ),
-                  })}
-                </li>
-                <li>· {cmp.signedInItem2}</li>
-                <li>
-                  ·{" "}
-                  {interpolateNode(cmp.signedInItem3, {
-                    emphasis: (
-                      <strong className="font-semibold text-brand-strong">
-                        {cmp.signedInItem3Emphasis}
-                      </strong>
-                    ),
-                  })}
-                </li>
-              </ul>
-            </div>
-
-            {/* 로그인 안 해도 (게스트) */}
-            <div className="rounded-xl border border-border bg-surface p-4">
-              <p className="text-sm font-semibold text-fg">{cmp.guestTitle}</p>
-              <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-                <li>· {cmp.guestItem1}</li>
-                <li>
-                  ·{" "}
-                  {interpolate(cmp.guestItem2, {
-                    clips: messages.common.myClips,
-                  })}
-                </li>
-                <li>
-                  ·{" "}
-                  {interpolateNode(cmp.guestItem3, {
-                    device: (
-                      <strong className="font-semibold text-fg">
-                        {cmp.guestItem3Device}
-                      </strong>
-                    ),
-                    noLink: (
-                      <strong className="font-semibold text-fg">
-                        {cmp.guestItem3NoLink}
-                      </strong>
-                    ),
-                  })}
-                </li>
-              </ul>
-            </div>
-          </div>
+          {/* 홈 소개와 같은 컴포넌트·같은 문구. 여기서는 max-w-sm 이라 1열로 쌓는다. */}
+          <CompareBoxes
+            messages={messages}
+            className="mt-4 flex flex-col gap-3"
+          />
         </section>
       </main>
     </div>
