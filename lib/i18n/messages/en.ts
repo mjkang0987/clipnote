@@ -263,6 +263,14 @@ const en: PartialMessages = {
     a6: "Yes, it's free to use.",
   },
 
+  meta: {
+    siteTitle: "ClipNote — turn any URL into a clean share card",
+    siteDescription:
+      "Paste a URL and ClipNote reads the title and description automatically, then builds a clean share card and a short link. Naver Cafe and Instagram links work too.",
+    ogTitle: "Turn any URL into a clean share card",
+    ogDescription: "One link becomes a share card and a short URL",
+  },
+
   language: {
     label: "Language",
     koreanOnlyNotice: "This document is provided in Korean only.",

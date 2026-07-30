@@ -266,6 +266,14 @@ const ja: PartialMessages = {
     a6: "はい、無料でご利用いただけます。",
   },
 
+  meta: {
+    siteTitle: "ClipNote — URLをきれいな共有カードに",
+    siteDescription:
+      "URLを入力するとタイトルと説明を自動で読み取り、きれいな共有カードと短いリンクを作ります。ネイバーカフェやInstagramのリンクにも対応します。",
+    ogTitle: "URLをきれいな共有カードに",
+    ogDescription: "リンク1つで共有カードと短いURLを作成",
+  },
+
   language: {
     label: "言語",
     koreanOnlyNotice: "この文書は韓国語でのみ提供されます。",

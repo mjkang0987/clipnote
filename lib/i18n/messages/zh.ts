@@ -254,6 +254,14 @@ const zh: PartialMessages = {
     a6: "是的，可以免费使用。",
   },
 
+  meta: {
+    siteTitle: "ClipNote — 把网址变成清爽的分享卡片",
+    siteDescription:
+      "输入网址后会自动读取标题和说明，生成清爽的分享卡片和短链接。Naver Cafe 和 Instagram 的链接也支持。",
+    ogTitle: "把网址变成清爽的分享卡片",
+    ogDescription: "一个链接就能生成分享卡片和短网址",
+  },
+
   language: {
     label: "语言",
     koreanOnlyNotice: "本文件仅提供韩文版本。",
