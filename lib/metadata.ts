@@ -56,6 +56,22 @@ function looksBlocked(m: ClipMetadata): boolean {
   return BLOCK_TITLE_MARKERS.some((k) => t.includes(k));
 }
 
+// 메타 출처의 신뢰도 순위. 높을수록 실제 콘텐츠에 가깝다.
+// `html`(문서 <title> 만 건짐)은 SPA 껍데기에서도 나오기 때문에 "성공"으로 취급하면 안 된다 —
+// 예: 네이버 게임 라운지는 일반 UA 에 껍데기+범용 <title> 을 주고, og 는 공유 크롤러 UA 에만 준다.
+const SOURCE_RANK: Record<ClipMetadata["source"], number> = {
+  none: 0,
+  html: 1,
+  embedded: 2,
+  og: 3,
+  adapter: 4,
+};
+
+/** 문서 <title> 이하로만 건진 약한 결과인지 — 크롤러 UA 재시도 대상. */
+function isWeak(m: ClipMetadata): boolean {
+  return SOURCE_RANK[m.source] <= SOURCE_RANK.html;
+}
+
 /** 사용자가 스킴 없이 입력해도 https 로 보정. */
 export function normalizeUrl(raw: string): string {
   const trimmed = raw.trim();
@@ -133,9 +149,12 @@ export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
 
   // 2) 메타를 못 얻거나(로그인 벽/JS 렌더) 봇 차단 페이지(Cloudflare 등)면 크롤러 UA 로 한 번 더.
   //    다수 사이트가 facebookexternalhit 등 공유 크롤러에는 OG 를 열어준다.
-  if (result.source === "none" || looksBlocked(result)) {
+  if (isWeak(result) || looksBlocked(result)) {
     const crawled = await fetchAndParse(url, CRAWLER_UA);
-    if (crawled.source !== "none" && !looksBlocked(crawled)) result = crawled;
+    // 더 강한 출처일 때만 교체한다 — 재시도가 결과를 떨어뜨리지 않도록.
+    if (!looksBlocked(crawled) && SOURCE_RANK[crawled.source] > SOURCE_RANK[result.source]) {
+      result = crawled;
+    }
   }
 
   // 3) 그래도 봇 차단 페이지 제목이면(예: "Attention Required! | Cloudflare")
