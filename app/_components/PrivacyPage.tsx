@@ -19,7 +19,7 @@ export default function PrivacyPage({ locale }: { locale: Locale }) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <Header />
+      <Header messages={messages} />
 
       {/* 본문이 한국어이므로 로케일과 무관하게 lang="ko" — 스크린리더가 한국어로 읽고,
           번역 도구도 이 영역을 한국어로 인식한다. 안내문만 방문자 언어로 표시한다. */}

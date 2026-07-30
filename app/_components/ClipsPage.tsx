@@ -40,6 +40,7 @@ export default async function ClipsPage({ locale }: { locale: Locale }) {
     // 사전은 서버에서 골라 props 로 내린다 — 클라이언트 번들에 모든 언어가 실리지 않는다.
     <ClipsClient
       messages={getMessages(locale)}
+      locale={locale}
       initialLoggedIn={initialLoggedIn}
       initialClips={initialClips}
       initialLoadFailed={initialLoadFailed}

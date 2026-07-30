@@ -478,7 +478,7 @@ export default function HomeClient({
 
   return (
     <div className="flex flex-1 flex-col">
-      <Header />
+      <Header messages={messages} />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3 sm:px-5 sm:py-8">
         <section className="py-4 text-center sm:py-8">

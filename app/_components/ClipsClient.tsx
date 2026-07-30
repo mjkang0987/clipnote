@@ -12,7 +12,7 @@ import {
   type LocalClip,
 } from "@/lib/local-clips";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
-import type { Messages } from "@/lib/i18n";
+import { LOCALE_TAGS, type Locale, type Messages } from "@/lib/i18n";
 import { interpolate } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
 
@@ -36,12 +36,15 @@ type Item = {
  */
 export default function ClipsClient({
   messages,
+  locale,
   initialLoggedIn,
   initialClips,
   initialLoadFailed,
 }: {
   /** 서버에서 고른 사전 — 클라이언트 번들에 모든 언어가 실리지 않게 props 로 받는다. */
   messages: Messages;
+  /** 날짜 그룹 라벨을 `Intl` 로 만들 때 쓴다(사전에 넣지 않는다 — 아래 dateGroupLabel 주석). */
+  locale: Locale;
   initialLoggedIn: boolean;
   initialClips: Clip[];
   /** 서버에서 목록 조회가 실패했는지 — 빈 목록과 구분해 재시도를 제안한다. */
@@ -110,7 +113,7 @@ export default function ClipsClient({
     [items, activeTag],
   );
 
-  const groups = useMemo(() => groupByDate(filtered), [filtered]);
+  const groups = useMemo(() => groupByDate(filtered, locale), [filtered, locale]);
 
   async function confirmDelete() {
     const target = pendingDelete;
@@ -324,7 +327,7 @@ export default function ClipsClient({
 
   return (
     <div className="flex flex-1 flex-col">
-      <Header showClipsLink={false} />
+      <Header messages={messages} showClipsLink={false} />
 
       <main
         className={`mx-auto w-full max-w-3xl flex-1 px-5 py-10 ${
@@ -1122,12 +1125,15 @@ function chipClass(active: boolean): string {
 
 /* ── 날짜 그룹 ─────────────────────────────────────────────── */
 
-function groupByDate(items: Item[]): { label: string; items: Item[] }[] {
+function groupByDate(
+  items: Item[],
+  locale: Locale,
+): { label: string; items: Item[] }[] {
   const now = new Date();
   const groups = new Map<string, Item[]>();
   const order: string[] = [];
   for (const item of items) {
-    const label = dateGroupLabel(new Date(item.date), now);
+    const label = dateGroupLabel(new Date(item.date), now, locale);
     if (!groups.has(label)) {
       groups.set(label, []);
       order.push(label);
@@ -1141,14 +1147,25 @@ function startOfDay(d: Date): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
-function dateGroupLabel(d: Date, now: Date): string {
+/**
+ * 날짜 그룹 라벨. **사전에 넣지 않는다** — `Intl` 이 4개 언어를 다 만들어 준다.
+ *
+ *   오늘 / 어제 / 이번 주 / 이번 달  → RelativeTimeFormat(numeric: "auto")
+ *   2026년 7월                      → DateTimeFormat(year, month: "long")
+ *
+ * 직접 번역하면 문구 4개 × 언어 3개에 "2026년 7월" 같은 연월 **형식**까지 언어마다
+ * 달라서(en "July 2026", ja "2026年7月") 사전으로는 형식을 표현할 수 없다.
+ */
+function dateGroupLabel(d: Date, now: Date, locale: Locale): string {
+  const tag = LOCALE_TAGS[locale];
   const diffDays = Math.floor((startOfDay(now) - startOfDay(d)) / 86400000);
-  if (diffDays <= 0) return "오늘";
-  if (diffDays === 1) return "어제";
-  if (diffDays < 7) return "이번 주";
+  const relative = new Intl.RelativeTimeFormat(tag, { numeric: "auto" });
+  if (diffDays <= 0) return relative.format(0, "day");
+  if (diffDays === 1) return relative.format(-1, "day");
+  if (diffDays < 7) return relative.format(0, "week");
   if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth())
-    return "이번 달";
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월`;
+    return relative.format(0, "month");
+  return new Intl.DateTimeFormat(tag, { year: "numeric", month: "long" }).format(d);
 }
 
 /* ── 매핑·유틸 ─────────────────────────────────────────────── */
