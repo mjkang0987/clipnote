@@ -17,6 +17,23 @@ const zh: PartialMessages = {
     save: "保存",
   },
 
+  compare: {
+    guestTitle: "不登录也可以",
+    guestItem1: "粘贴链接就能立刻生成预览卡片。",
+    guestItem2: "把剪藏保存在此浏览器，之后在「{clips}」中再查看。",
+    guestItem3: "但保存只会留在{device}，而且{noLink}",
+    guestItem3Device: "此设备上",
+    guestItem3NoLink: "无法生成短分享链接。",
+
+    signedInTitle: "登录后",
+    signedInItem1: "可以用{emphasis}直接发送到聊天工具和社交平台。",
+    signedInItem1Emphasis: "短分享链接",
+    signedInItem2: "分享的链接会显示为带标题和图片的预览卡片。",
+    signedInItem3:
+      "剪藏会保存在账号里，{emphasis}都能照样查看，并按标签整理得很清楚。",
+    signedInItem3Emphasis: "在任何设备上",
+  },
+
   clips: {
     guestNote: "这些剪藏保存在此浏览器中。登录后可在任何设备查看和分享。",
     accountNote: "这些剪藏已保存到你的账号。",
@@ -96,7 +113,8 @@ const zh: PartialMessages = {
       tagsLabel: "标签",
       tagsNote: "(可选 · 用逗号分隔)",
       tagsPlaceholder: "开发, 设计, 稍后读",
-      tagsHint: "加上标签后就能在{clips}里按相同标签集中查看。用逗号(,)分隔，最多 6 个。",
+      tagsHint:
+        "加上标签后就能在{clips}里按相同标签集中查看。用逗号(,)分隔，最多 6 个。",
       frequentTags: "常用标签:",
     },
     preview: {
@@ -156,19 +174,6 @@ const zh: PartialMessages = {
     errorGeneric: "登录时出现问题。",
 
     compareTitle: "登录 / 访客模式说明",
-    signedInTitle: "登录后",
-    signedInShortLink: "可以生成{emphasis}，发送到聊天工具和社交平台。",
-    signedInShortLinkEmphasis: "短分享链接",
-    signedInPreview: "分享的链接会显示为带标题和图片的预览卡片。",
-    signedInSync: "剪藏会保存在账号里，{emphasis}也能照样查看，并按标签整理。",
-    signedInSyncEmphasis: "在其他设备上",
-
-    guestTitle: "不登录也可以",
-    guestPreview: "粘贴网址即可生成预览卡片。",
-    guestSave: "把剪藏保存在此浏览器，之后在「{clips}」中再查看。",
-    guestLimit: "但保存只会留在{device}，而且{noLink}",
-    guestLimitDevice: "此设备上",
-    guestLimitNoLink: "无法生成短分享链接。",
   },
 
   settings: {
@@ -184,7 +189,8 @@ const zh: PartialMessages = {
     contactNote: "如需报告问题或提出功能建议，请发送至 {email}。",
 
     dangerTitle: "删除账号",
-    dangerBody: "注销后账号以及保存的所有剪藏和分享链接将被永久删除，无法恢复。",
+    dangerBody:
+      "注销后账号以及保存的所有剪藏和分享链接将被永久删除，无法恢复。",
     withdraw: "注销账号",
 
     withdrawTitle: "确定要注销吗?",
@@ -222,29 +228,14 @@ const zh: PartialMessages = {
     body1: "ClipNote 是把链接变成分享卡片的免费服务。",
     body2:
       "粘贴链接后会自动读取标题、说明和封面图，生成在聊天工具和社交平台上一眼就能看懂的卡片，以及一个短网址。",
-    body3: "像 Naver Cafe 帖子、Instagram Reels 这类不容易生成预览的链接也支持。",
+    body3:
+      "像 Naver Cafe 帖子、Instagram Reels 这类不容易生成预览的链接也支持。",
 
     howTitle: "使用方法",
     how1: "粘贴要分享的链接。标题、说明和封面图会自动填入。",
-    how2:
-      "点击「{createLink}」会生成一个先显示分享卡片的短网址。生成后同一个位置会变成「{copyLink}」。",
+    how2: "点击「{createLink}」会生成一个先显示分享卡片的短网址。生成后同一个位置会变成「{copyLink}」。",
     how3: "只想发网址、不需要卡片时用「{copyOriginal}」— 会一起复制标题和原始网址。",
-    how4:
-      "「{saveToClips}」之后可以按标签整理，随时回来查看。登录前用「{saveHere}」只会留在此设备。",
-
-    guestTitle: "不登录也可以",
-    guestItem1: "粘贴链接就能立刻生成预览卡片。",
-    guestItem2: "把剪藏保存在此浏览器，之后在「{clips}」中再查看。",
-    guestItem3: "但保存只会留在{device}，而且{noLink}",
-    guestItem3Device: "此设备上",
-    guestItem3NoLink: "无法生成短分享链接。",
-
-    signedInTitle: "登录后",
-    signedInItem1: "可以用{emphasis}直接发送到聊天工具和社交平台。",
-    signedInItem1Emphasis: "短分享链接",
-    signedInItem2: "分享的链接会显示为带标题和图片的预览卡片。",
-    signedInItem3: "剪藏会保存在账号里，{emphasis}都能照样查看，并按标签整理得很清楚。",
-    signedInItem3Emphasis: "在任何设备上",
+    how4: "「{saveToClips}」之后可以按标签整理，随时回来查看。登录前用「{saveHere}」只会留在此设备。",
   },
 
   faq: {

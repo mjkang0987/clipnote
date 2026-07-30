@@ -18,6 +18,25 @@ const en: PartialMessages = {
     save: "Save",
   },
 
+  compare: {
+    guestTitle: "Without signing in",
+    guestItem1: "Paste a link and build a preview card right away.",
+    guestItem2:
+      "Save clips in this browser and find them again in \u2018{clips}\u2019.",
+    guestItem3: "But they stay {device}, and {noLink}",
+    guestItem3Device: "on this device only",
+    guestItem3NoLink: "you can't create short share links.",
+
+    signedInTitle: "When you sign in",
+    signedInItem1: "Send a {emphasis} straight to messengers and social.",
+    signedInItem1Emphasis: "short share link",
+    signedInItem2:
+      "Shared links show up as preview cards with a title and image.",
+    signedInItem3:
+      "Clips collect in your account, stay visible {emphasis}, and sort neatly by tag.",
+    signedInItem3Emphasis: "on any device",
+  },
+
   clips: {
     guestNote:
       "These clips are saved in this browser. Sign in to see and share them anywhere.",
@@ -132,10 +151,12 @@ const en: PartialMessages = {
     clearInputAria: "Clear input",
     errors: {
       metaFailed: "Couldn't load the content. Please try again in a moment.",
-      titleRequiredForLink: "A title is required to create a share link. Please enter one.",
+      titleRequiredForLink:
+        "A title is required to create a share link. Please enter one.",
       linkCreateFailed: "Couldn't create the share link.",
       linkCreateError: "Something went wrong while creating the share link.",
-      titleRequiredForClip: "A title is required to add a clip. Please enter one.",
+      titleRequiredForClip:
+        "A title is required to add a clip. Please enter one.",
       clipAddFailed: "Couldn't add the clip.",
       clipAddError: "Something went wrong while adding the clip.",
       titleRequiredForSave: "A title is required to save.",
@@ -160,19 +181,6 @@ const en: PartialMessages = {
     errorGeneric: "Something went wrong while signing in.",
 
     compareTitle: "Signed in vs. guest",
-    signedInTitle: "When you sign in",
-    signedInShortLink: "Create a {emphasis} to send on messengers and social.",
-    signedInShortLinkEmphasis: "short share link",
-    signedInPreview: "Shared links show up as preview cards with a title and image.",
-    signedInSync: "Clips collect in your account, stay visible {emphasis}, and sort by tag.",
-    signedInSyncEmphasis: "on your other devices",
-
-    guestTitle: "Without signing in",
-    guestPreview: "Paste a URL to build a preview card.",
-    guestSave: "Save clips in this browser and find them again in {clips}.",
-    guestLimit: "But they stay {device}, and {noLink}",
-    guestLimitDevice: "on this device only",
-    guestLimitNoLink: "you can't create short share links.",
   },
 
   settings: {
@@ -193,12 +201,14 @@ const en: PartialMessages = {
     withdraw: "Delete account",
 
     withdrawTitle: "Delete your account?",
-    withdrawBody: "The following will be permanently deleted and can't be recovered.",
+    withdrawBody:
+      "The following will be permanently deleted and can't be recovered.",
     withdrawItemAccount: "Account details (sign-in identifier, email, profile)",
     withdrawItemClips: "Every saved clip and share link",
     withdrawAgree: "I've read the above and agree to the deletion.",
     withdrawing: "Deleting…",
-    withdrawFailed: "Couldn't delete the account. Please try again in a moment.",
+    withdrawFailed:
+      "Couldn't delete the account. Please try again in a moment.",
     withdrawError: "Something went wrong while deleting the account.",
   },
 
@@ -232,26 +242,9 @@ const en: PartialMessages = {
 
     howTitle: "How it works",
     how1: "Paste the link you want to share. Title, description, and cover image fill in automatically.",
-    how2:
-      "Press \u201c{createLink}\u201d and you get a short URL that shows the share card first. After that, the same button becomes \u201c{copyLink}\u201d.",
-    how3:
-      "Just need the address without the card? \u201c{copyOriginal}\u201d copies the title and the original URL together.",
-    how4:
-      "\u201c{saveToClips}\u201d keeps it for later, sorted by tag. Before you sign in, \u201c{saveHere}\u201d keeps it on this device only.",
-
-    guestTitle: "Without signing in",
-    guestItem1: "Paste a link and build a preview card right away.",
-    guestItem2: "Save clips in this browser and find them again in \u2018{clips}\u2019.",
-    guestItem3: "But they stay {device}, and {noLink}",
-    guestItem3Device: "on this device only",
-    guestItem3NoLink: "you can't create short share links.",
-
-    signedInTitle: "When you sign in",
-    signedInItem1: "Send a {emphasis} straight to messengers and social.",
-    signedInItem1Emphasis: "short share link",
-    signedInItem2: "Shared links show up as preview cards with a title and image.",
-    signedInItem3: "Clips collect in your account, stay visible {emphasis}, and sort neatly by tag.",
-    signedInItem3Emphasis: "on any device",
+    how2: "Press \u201c{createLink}\u201d and you get a short URL that shows the share card first. After that, the same button becomes \u201c{copyLink}\u201d.",
+    how3: "Just need the address without the card? \u201c{copyOriginal}\u201d copies the title and the original URL together.",
+    how4: "\u201c{saveToClips}\u201d keeps it for later, sorted by tag. Before you sign in, \u201c{saveHere}\u201d keeps it on this device only.",
   },
 
   faq: {

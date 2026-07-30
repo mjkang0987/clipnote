@@ -24,9 +24,35 @@ const ko = {
   },
 
   /** 내 클립 화면 */
+  /**
+   * 로그인 / 게스트 비교 — **홈 소개와 `/login` 이 이 한 벌을 공유한다.**
+   * 전에는 두 화면에 따로 적혀 있어서 같은 뜻이 다르게 갈라졌다
+   * (`바로` 유무, `링크`/`URL`, `어느 기기에서나`/`다른 기기에서도`).
+   * 표시 순서는 화면이 정한다 — 홈은 게스트 먼저, `/login` 은 로그인 먼저.
+   */
+  compare: {
+    guestTitle: "로그인 안 해도",
+    guestItem1: "링크를 붙여넣어 미리보기 카드를 바로 만들 수 있어요.",
+    /** `{clips}` 는 내 클립 화면 이름 */
+    guestItem2: "만든 클립을 이 브라우저에 저장하고 ‘{clips}’에서 다시 봐요.",
+    /** `{device}`·`{noLink}` 는 강조되는 낱말 */
+    guestItem3: "단, 저장은 {device} 남고 {noLink}",
+    guestItem3Device: "이 기기에만",
+    guestItem3NoLink: "짧은 공유 링크는 못 만들어요.",
+
+    signedInTitle: "로그인 하면",
+    signedInItem1: "{emphasis}로 카카오톡·SNS에 바로 보낼 수 있어요.",
+    signedInItem1Emphasis: "짧은 공유 링크",
+    signedInItem2: "공유한 링크가 제목·이미지가 담긴 미리보기 카드로 떠요.",
+    signedInItem3:
+      "클립이 계정에 쌓여 {emphasis} 그대로 보이고, 태그로 깔끔하게 정리돼요.",
+    signedInItem3Emphasis: "어느 기기에서나",
+  },
+
   clips: {
     /** 로그인 상태별 부제 */
-    guestNote: "이 브라우저에 저장된 클립이에요. 로그인하면 어디서나 보고 공유할 수 있어요.",
+    guestNote:
+      "이 브라우저에 저장된 클립이에요. 로그인하면 어디서나 보고 공유할 수 있어요.",
     accountNote: "내 계정에 저장된 클립이에요.",
     newClip: "+ 새 클립",
     select: "선택",
@@ -141,7 +167,8 @@ const ko = {
       sectionAria: "내 클립 저장 미리보기",
       title: "내 클립에 저장하면",
       note: "목록에서 이렇게 보여요",
-      caption: "왼쪽 썸네일은 원본 페이지의 대표 이미지예요. 없으면 그라디언트로 채워져요.",
+      caption:
+        "왼쪽 썸네일은 원본 페이지의 대표 이미지예요. 없으면 그라디언트로 채워져요.",
     },
     /** 공유 링크 생성 결과 레이어 */
     result: {
@@ -156,10 +183,12 @@ const ko = {
     clearInputAria: "입력 지우기",
     errors: {
       metaFailed: "내용을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
-      titleRequiredForLink: "공유 링크를 만들려면 제목이 필요해요. 제목을 입력해 주세요.",
+      titleRequiredForLink:
+        "공유 링크를 만들려면 제목이 필요해요. 제목을 입력해 주세요.",
       linkCreateFailed: "공유 링크 생성에 실패했어요.",
       linkCreateError: "공유 링크 생성 중 문제가 발생했어요.",
-      titleRequiredForClip: "클립을 추가하려면 제목이 필요해요. 제목을 입력해 주세요.",
+      titleRequiredForClip:
+        "클립을 추가하려면 제목이 필요해요. 제목을 입력해 주세요.",
       clipAddFailed: "클립 추가에 실패했어요.",
       clipAddError: "클립 추가 중 문제가 발생했어요.",
       titleRequiredForSave: "저장하려면 제목이 필요해요.",
@@ -188,21 +217,6 @@ const ko = {
     errorGeneric: "로그인 중 문제가 발생했어요.",
 
     compareTitle: "로그인 / 게스트 모드 안내",
-    signedInTitle: "로그인 하면",
-    /** `{emphasis}` 는 강조되는 낱말 */
-    signedInShortLink: "{emphasis}를 만들어 카카오톡·SNS에 보낼 수 있어요.",
-    signedInShortLinkEmphasis: "짧은 공유 링크",
-    signedInPreview: "공유한 링크가 제목·이미지가 담긴 미리보기 카드로 떠요.",
-    signedInSync: "클립이 계정에 쌓여 {emphasis} 그대로 보이고, 태그로 정리돼요.",
-    signedInSyncEmphasis: "다른 기기에서도",
-
-    guestTitle: "로그인 안 해도",
-    guestPreview: "URL을 붙여넣어 미리보기 카드를 만들 수 있어요.",
-    /** `{clips}` 는 내 클립 화면 이름 */
-    guestSave: "만든 클립을 이 브라우저에 저장하고 ‘{clips}’에서 다시 봐요.",
-    guestLimit: "단, 저장은 {device} 남고 {noLink}",
-    guestLimitDevice: "이 기기에만",
-    guestLimitNoLink: "짧은 공유 링크는 못 만들어요.",
   },
 
   /** 계정 설정 화면 */
@@ -275,28 +289,9 @@ const ko = {
     /** 사용법 — 실제 버튼 이름을 그대로 쓴다(`{createLink}` 등은 homeActions 값이 들어간다) */
     howTitle: "이렇게 동작해요",
     how1: "공유할 링크를 붙여넣어요. 제목·설명·대표 이미지는 자동으로 채워져요.",
-    how2:
-      "「{createLink}」를 누르면 공유 카드가 먼저 보이는 짧은 주소가 만들어져요. 만든 뒤에는 같은 자리가 「{copyLink}」로 바뀌어요.",
-    how3:
-      "카드 없이 주소만 보내고 싶으면 「{copyOriginal}」 — 제목과 원본 주소를 함께 복사해요.",
-    how4:
-      "「{saveToClips}」하면 나중에 태그로 정리해 다시 찾아볼 수 있어요. 로그인 전에는 「{saveHere}」 — 이 기기에만 남아요.",
-
-    guestTitle: "로그인 안 해도",
-    guestItem1: "링크를 붙여넣어 미리보기 카드를 바로 만들 수 있어요.",
-    /** `{clips}` 는 내 클립 화면 이름 */
-    guestItem2: "만든 클립을 이 브라우저에 저장하고 ‘{clips}’에서 다시 봐요.",
-    /** `{device}`·`{noLink}` 는 강조되는 낱말 */
-    guestItem3: "단, 저장은 {device} 남고 {noLink}",
-    guestItem3Device: "이 기기에만",
-    guestItem3NoLink: "짧은 공유 링크는 못 만들어요.",
-
-    signedInTitle: "로그인 하면",
-    signedInItem1: "{emphasis}로 카카오톡·SNS에 바로 보낼 수 있어요.",
-    signedInItem1Emphasis: "짧은 공유 링크",
-    signedInItem2: "공유한 링크가 제목·이미지가 담긴 미리보기 카드로 떠요.",
-    signedInItem3: "클립이 계정에 쌓여 {emphasis} 그대로 보이고, 태그로 깔끔하게 정리돼요.",
-    signedInItem3Emphasis: "어느 기기에서나",
+    how2: "「{createLink}」를 누르면 공유 카드가 먼저 보이는 짧은 주소가 만들어져요. 만든 뒤에는 같은 자리가 「{copyLink}」로 바뀌어요.",
+    how3: "카드 없이 주소만 보내고 싶으면 「{copyOriginal}」 — 제목과 원본 주소를 함께 복사해요.",
+    how4: "「{saveToClips}」하면 나중에 태그로 정리해 다시 찾아볼 수 있어요. 로그인 전에는 「{saveHere}」 — 이 기기에만 남아요.",
   },
 
   /**

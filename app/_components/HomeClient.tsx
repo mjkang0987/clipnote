@@ -12,14 +12,18 @@ import type { ClipMetadata } from "@/lib/metadata";
 import { buildShareText } from "@/lib/shareText";
 import type { Messages } from "@/lib/i18n";
 
-/** 홈이 쓰는 사전 조각 — clips·settings·login namespace 는 이 화면에 필요 없다. */
-type HomeMessages = Pick<Messages, "common" | "home" | "homeActions" | "about" | "faq">;
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
 import Brand from "@/app/_components/Brand";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { addLocalClip, getKnownTags, recordTags } from "@/lib/local-clips";
+
+/** 홈이 쓰는 사전 조각 — clips·settings·login namespace 는 이 화면에 필요 없다. */
+type HomeMessages = Pick<
+  Messages,
+  "common" | "compare" | "home" | "homeActions" | "about" | "faq"
+>;
 
 /**
  * 주 입력장치가 터치인지 — 데스크톱(마우스/트랙패드)과 모바일을 가르는 기준.
@@ -87,6 +91,8 @@ export default function HomeClient({
   const c = messages.common;
   const a = messages.about;
   const f = messages.faq;
+  // 로그인/게스트 비교는 `/login` 과 같은 사전을 쓴다(표시 순서만 화면이 정한다).
+  const cmp = messages.compare;
   // FAQ 는 화면과 JSON-LD 가 같은 배열을 쓴다(문구가 어긋나지 않게).
   const faqs = useMemo(() => faqItems(messages), [messages]);
   // 본문 안내문의 내부 링크도 현재 로케일을 유지한다(`/en` 에서 한국어 페이지로 새지 않게).
@@ -140,7 +146,9 @@ export default function HomeClient({
     // 버튼 영역이 자리표시로 비어 있고, 응답이 오는 순간 아래 안내문이 끼어들어 레이아웃이 밀렸다.
     // 여기서 필요한 건 "어떤 버튼을 보일지"라는 표시용 판단이라 로컬 세션으로 충분하다
     // (실제 권한 검사는 서버 API 라우트에서 한다). getSession() 은 저장된 세션을 즉시 준다.
-    supabase.auth.getSession().then(({ data }) => setIsLoggedIn(Boolean(data.session?.user)));
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setIsLoggedIn(Boolean(data.session?.user)));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) =>
       setIsLoggedIn(Boolean(session?.user)),
     );
@@ -174,13 +182,17 @@ export default function HomeClient({
 
   // 미리보기 값: 사용자 입력 우선 → 가져온 메타 → 호스트
   const effectiveTitle =
-    title.trim() || meta?.title || (url ? prettyHost(url) : h.preview.titlePlaceholder);
+    title.trim() ||
+    meta?.title ||
+    (url ? prettyHost(url) : h.preview.titlePlaceholder);
   const description = meta?.description ?? null;
   const image = meta?.image ?? null;
 
   // 미리보기 썸네일은 원본 이미지를 브라우저가 직접 부르면 hotlink/referer·혼합콘텐츠로
   // 자주 막히므로, 우리 서버 프록시(/api/image)를 거쳐 불러온다.
-  const proxiedImage = image ? `/api/image?url=${encodeURIComponent(image)}` : null;
+  const proxiedImage = image
+    ? `/api/image?url=${encodeURIComponent(image)}`
+    : null;
 
   const seed = title.trim() || meta?.title || url || "clipnote";
   const gradient = useMemo(() => pickGradient(seed), [seed]);
@@ -216,9 +228,12 @@ export default function HomeClient({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/metadata?url=${encodeURIComponent(target)}`, {
-        signal: controller.signal,
-      });
+      const res = await fetch(
+        `/api/metadata?url=${encodeURIComponent(target)}`,
+        {
+          signal: controller.signal,
+        },
+      );
       const data = (await res.json()) as ClipMetadata;
       if (controller.signal.aborted) return null;
       setMeta(data);
@@ -436,7 +451,8 @@ export default function HomeClient({
 
   // 비로그인: 이 브라우저(localStorage)에만 저장
   function handleSaveLocal() {
-    const saveTitle = title.trim() || meta?.title || (url ? prettyHost(url) : "");
+    const saveTitle =
+      title.trim() || meta?.title || (url ? prettyHost(url) : "");
     if (!saveTitle) {
       setError(h.errors.titleRequiredForSave);
       return;
@@ -468,11 +484,10 @@ export default function HomeClient({
         ? t.creating
         : loading
           ? t.loadingMeta
-          // "공유"를 빼서 짧게 — 링크 생성 후 바뀌는 `링크 복사` 와 어휘를 맞추고,
-          // 모바일 좌우 배치의 좁은 폭에도 들어간다. 성격 설명은 버튼 아래 안내문에서 한다.
-          : t.createLink;
-  const primaryDisabled =
-    !hasInput || creating || adding || loading;
+          : // "공유"를 빼서 짧게 — 링크 생성 후 바뀌는 `링크 복사` 와 어휘를 맞추고,
+            // 모바일 좌우 배치의 좁은 폭에도 들어간다. 성격 설명은 버튼 아래 안내문에서 한다.
+            t.createLink;
+  const primaryDisabled = !hasInput || creating || adding || loading;
   // '내 클립에 저장' 버튼(로그인 사용자용) 라벨·비활성
   const saveClipLabel = adding
     ? t.saving
@@ -530,9 +545,14 @@ export default function HomeClient({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="clip-title" className="text-sm font-medium text-fg">
+              <label
+                htmlFor="clip-title"
+                className="text-sm font-medium text-fg"
+              >
                 {h.form.titleLabel}{" "}
-                <span className="font-normal text-fg-muted">{h.form.titleNote}</span>
+                <span className="font-normal text-fg-muted">
+                  {h.form.titleNote}
+                </span>
               </label>
               <ClearableInput
                 id="clip-title"
@@ -548,9 +568,14 @@ export default function HomeClient({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="clip-tags" className="text-sm font-medium text-fg">
+              <label
+                htmlFor="clip-tags"
+                className="text-sm font-medium text-fg"
+              >
                 {h.form.tagsLabel}{" "}
-                <span className="font-normal text-fg-muted">{h.form.tagsNote}</span>
+                <span className="font-normal text-fg-muted">
+                  {h.form.tagsNote}
+                </span>
               </label>
               <ClearableInput
                 id="clip-tags"
@@ -589,7 +614,9 @@ export default function HomeClient({
 
               {tagSuggestions.length > 0 && (
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-fg-muted">{h.form.frequentTags}</span>
+                  <span className="text-xs text-fg-muted">
+                    {h.form.frequentTags}
+                  </span>
                   {tagSuggestions.map((tag) => (
                     <button
                       key={tag}
@@ -612,11 +639,19 @@ export default function HomeClient({
               <div className="flex flex-col gap-2">
                 <div className="flex gap-2">
                   {shareUrl ? (
-                    <button type="button" onClick={handleCopy} className={SECONDARY_BUTTON}>
+                    <button
+                      type="button"
+                      onClick={handleCopy}
+                      className={SECONDARY_BUTTON}
+                    >
                       {copied ? t.copied : t.copyLink}
                     </button>
                   ) : (
-                    <button type="submit" disabled={primaryDisabled} className={SECONDARY_BUTTON}>
+                    <button
+                      type="submit"
+                      disabled={primaryDisabled}
+                      className={SECONDARY_BUTTON}
+                    >
                       {primaryLabel}
                     </button>
                   )}
@@ -662,7 +697,11 @@ export default function HomeClient({
                     {plainCopied ? t.copied : t.copyOriginal}
                   </button>
                 </div>
-                <button type="submit" disabled={primaryDisabled} className={PRIMARY_BUTTON}>
+                <button
+                  type="submit"
+                  disabled={primaryDisabled}
+                  className={PRIMARY_BUTTON}
+                >
                   {primaryLabel}
                 </button>
               </div>
@@ -712,150 +751,172 @@ export default function HomeClient({
         {/* URL 입력 전엔 빈 카드를 숨기고, 링크가 들어오면 두 미리보기를 보여준다. */}
         {hasInput && (
           <>
-        {/* ① 공유 카드: 링크를 공유했을 때 보이는 이미지 */}
-        <section className="mt-10 sm:mt-12" aria-label={h.cardPreview.sectionAria}>
-          <div className="mb-2">
-            <h2 className="flex items-center gap-2 text-base font-semibold text-fg">
-              {h.cardPreview.title}
-              {loading && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-strong">
-                  <Spinner /> {h.cardPreview.loading}
-                </span>
-              )}
-            </h2>
-            <p className="mt-0.5 text-xs text-fg-muted">{h.cardPreview.note}</p>
-          </div>
-          {/* 실제 OG(/api/og, 1200×630)의 비율·폰트·여백을 cqw 로 그대로 축소 복제 */}
-          <div className="overflow-hidden rounded-xl shadow-soft" style={{ containerType: "inline-size" }}>
-            <div
-              className="relative flex aspect-[1200/630] w-full flex-col justify-end"
-              style={{ background: gradientCss(gradient), padding: "6cqw" }}
+            {/* ① 공유 카드: 링크를 공유했을 때 보이는 이미지 */}
+            <section
+              className="mt-10 sm:mt-12"
+              aria-label={h.cardPreview.sectionAria}
             >
-              {/* 원본 대표 이미지가 있으면 배경으로 깔고, 로드 실패 시 숨겨 그라디언트가 보이게 함 */}
-              {proxiedImage && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={proxiedImage}
-                  alt=""
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-              )}
-              {/* 원본 이미지가 있으면 실제 공유 시 그 이미지가 그대로 뜬다(ClipNote 텍스트 오버레이 없음).
-                  이미지 위 텍스트는 가독성이 떨어지므로 이미지가 없을 때만 스크림·텍스트를 그린다. */}
-              {!image && (
-                <>
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%]"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.28))",
-                    }}
-                  />
-                  {meta?.siteName && (
-                    <p
-                      className="relative truncate font-bold uppercase"
-                      style={{
-                        fontSize: "2.17cqw",
-                        letterSpacing: "0.17cqw",
-                        color: "rgba(255,255,255,0.92)",
-                      }}
-                    >
-                      {meta.siteName}
-                    </p>
+              <div className="mb-2">
+                <h2 className="flex items-center gap-2 text-base font-semibold text-fg">
+                  {h.cardPreview.title}
+                  {loading && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-strong">
+                      <Spinner /> {h.cardPreview.loading}
+                    </span>
                   )}
-                  <p
-                    className="relative line-clamp-3 font-bold text-white"
-                    style={{
-                      fontSize: effectiveTitle.length > 40 ? "5cqw" : "6cqw",
-                      lineHeight: 1.15,
-                      marginTop: "1.5cqw",
-                    }}
-                  >
+                </h2>
+                <p className="mt-0.5 text-xs text-fg-muted">
+                  {h.cardPreview.note}
+                </p>
+              </div>
+              {/* 실제 OG(/api/og, 1200×630)의 비율·폰트·여백을 cqw 로 그대로 축소 복제 */}
+              <div
+                className="overflow-hidden rounded-xl shadow-soft"
+                style={{ containerType: "inline-size" }}
+              >
+                <div
+                  className="relative flex aspect-[1200/630] w-full flex-col justify-end"
+                  style={{ background: gradientCss(gradient), padding: "6cqw" }}
+                >
+                  {/* 원본 대표 이미지가 있으면 배경으로 깔고, 로드 실패 시 숨겨 그라디언트가 보이게 함 */}
+                  {proxiedImage && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={proxiedImage}
+                      alt=""
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  )}
+                  {/* 원본 이미지가 있으면 실제 공유 시 그 이미지가 그대로 뜬다(ClipNote 텍스트 오버레이 없음).
+                  이미지 위 텍스트는 가독성이 떨어지므로 이미지가 없을 때만 스크림·텍스트를 그린다. */}
+                  {!image && (
+                    <>
+                      <div
+                        aria-hidden
+                        className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%]"
+                        style={{
+                          backgroundImage:
+                            "linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.28))",
+                        }}
+                      />
+                      {meta?.siteName && (
+                        <p
+                          className="relative truncate font-bold uppercase"
+                          style={{
+                            fontSize: "2.17cqw",
+                            letterSpacing: "0.17cqw",
+                            color: "rgba(255,255,255,0.92)",
+                          }}
+                        >
+                          {meta.siteName}
+                        </p>
+                      )}
+                      <p
+                        className="relative line-clamp-3 font-bold text-white"
+                        style={{
+                          fontSize:
+                            effectiveTitle.length > 40 ? "5cqw" : "6cqw",
+                          lineHeight: 1.15,
+                          marginTop: "1.5cqw",
+                        }}
+                      >
+                        {effectiveTitle}
+                      </p>
+                      {description && (
+                        <p
+                          className="relative line-clamp-2"
+                          style={{
+                            fontSize: "2.5cqw",
+                            lineHeight: 1.4,
+                            marginTop: "1.83cqw",
+                            color: "rgba(255,255,255,0.9)",
+                          }}
+                        >
+                          {description}
+                        </p>
+                      )}
+                      <p
+                        className="relative font-bold"
+                        style={{
+                          fontSize: "2cqw",
+                          marginTop: "2.5cqw",
+                          color: "rgba(255,255,255,0.95)",
+                        }}
+                      >
+                        ClipNote
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+              <p className="mt-1.5 text-xs text-fg-muted">
+                {h.cardPreview.caption}
+              </p>
+            </section>
+
+            {/* ② 내 클립 저장 모습: 목록에서 보이는 카드(왼쪽 썸네일 = 원본 이미지) */}
+            <section
+              className="mt-10 sm:mt-12"
+              aria-label={h.clipPreview.sectionAria}
+            >
+              <div className="mb-2">
+                <h2 className="text-base font-semibold text-fg">
+                  {h.clipPreview.title}
+                </h2>
+                <p className="mt-0.5 text-xs text-fg-muted">
+                  {h.clipPreview.note}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-soft">
+                <div
+                  className="h-14 w-14 shrink-0 overflow-hidden rounded-[8px]"
+                  style={{ background: gradientCss(gradient) }}
+                  aria-hidden
+                >
+                  {proxiedImage && (
+                    // 원본 대표 이미지 = 목록 썸네일. 로드 실패 시 그라디언트가 보임.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={proxiedImage}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <p className="truncate font-semibold text-fg">
                     {effectiveTitle}
                   </p>
-                  {description && (
-                    <p
-                      className="relative line-clamp-2"
-                      style={{
-                        fontSize: "2.5cqw",
-                        lineHeight: 1.4,
-                        marginTop: "1.83cqw",
-                        color: "rgba(255,255,255,0.9)",
-                      }}
-                    >
-                      {description}
+                  {url && (
+                    <p className="truncate text-sm text-fg-muted">
+                      {prettyHost(url)}
                     </p>
                   )}
-                  <p
-                    className="relative font-bold"
-                    style={{
-                      fontSize: "2cqw",
-                      marginTop: "2.5cqw",
-                      color: "rgba(255,255,255,0.95)",
-                    }}
-                  >
-                    ClipNote
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-          <p className="mt-1.5 text-xs text-fg-muted">
-            {h.cardPreview.caption}
-          </p>
-        </section>
-
-        {/* ② 내 클립 저장 모습: 목록에서 보이는 카드(왼쪽 썸네일 = 원본 이미지) */}
-        <section className="mt-10 sm:mt-12" aria-label={h.clipPreview.sectionAria}>
-          <div className="mb-2">
-            <h2 className="text-base font-semibold text-fg">{h.clipPreview.title}</h2>
-            <p className="mt-0.5 text-xs text-fg-muted">{h.clipPreview.note}</p>
-          </div>
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-soft">
-            <div
-              className="h-14 w-14 shrink-0 overflow-hidden rounded-[8px]"
-              style={{ background: gradientCss(gradient) }}
-              aria-hidden
-            >
-              {proxiedImage && (
-                // 원본 대표 이미지 = 목록 썸네일. 로드 실패 시 그라디언트가 보임.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={proxiedImage}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-              )}
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col">
-              <p className="truncate font-semibold text-fg">{effectiveTitle}</p>
-              {url && <p className="truncate text-sm text-fg-muted">{prettyHost(url)}</p>}
-              {tags.length > 0 && (
-                <ul className="mt-1 flex flex-wrap gap-1">
-                  {tags.map((tag) => (
-                    <li
-                      key={tag}
-                      className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-strong"
-                    >
-                      {tag}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-          <p className="mt-1.5 text-xs text-fg-muted">
-            {h.clipPreview.caption}
-          </p>
-        </section>
+                  {tags.length > 0 && (
+                    <ul className="mt-1 flex flex-wrap gap-1">
+                      {tags.map((tag) => (
+                        <li
+                          key={tag}
+                          className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-strong"
+                        >
+                          {tag}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+              <p className="mt-1.5 text-xs text-fg-muted">
+                {h.clipPreview.caption}
+              </p>
+            </section>
           </>
         )}
 
@@ -874,56 +935,74 @@ export default function HomeClient({
           <p className="mt-2 leading-relaxed text-fg-muted">{a.body2}</p>
           <p className="mt-2 leading-relaxed text-fg-muted">{a.body3}</p>
 
-          <h2 className="mt-8 text-xl font-bold text-fg sm:mt-10">{a.howTitle}</h2>
+          <h2 className="mt-8 text-xl font-bold text-fg sm:mt-10">
+            {a.howTitle}
+          </h2>
           {/* 실제 버튼 이름을 사전에서 끌어와 넣는다 — 버튼 라벨을 바꾸면 사용법도 따라 바뀐다. */}
           <ol className="mt-3 flex flex-col gap-2 leading-relaxed text-fg-muted">
             <li>1. {a.how1}</li>
-            <li>2. {interpolate(a.how2, { createLink: t.createLink, copyLink: t.copyLink })}</li>
+            <li>
+              2.{" "}
+              {interpolate(a.how2, {
+                createLink: t.createLink,
+                copyLink: t.copyLink,
+              })}
+            </li>
             <li>3. {interpolate(a.how3, { copyOriginal: t.copyOriginal })}</li>
             <li>
-              4. {interpolate(a.how4, { saveToClips: t.saveToClips, saveHere: t.saveHere })}
+              4.{" "}
+              {interpolate(a.how4, {
+                saveToClips: t.saveToClips,
+                saveHere: t.saveHere,
+              })}
             </li>
           </ol>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-border bg-surface p-4">
-              <p className="text-sm font-semibold text-fg">{a.guestTitle}</p>
+              <p className="text-sm font-semibold text-fg">{cmp.guestTitle}</p>
               <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-                <li>· {a.guestItem1}</li>
-                <li>· {interpolate(a.guestItem2, { clips: c.myClips })}</li>
+                <li>· {cmp.guestItem1}</li>
+                <li>· {interpolate(cmp.guestItem2, { clips: c.myClips })}</li>
                 <li>
                   ·{" "}
-                  {interpolateNode(a.guestItem3, {
+                  {interpolateNode(cmp.guestItem3, {
                     device: (
-                      <strong className="font-semibold text-fg">{a.guestItem3Device}</strong>
+                      <strong className="font-semibold text-fg">
+                        {cmp.guestItem3Device}
+                      </strong>
                     ),
                     noLink: (
-                      <strong className="font-semibold text-fg">{a.guestItem3NoLink}</strong>
+                      <strong className="font-semibold text-fg">
+                        {cmp.guestItem3NoLink}
+                      </strong>
                     ),
                   })}
                 </li>
               </ul>
             </div>
             <div className="rounded-xl border border-brand/30 bg-brand-soft p-4">
-              <p className="text-sm font-semibold text-brand-strong">{a.signedInTitle}</p>
+              <p className="text-sm font-semibold text-brand-strong">
+                {cmp.signedInTitle}
+              </p>
               <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
                 <li>
                   ·{" "}
-                  {interpolateNode(a.signedInItem1, {
+                  {interpolateNode(cmp.signedInItem1, {
                     emphasis: (
                       <strong className="font-semibold text-brand-strong">
-                        {a.signedInItem1Emphasis}
+                        {cmp.signedInItem1Emphasis}
                       </strong>
                     ),
                   })}
                 </li>
-                <li>· {a.signedInItem2}</li>
+                <li>· {cmp.signedInItem2}</li>
                 <li>
                   ·{" "}
-                  {interpolateNode(a.signedInItem3, {
+                  {interpolateNode(cmp.signedInItem3, {
                     emphasis: (
                       <strong className="font-semibold text-brand-strong">
-                        {a.signedInItem3Emphasis}
+                        {cmp.signedInItem3Emphasis}
                       </strong>
                     ),
                   })}

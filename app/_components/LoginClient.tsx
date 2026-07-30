@@ -5,7 +5,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Messages } from "@/lib/i18n";
 
 /** 로그인 화면이 쓰는 사전 조각(RSC 페이로드를 화면 단위로 좁힌다) */
-type LoginMessages = Pick<Messages, "common" | "login">;
+type LoginMessages = Pick<Messages, "common" | "compare" | "login">;
 import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import Header from "@/app/_components/Header";
@@ -19,6 +19,8 @@ const LAST_PROVIDER_KEY = "clipnote:last-login-provider";
 // 사전은 서버(`LoginPage`)에서 골라 받는다.
 export default function LoginClient({ messages }: { messages: LoginMessages }) {
   const t = messages.login;
+  // 로그인/게스트 비교는 홈 소개와 같은 사전을 쓴다(표시 순서만 이 화면이 정한다).
+  const cmp = messages.compare;
   const [loading, setLoading] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
@@ -82,154 +84,165 @@ export default function LoginClient({ messages }: { messages: LoginMessages }) {
     <div className="flex flex-1 flex-col">
       <Header messages={messages} showClipsLink={false} />
       <main className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 py-12">
-      {/* ── 로그인 화면(실제 동작 영역) ── */}
-      <h1 className="flex items-center justify-center gap-2 text-2xl font-bold tracking-tight text-fg">
-        <Brand iconClassName="h-8 w-8" />
-        <span>{t.title}</span>
-      </h1>
-      <p className="mt-2 text-center text-sm text-fg-muted">
-        {KAKAO_ENABLED ? t.subtitleWithKakao : t.subtitleGoogleOnly}
-      </p>
-
-      {/* 개인정보 수집·이용 동의 */}
-      <label className="mt-8 flex cursor-pointer items-start gap-2.5 rounded-xl border border-border bg-bg p-3.5">
-        <input
-          type="checkbox"
-          checked={agreed}
-          onChange={(e) => setAgreed(e.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-brand"
-        />
-        <span className="text-sm leading-relaxed text-fg-muted">
-          {interpolateNode(t.consent, {
-            privacy: (
-              <a
-                href={path("/privacy")}
-                target="_blank"
-                rel="noreferrer"
-                className="font-semibold text-brand-strong underline"
-              >
-                {messages.common.privacy}
-              </a>
-            ),
-          })}
-        </span>
-      </label>
-
-      <div className="mt-4 flex flex-col gap-3">
-        <button
-          type="button"
-          onClick={() => signIn("google")}
-          disabled={loading !== null || !agreed}
-          className="relative flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-bg px-4 text-base font-semibold text-fg transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {loading === "google"
-            ? t.redirecting
-            : interpolate(t.continueWith, { provider: "Google" })}
-          {lastProvider === "google" && <RecentBadge label={t.recent} />}
-        </button>
-
-        {KAKAO_ENABLED && (
-          <button
-            type="button"
-            onClick={() => signIn("kakao")}
-            disabled={loading !== null || !agreed}
-            className="relative flex h-12 items-center justify-center gap-2 rounded-xl bg-[#FEE500] px-4 text-base font-semibold text-[#191600] transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading === "kakao"
-              ? t.redirecting
-              : interpolate(t.continueWith, { provider: "Kakao" })}
-            {lastProvider === "kakao" && <RecentBadge label={t.recent} />}
-          </button>
-        )}
-
-        <button
-          type="button"
-          onClick={() => signIn("naver")}
-          disabled={loading !== null || !agreed}
-          className="relative flex h-12 items-center justify-center gap-2 rounded-xl bg-[#03C75A] px-4 text-base font-semibold text-white transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {loading === "naver"
-            ? t.redirecting
-            : interpolate(t.continueWith, { provider: "Naver" })}
-          {lastProvider === "naver" && <RecentBadge label={t.recent} />}
-        </button>
-      </div>
-
-      {error && (
-        <p role="alert" className="mt-4 text-center text-sm text-danger">
-          {error}
+        {/* ── 로그인 화면(실제 동작 영역) ── */}
+        <h1 className="flex items-center justify-center gap-2 text-2xl font-bold tracking-tight text-fg">
+          <Brand iconClassName="h-8 w-8" />
+          <span>{t.title}</span>
+        </h1>
+        <p className="mt-2 text-center text-sm text-fg-muted">
+          {KAKAO_ENABLED ? t.subtitleWithKakao : t.subtitleGoogleOnly}
         </p>
-      )}
 
-      <div className="mt-6 flex items-center gap-3">
-        <span className="h-px flex-1 bg-border" />
-        <span className="text-xs text-fg-muted">{t.or}</span>
-        <span className="h-px flex-1 bg-border" />
-      </div>
-
-      <a
-        href={path("/")}
-        className="mt-4 flex h-12 items-center justify-center rounded-xl px-4 text-base font-semibold text-fg-muted transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40"
-      >
-        {t.continueAsGuest}
-      </a>
-
-      {/* ── 안내 영역(로그인 화면과 명확히 구분) ── */}
-      <section className="mt-12 border-t border-border pt-8">
-        <h2 className="text-center text-xs font-semibold uppercase tracking-wider text-fg-muted">
-          {t.compareTitle}
-        </h2>
+        {/* 개인정보 수집·이용 동의 */}
+        <label className="mt-8 flex cursor-pointer items-start gap-2.5 rounded-xl border border-border bg-bg p-3.5">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-brand"
+          />
+          <span className="text-sm leading-relaxed text-fg-muted">
+            {interpolateNode(t.consent, {
+              privacy: (
+                <a
+                  href={path("/privacy")}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-brand-strong underline"
+                >
+                  {messages.common.privacy}
+                </a>
+              ),
+            })}
+          </span>
+        </label>
 
         <div className="mt-4 flex flex-col gap-3">
-          {/* 로그인 하면 (메인 '이렇게 동작해요'와 동일 텍스트·강조) */}
-          <div className="rounded-xl border border-brand/30 bg-brand-soft p-4">
-            <p className="text-sm font-semibold text-brand-strong">{t.signedInTitle}</p>
-            <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-              <li>
-                ·{" "}
-                {interpolateNode(t.signedInShortLink, {
-                  emphasis: (
-                    <strong className="font-semibold text-brand-strong">
-                      {t.signedInShortLinkEmphasis}
-                    </strong>
-                  ),
-                })}
-              </li>
-              <li>· {t.signedInPreview}</li>
-              <li>
-                ·{" "}
-                {interpolateNode(t.signedInSync, {
-                  emphasis: (
-                    <strong className="font-semibold text-brand-strong">
-                      {t.signedInSyncEmphasis}
-                    </strong>
-                  ),
-                })}
-              </li>
-            </ul>
-          </div>
+          <button
+            type="button"
+            onClick={() => signIn("google")}
+            disabled={loading !== null || !agreed}
+            className="relative flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-bg px-4 text-base font-semibold text-fg transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading === "google"
+              ? t.redirecting
+              : interpolate(t.continueWith, { provider: "Google" })}
+            {lastProvider === "google" && <RecentBadge label={t.recent} />}
+          </button>
 
-          {/* 로그인 안 해도 (게스트) */}
-          <div className="rounded-xl border border-border bg-surface p-4">
-            <p className="text-sm font-semibold text-fg">{t.guestTitle}</p>
-            <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-              <li>· {t.guestPreview}</li>
-              <li>· {interpolate(t.guestSave, { clips: messages.common.myClips })}</li>
-              <li>
-                ·{" "}
-                {interpolateNode(t.guestLimit, {
-                  device: (
-                    <strong className="font-semibold text-fg">{t.guestLimitDevice}</strong>
-                  ),
-                  noLink: (
-                    <strong className="font-semibold text-fg">{t.guestLimitNoLink}</strong>
-                  ),
-                })}
-              </li>
-            </ul>
-          </div>
+          {KAKAO_ENABLED && (
+            <button
+              type="button"
+              onClick={() => signIn("kakao")}
+              disabled={loading !== null || !agreed}
+              className="relative flex h-12 items-center justify-center gap-2 rounded-xl bg-[#FEE500] px-4 text-base font-semibold text-[#191600] transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading === "kakao"
+                ? t.redirecting
+                : interpolate(t.continueWith, { provider: "Kakao" })}
+              {lastProvider === "kakao" && <RecentBadge label={t.recent} />}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => signIn("naver")}
+            disabled={loading !== null || !agreed}
+            className="relative flex h-12 items-center justify-center gap-2 rounded-xl bg-[#03C75A] px-4 text-base font-semibold text-white transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading === "naver"
+              ? t.redirecting
+              : interpolate(t.continueWith, { provider: "Naver" })}
+            {lastProvider === "naver" && <RecentBadge label={t.recent} />}
+          </button>
         </div>
-      </section>
+
+        {error && (
+          <p role="alert" className="mt-4 text-center text-sm text-danger">
+            {error}
+          </p>
+        )}
+
+        <div className="mt-6 flex items-center gap-3">
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-xs text-fg-muted">{t.or}</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
+        <a
+          href={path("/")}
+          className="mt-4 flex h-12 items-center justify-center rounded-xl px-4 text-base font-semibold text-fg-muted transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40"
+        >
+          {t.continueAsGuest}
+        </a>
+
+        {/* ── 안내 영역(로그인 화면과 명확히 구분) ── */}
+        <section className="mt-12 border-t border-border pt-8">
+          <h2 className="text-center text-xs font-semibold uppercase tracking-wider text-fg-muted">
+            {t.compareTitle}
+          </h2>
+
+          <div className="mt-4 flex flex-col gap-3">
+            {/* 로그인 하면 (메인 '이렇게 동작해요'와 동일 텍스트·강조) */}
+            <div className="rounded-xl border border-brand/30 bg-brand-soft p-4">
+              <p className="text-sm font-semibold text-brand-strong">
+                {cmp.signedInTitle}
+              </p>
+              <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
+                <li>
+                  ·{" "}
+                  {interpolateNode(cmp.signedInItem1, {
+                    emphasis: (
+                      <strong className="font-semibold text-brand-strong">
+                        {cmp.signedInItem1Emphasis}
+                      </strong>
+                    ),
+                  })}
+                </li>
+                <li>· {cmp.signedInItem2}</li>
+                <li>
+                  ·{" "}
+                  {interpolateNode(cmp.signedInItem3, {
+                    emphasis: (
+                      <strong className="font-semibold text-brand-strong">
+                        {cmp.signedInItem3Emphasis}
+                      </strong>
+                    ),
+                  })}
+                </li>
+              </ul>
+            </div>
+
+            {/* 로그인 안 해도 (게스트) */}
+            <div className="rounded-xl border border-border bg-surface p-4">
+              <p className="text-sm font-semibold text-fg">{cmp.guestTitle}</p>
+              <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
+                <li>· {cmp.guestItem1}</li>
+                <li>
+                  ·{" "}
+                  {interpolate(cmp.guestItem2, {
+                    clips: messages.common.myClips,
+                  })}
+                </li>
+                <li>
+                  ·{" "}
+                  {interpolateNode(cmp.guestItem3, {
+                    device: (
+                      <strong className="font-semibold text-fg">
+                        {cmp.guestItem3Device}
+                      </strong>
+                    ),
+                    noLink: (
+                      <strong className="font-semibold text-fg">
+                        {cmp.guestItem3NoLink}
+                      </strong>
+                    ),
+                  })}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );

@@ -17,6 +17,25 @@ const ja: PartialMessages = {
     save: "保存",
   },
 
+  compare: {
+    guestTitle: "ログインしなくても",
+    guestItem1: "リンクを貼り付けてプレビューカードをすぐ作れます。",
+    guestItem2:
+      "作ったクリップをこのブラウザに保存して「{clips}」で見返せます。",
+    guestItem3: "ただし保存は{device}残り、{noLink}",
+    guestItem3Device: "この端末にだけ",
+    guestItem3NoLink: "短い共有リンクは作れません。",
+
+    signedInTitle: "ログインすると",
+    signedInItem1: "{emphasis}でメッセンジャーやSNSにそのまま送れます。",
+    signedInItem1Emphasis: "短い共有リンク",
+    signedInItem2:
+      "共有したリンクがタイトルと画像入りのプレビューカードで表示されます。",
+    signedInItem3:
+      "クリップがアカウントに溜まり、{emphasis}そのまま見られてタグで整理できます。",
+    signedInItem3Emphasis: "どの端末でも",
+  },
+
   clips: {
     guestNote:
       "このブラウザに保存されたクリップです。ログインするとどこからでも見て共有できます。",
@@ -25,7 +44,8 @@ const ja: PartialMessages = {
     select: "選択",
     allTags: "すべて",
     loading: "読み込み中…",
-    loadFailed: "一覧を読み込めませんでした。保存したクリップが消えたわけではありません。",
+    loadFailed:
+      "一覧を読み込めませんでした。保存したクリップが消えたわけではありません。",
     retry: "再試行",
     empty: "まだ保存したクリップがありません。",
     emptyCta: "最初のクリップを作成",
@@ -132,11 +152,14 @@ const ja: PartialMessages = {
     },
     clearInputAria: "入力をクリア",
     errors: {
-      metaFailed: "内容を読み込めませんでした。しばらくしてからもう一度お試しください。",
-      titleRequiredForLink: "共有リンクを作るにはタイトルが必要です。入力してください。",
+      metaFailed:
+        "内容を読み込めませんでした。しばらくしてからもう一度お試しください。",
+      titleRequiredForLink:
+        "共有リンクを作るにはタイトルが必要です。入力してください。",
       linkCreateFailed: "共有リンクの作成に失敗しました。",
       linkCreateError: "共有リンクの作成中に問題が発生しました。",
-      titleRequiredForClip: "クリップを追加するにはタイトルが必要です。入力してください。",
+      titleRequiredForClip:
+        "クリップを追加するにはタイトルが必要です。入力してください。",
       clipAddFailed: "クリップの追加に失敗しました。",
       clipAddError: "クリップの追加中に問題が発生しました。",
       titleRequiredForSave: "保存するにはタイトルが必要です。",
@@ -157,23 +180,11 @@ const ja: PartialMessages = {
 
     errorIncomplete: "ログインが完了しませんでした。もう一度お試しください。",
     errorConsent: "プライバシーポリシーに同意しないとログインできません。",
-    errorStart: "ログインを開始できませんでした。しばらくしてからお試しください。",
+    errorStart:
+      "ログインを開始できませんでした。しばらくしてからお試しください。",
     errorGeneric: "ログイン中に問題が発生しました。",
 
     compareTitle: "ログイン / ゲストモードについて",
-    signedInTitle: "ログインすると",
-    signedInShortLink: "{emphasis}を作ってメッセンジャーやSNSに送れます。",
-    signedInShortLinkEmphasis: "短い共有リンク",
-    signedInPreview: "共有したリンクがタイトルと画像入りのプレビューカードで表示されます。",
-    signedInSync: "クリップがアカウントに溜まり、{emphasis}そのまま見られてタグで整理できます。",
-    signedInSyncEmphasis: "ほかの端末でも",
-
-    guestTitle: "ログインしなくても",
-    guestPreview: "URLを貼り付けてプレビューカードを作れます。",
-    guestSave: "作ったクリップをこのブラウザに保存して「{clips}」で見返せます。",
-    guestLimit: "ただし保存は{device}残り、{noLink}",
-    guestLimitDevice: "この端末にだけ",
-    guestLimitNoLink: "短い共有リンクは作れません。",
   },
 
   settings: {
@@ -199,7 +210,8 @@ const ja: PartialMessages = {
     withdrawItemClips: "保存したすべてのクリップと共有リンク",
     withdrawAgree: "上記を確認し、削除に同意します。",
     withdrawing: "退会処理中…",
-    withdrawFailed: "退会処理に失敗しました。しばらくしてからもう一度お試しください。",
+    withdrawFailed:
+      "退会処理に失敗しました。しばらくしてからもう一度お試しください。",
     withdrawError: "退会処理中に問題が発生しました。",
   },
 
@@ -233,26 +245,9 @@ const ja: PartialMessages = {
 
     howTitle: "使い方",
     how1: "共有したいリンクを貼り付けます。タイトル・説明・カバー画像は自動で入ります。",
-    how2:
-      "「{createLink}」を押すと、共有カードが先に表示される短いURLができます。作成後は同じ場所が「{copyLink}」に変わります。",
-    how3:
-      "カードなしでURLだけ送りたいときは「{copyOriginal}」— タイトルと元のURLをまとめてコピーします。",
-    how4:
-      "「{saveToClips}」しておくと、あとでタグごとに整理して見返せます。ログイン前は「{saveHere}」でこの端末にだけ残ります。",
-
-    guestTitle: "ログインしなくても",
-    guestItem1: "リンクを貼り付けてプレビューカードをすぐ作れます。",
-    guestItem2: "作ったクリップをこのブラウザに保存して「{clips}」で見返せます。",
-    guestItem3: "ただし保存は{device}残り、{noLink}",
-    guestItem3Device: "この端末にだけ",
-    guestItem3NoLink: "短い共有リンクは作れません。",
-
-    signedInTitle: "ログインすると",
-    signedInItem1: "{emphasis}でメッセンジャーやSNSにそのまま送れます。",
-    signedInItem1Emphasis: "短い共有リンク",
-    signedInItem2: "共有したリンクがタイトルと画像入りのプレビューカードで表示されます。",
-    signedInItem3: "クリップがアカウントに溜まり、{emphasis}そのまま見られてタグで整理できます。",
-    signedInItem3Emphasis: "どの端末でも",
+    how2: "「{createLink}」を押すと、共有カードが先に表示される短いURLができます。作成後は同じ場所が「{copyLink}」に変わります。",
+    how3: "カードなしでURLだけ送りたいときは「{copyOriginal}」— タイトルと元のURLをまとめてコピーします。",
+    how4: "「{saveToClips}」しておくと、あとでタグごとに整理して見返せます。ログイン前は「{saveHere}」でこの端末にだけ残ります。",
   },
 
   faq: {

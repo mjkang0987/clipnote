@@ -27,6 +27,7 @@ export default async function HomePage({ locale }: { locale: Locale }) {
     <HomeClient
       messages={{
         common: m.common,
+        compare: m.compare,
         home: m.home,
         homeActions: m.homeActions,
         about: m.about,
