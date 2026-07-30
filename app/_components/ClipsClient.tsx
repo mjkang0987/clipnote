@@ -34,9 +34,12 @@ type Item = {
 export default function ClipsClient({
   initialLoggedIn,
   initialClips,
+  initialLoadFailed,
 }: {
   initialLoggedIn: boolean;
   initialClips: Clip[];
+  /** 서버에서 목록 조회가 실패했는지 — 빈 목록과 구분해 재시도를 제안한다. */
+  initialLoadFailed: boolean;
 }) {
   // 게스트 목록은 localStorage 라 서버에서 알 수 없다 → 마운트 후 채운다.
   const [items, setItems] = useState<Item[]>(() =>
@@ -45,6 +48,7 @@ export default function ClipsClient({
   // 서버 판정값이 그대로 유지된다(이 화면에서 로그인 상태가 바뀔 일이 없다).
   const loggedIn = initialLoggedIn;
   const [loading, setLoading] = useState(!initialLoggedIn);
+  const [loadFailed, setLoadFailed] = useState(initialLoadFailed);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Item | null>(null);
 
@@ -193,6 +197,23 @@ export default function ClipsClient({
       // 무시(다음 로드 때 반영)
     }
     setMigrating(false);
+  }
+
+  /** 서버 렌더에서 목록 조회가 실패했을 때의 재시도 — 기존 API 경로를 그대로 쓴다. */
+  async function retryLoad() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/clips");
+      const json = (await res.json()) as { loggedIn: boolean; clips: Clip[] };
+      if (json.loggedIn) {
+        setItems(json.clips.map(dbToItem));
+        setLoadFailed(false);
+      }
+    } catch {
+      // 실패하면 재시도 안내를 유지한다.
+    } finally {
+      setLoading(false);
+    }
   }
 
   // 옮기기를 거절하면 로컬 클립은 남겨둘 곳이 없다(로그인 목록은 DB 를 보여준다) →
@@ -350,6 +371,20 @@ export default function ClipsClient({
 
         {loading ? (
           <p className="mt-10 text-center text-sm text-fg-muted">불러오는 중…</p>
+        ) : loadFailed ? (
+          <div className="mt-10 rounded-2xl border border-dashed border-border bg-surface p-10 text-center">
+            <p className="text-sm text-fg-muted">
+              목록을 불러오지 못했어요. 저장된 클립이 사라진 건 아니에요.
+            </p>
+            <button
+              type="button"
+              onClick={retryLoad}
+              disabled={loading}
+              className="mt-3 inline-block rounded-[8px] bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-60"
+            >
+              다시 시도
+            </button>
+          </div>
         ) : items.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-dashed border-border bg-surface p-10 text-center">
             <p className="text-sm text-fg-muted">아직 저장한 클립이 없어요.</p>

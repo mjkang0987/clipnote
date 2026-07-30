@@ -18,6 +18,9 @@ import { getCurrentUser } from "@/lib/supabase/server";
 export default async function Page() {
   let initialLoggedIn = false;
   let initialClips: Clip[] = [];
+  // 조회 실패를 빈 목록과 구분해 넘긴다 — 구분하지 않으면 DB 에 클립이 있는데도
+  // "아직 저장한 클립이 없어요" 로 보이고 재시도 경로도 없다.
+  let initialLoadFailed = false;
 
   if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
     const user = await getCurrentUser();
@@ -26,10 +29,16 @@ export default async function Page() {
       try {
         initialClips = await clipStore.listByUser(user.id);
       } catch {
-        // 조회 실패는 빈 목록으로 — 본문에서 다시 불러올 수 있다.
+        initialLoadFailed = true;
       }
     }
   }
 
-  return <ClipsClient initialLoggedIn={initialLoggedIn} initialClips={initialClips} />;
+  return (
+    <ClipsClient
+      initialLoggedIn={initialLoggedIn}
+      initialClips={initialClips}
+      initialLoadFailed={initialLoadFailed}
+    />
+  );
 }
