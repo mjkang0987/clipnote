@@ -117,6 +117,33 @@ const en: PartialMessages = {
     },
   },
 
+  settings: {
+    title: "Account settings",
+    subtitle: "Manage your sign-in details and account.",
+    loading: "Loading…",
+    signedInWith: "Signed in with {provider}",
+    accountLabel: "{provider} account",
+    providerUnknown: "social",
+    viewLink: "View ›",
+    contact: "Contact us",
+    contactAction: "Send email ›",
+    contactNote: "Report bugs or request features at {email}.",
+
+    dangerTitle: "Delete account",
+    dangerBody:
+      "Deleting your account permanently removes it along with every saved clip and share link. This can't be recovered.",
+    withdraw: "Delete account",
+
+    withdrawTitle: "Delete your account?",
+    withdrawBody: "The following will be permanently deleted and can't be recovered.",
+    withdrawItemAccount: "Account details (sign-in identifier, email, profile)",
+    withdrawItemClips: "Every saved clip and share link",
+    withdrawAgree: "I've read the above and agree to the deletion.",
+    withdrawing: "Deleting…",
+    withdrawFailed: "Couldn't delete the account. Please try again in a moment.",
+    withdrawError: "Something went wrong while deleting the account.",
+  },
+
   homeActions: {
     createLink: "Create link",
     creating: "Creating…",

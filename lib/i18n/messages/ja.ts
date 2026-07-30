@@ -118,6 +118,33 @@ const ja: PartialMessages = {
     },
   },
 
+  settings: {
+    title: "アカウント設定",
+    subtitle: "ログイン情報とアカウントを管理します。",
+    loading: "読み込み中…",
+    signedInWith: "{provider} アカウントでログイン中",
+    accountLabel: "{provider} アカウント",
+    providerUnknown: "ソーシャル",
+    viewLink: "表示 ›",
+    contact: "お問い合わせ",
+    contactAction: "メールを送る ›",
+    contactNote: "不具合の報告・機能のご要望は {email} までお送りください。",
+
+    dangerTitle: "アカウント削除",
+    dangerBody:
+      "退会するとアカウントと保存されたすべてのクリップ・共有リンクが永久に削除され、復元できません。",
+    withdraw: "退会する",
+
+    withdrawTitle: "本当に退会しますか?",
+    withdrawBody: "以下の情報が永久に削除され、復元できません。",
+    withdrawItemAccount: "アカウント情報(ログイン識別子・メール・プロフィール)",
+    withdrawItemClips: "保存したすべてのクリップと共有リンク",
+    withdrawAgree: "上記を確認し、削除に同意します。",
+    withdrawing: "退会処理中…",
+    withdrawFailed: "退会処理に失敗しました。しばらくしてからもう一度お試しください。",
+    withdrawError: "退会処理中に問題が発生しました。",
+  },
+
   homeActions: {
     createLink: "リンクを作成",
     creating: "作成中…",

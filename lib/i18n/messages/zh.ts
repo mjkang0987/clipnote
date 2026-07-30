@@ -114,6 +114,32 @@ const zh: PartialMessages = {
     },
   },
 
+  settings: {
+    title: "账号设置",
+    subtitle: "管理登录信息和账号。",
+    loading: "加载中…",
+    signedInWith: "已使用 {provider} 账号登录",
+    accountLabel: "{provider} 账号",
+    providerUnknown: "社交",
+    viewLink: "查看 ›",
+    contact: "联系我们",
+    contactAction: "发送邮件 ›",
+    contactNote: "如需报告问题或提出功能建议，请发送至 {email}。",
+
+    dangerTitle: "删除账号",
+    dangerBody: "注销后账号以及保存的所有剪藏和分享链接将被永久删除，无法恢复。",
+    withdraw: "注销账号",
+
+    withdrawTitle: "确定要注销吗?",
+    withdrawBody: "以下信息将被永久删除，无法恢复。",
+    withdrawItemAccount: "账号信息(登录标识符·邮箱·个人资料)",
+    withdrawItemClips: "保存的所有剪藏和分享链接",
+    withdrawAgree: "我已阅读以上内容并同意删除。",
+    withdrawing: "注销中…",
+    withdrawFailed: "注销失败。请稍后再试。",
+    withdrawError: "注销过程中出现问题。",
+  },
+
   homeActions: {
     createLink: "创建链接",
     creating: "创建中…",

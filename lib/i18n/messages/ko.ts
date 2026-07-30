@@ -140,6 +140,38 @@ const ko = {
     },
   },
 
+  /** 계정 설정 화면 */
+  settings: {
+    title: "계정 설정",
+    subtitle: "로그인 정보와 계정을 관리합니다.",
+    loading: "불러오는 중…",
+    /** `{provider}` 는 Google·Kakao·Naver 같은 공급자 이름(번역하지 않음) */
+    signedInWith: "{provider} 계정으로 로그인됨",
+    /** 이메일을 표시하지 않는 공급자(네이버)에서 쓰는 계정 라벨 */
+    accountLabel: "{provider} 계정",
+    /** 공급자를 알 수 없을 때 */
+    providerUnknown: "소셜",
+    viewLink: "보기 ›",
+    contact: "문의하기",
+    contactAction: "메일 보내기 ›",
+    /** `{email}` 은 문의 메일 주소 */
+    contactNote: "오류 제보·기능 요청은 {email} 로 보내 주세요.",
+
+    dangerTitle: "계정 삭제",
+    dangerBody:
+      "탈퇴하면 계정과 저장된 모든 클립·공유 링크가 영구 삭제되며 복구할 수 없어요.",
+    withdraw: "회원 탈퇴",
+
+    withdrawTitle: "정말 탈퇴할까요?",
+    withdrawBody: "아래 정보가 영구적으로 삭제되며 복구할 수 없어요.",
+    withdrawItemAccount: "계정 정보(로그인 식별자·이메일·프로필)",
+    withdrawItemClips: "저장한 모든 클립과 공유 링크",
+    withdrawAgree: "위 내용을 확인했으며 삭제에 동의합니다.",
+    withdrawing: "탈퇴 중…",
+    withdrawFailed: "탈퇴 처리에 실패했어요. 잠시 후 다시 시도해 주세요.",
+    withdrawError: "탈퇴 처리 중 문제가 발생했어요.",
+  },
+
   /** 홈 하단 1차 액션 버튼과 그 안내문 */
   homeActions: {
     createLink: "링크 만들기",

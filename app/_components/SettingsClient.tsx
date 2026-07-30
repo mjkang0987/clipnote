@@ -4,12 +4,16 @@ import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Messages } from "@/lib/i18n";
+import { interpolate } from "@/lib/i18n/interpolate";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import Header from "@/app/_components/Header";
 
 // 계정 설정 페이지: 로그인 정보 확인 · 로그아웃 · 회원 탈퇴.
 // 사전은 서버(`SettingsPage`)에서 골라 받는다.
+const CONTACT_EMAIL = "pikaworks.help@gmail.com";
+
 export default function SettingsClient({ messages }: { messages: Messages }) {
+  const t = messages.settings;
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -55,21 +59,21 @@ export default function SettingsClient({ messages }: { messages: Messages }) {
       <div className="flex flex-1 flex-col">
         <Header messages={messages} />
         <main className="mx-auto w-full max-w-lg flex-1 px-5 py-12">
-          <p className="mt-10 text-center text-sm text-fg-muted">불러오는 중…</p>
+          <p className="mt-10 text-center text-sm text-fg-muted">{t.loading}</p>
         </main>
       </div>
     );
   }
 
-  const { label: accountLabel, provider } = describeAccount(user);
+  const { label: accountLabel, provider } = describeAccount(user, t);
 
   return (
     <div className="flex flex-1 flex-col">
       <Header messages={messages} />
 
       <main className="mx-auto w-full max-w-lg flex-1 px-5 py-10">
-        <h1 className="text-2xl font-bold tracking-tight text-fg">계정 설정</h1>
-        <p className="mt-1 text-sm text-fg-muted">로그인 정보와 계정을 관리합니다.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-fg">{t.title}</h1>
+        <p className="mt-1 text-sm text-fg-muted">{t.subtitle}</p>
 
         {/* 계정 정보 + 로그아웃 */}
         <section className="mt-6 border-t border-border py-5">
@@ -77,7 +81,7 @@ export default function SettingsClient({ messages }: { messages: Messages }) {
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold text-fg">{accountLabel}</p>
               <p className="truncate text-sm text-fg-muted">
-                {provider} 계정으로 로그인됨
+                {interpolate(t.signedInWith, { provider })}
               </p>
             </div>
             <button
@@ -85,7 +89,7 @@ export default function SettingsClient({ messages }: { messages: Messages }) {
               onClick={signOut}
               className="shrink-0 text-sm font-semibold text-fg-muted transition hover:text-fg"
             >
-              로그아웃
+              {messages.common.logout}
             </button>
           </div>
         </section>
@@ -96,9 +100,9 @@ export default function SettingsClient({ messages }: { messages: Messages }) {
             href={path("/privacy")}
             className="flex items-center justify-between text-sm font-semibold text-fg transition hover:text-brand-strong"
           >
-            <span>개인정보처리방침</span>
+            <span>{messages.common.privacy}</span>
             <span className="text-fg-muted" aria-hidden>
-              보기 ›
+              {t.viewLink}
             </span>
           </a>
         </section>
@@ -106,38 +110,36 @@ export default function SettingsClient({ messages }: { messages: Messages }) {
         {/* 문의 */}
         <section className="mt-1 border-t border-border py-4">
           <a
-            href="mailto:pikaworks.help@gmail.com"
+            href={`mailto:${CONTACT_EMAIL}`}
             className="flex items-center justify-between text-sm font-semibold text-fg transition hover:text-brand-strong"
           >
-            <span>문의하기</span>
+            <span>{t.contact}</span>
             <span className="text-fg-muted" aria-hidden>
-              메일 보내기 ›
+              {t.contactAction}
             </span>
           </a>
           <p className="mt-1 text-xs text-fg-muted">
-            오류 제보·기능 요청은 pikaworks.help@gmail.com 로 보내 주세요.
+            {interpolate(t.contactNote, { email: CONTACT_EMAIL })}
           </p>
         </section>
 
         {/* 위험 구역: 회원 탈퇴 */}
         <section className="mt-4 rounded-2xl border border-danger/30 bg-danger/5 p-5">
-          <h2 className="text-sm font-semibold text-danger">계정 삭제</h2>
-          <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-            탈퇴하면 계정과 저장된 모든 클립·공유 링크가 영구 삭제되며 복구할 수
-            없어요.
-          </p>
+          <h2 className="text-sm font-semibold text-danger">{t.dangerTitle}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-fg-muted">{t.dangerBody}</p>
           <button
             type="button"
             onClick={() => setConfirming(true)}
             className="mt-3 text-sm font-semibold text-danger underline underline-offset-2 transition hover:opacity-80"
           >
-            회원 탈퇴
+            {t.withdraw}
           </button>
         </section>
       </main>
 
       {confirming && (
         <WithdrawConfirmLayer
+          messages={messages}
           onCancel={() => setConfirming(false)}
           onDone={() => {
             window.location.href = path("/");
@@ -150,12 +152,15 @@ export default function SettingsClient({ messages }: { messages: Messages }) {
 
 /** 탈퇴 확인 모달: 동의 체크 후에만 삭제 실행. */
 function WithdrawConfirmLayer({
+  messages,
   onCancel,
   onDone,
 }: {
+  messages: Messages;
   onCancel: () => void;
   onDone: () => void;
 }) {
+  const t = messages.settings;
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -179,7 +184,7 @@ function WithdrawConfirmLayer({
     try {
       const res = await fetch("/api/account", { method: "DELETE" });
       if (!res.ok) {
-        setError("탈퇴 처리에 실패했어요. 잠시 후 다시 시도해 주세요.");
+        setError(t.withdrawFailed);
         setBusy(false);
         return;
       }
@@ -192,7 +197,7 @@ function WithdrawConfirmLayer({
       }
       onDone();
     } catch {
-      setError("탈퇴 처리 중 문제가 발생했어요.");
+      setError(t.withdrawError);
       setBusy(false);
     }
   }
@@ -212,14 +217,14 @@ function WithdrawConfirmLayer({
         className="w-full max-w-sm rounded-t-2xl bg-surface p-6 shadow-soft sm:rounded-2xl"
       >
         <h2 id="withdraw-title" className="text-lg font-bold text-fg">
-          정말 탈퇴할까요?
+          {t.withdrawTitle}
         </h2>
         <p id="withdraw-desc" className="mt-2 text-sm leading-relaxed text-fg-muted">
-          아래 정보가 영구적으로 삭제되며 복구할 수 없어요.
+          {t.withdrawBody}
         </p>
         <ul className="mt-3 flex flex-col gap-1 rounded-xl bg-bg p-4 text-sm text-fg">
-          <li>· 계정 정보(로그인 식별자·이메일·프로필)</li>
-          <li>· 저장한 모든 클립과 공유 링크</li>
+          <li>· {t.withdrawItemAccount}</li>
+          <li>· {t.withdrawItemClips}</li>
         </ul>
 
         <label className="mt-4 flex cursor-pointer items-start gap-2.5">
@@ -231,7 +236,7 @@ function WithdrawConfirmLayer({
             className="mt-0.5 h-4 w-4 shrink-0 accent-danger"
           />
           <span className="text-sm leading-relaxed text-fg">
-            위 내용을 확인했으며 삭제에 동의합니다.
+            {t.withdrawAgree}
           </span>
         </label>
 
@@ -248,7 +253,7 @@ function WithdrawConfirmLayer({
             disabled={busy}
             className="h-12 flex-1 rounded-xl border border-border bg-bg text-base font-semibold text-fg transition hover:bg-border/40 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            취소
+            {messages.common.cancel}
           </button>
           <button
             type="button"
@@ -256,7 +261,7 @@ function WithdrawConfirmLayer({
             disabled={!agreed || busy}
             className="h-12 flex-1 rounded-xl bg-danger text-base font-semibold text-white transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-danger/50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {busy ? "탈퇴 중…" : "회원 탈퇴"}
+            {busy ? t.withdrawing : t.withdraw}
           </button>
         </div>
       </div>
@@ -265,7 +270,10 @@ function WithdrawConfirmLayer({
 }
 
 /** 표시용 계정 라벨과 공급자 이름. 네이버는 내부 식별 이메일을 숨긴다. */
-function describeAccount(user: User): { label: string; provider: string } {
+function describeAccount(
+  user: User,
+  t: Messages["settings"],
+): { label: string; provider: string } {
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
   const appMeta = (user.app_metadata ?? {}) as Record<string, unknown>;
   const rawProvider =
@@ -275,20 +283,22 @@ function describeAccount(user: User): { label: string; provider: string } {
 
   const provider =
     PROVIDER_NAMES[rawProvider] ??
-    (user.email?.endsWith("@naver.invalid") ? "네이버" : "소셜");
+    (user.email?.endsWith("@naver.invalid") ? "Naver" : t.providerUnknown);
 
   // 네이버는 내부 식별 이메일(@naver.invalid)을 노출하지 않고 닉네임/공급자로 표기.
   const email = user.email ?? "";
   const label =
     email && !email.endsWith("@naver.invalid")
       ? email
-      : (typeof meta.name === "string" && meta.name) || `${provider} 계정`;
+      : (typeof meta.name === "string" && meta.name) ||
+        interpolate(t.accountLabel, { provider });
 
   return { label, provider };
 }
 
 const PROVIDER_NAMES: Record<string, string> = {
   google: "Google",
-  kakao: "카카오",
-  naver: "네이버",
+  // 공급자 이름은 어느 언어에서도 라틴 표기로 통일한다 — 언어별 표기 분기가 사라진다.
+  kakao: "Kakao",
+  naver: "Naver",
 };
