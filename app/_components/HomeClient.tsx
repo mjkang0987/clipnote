@@ -98,6 +98,9 @@ export default function HomeClient({
   const path = useLocalizedPath();
   // 데스크톱 등 미지원 환경에서는 공유하기 버튼을 아예 노출하지 않는다(복사하기만 남는다).
   const canShare = useCanShare();
+  // 게스트 버튼이 2개뿐인 경우(= 공유하기 미지원 = 사실상 데스크톱).
+  // 이때만 넓은 화면에서 한 줄로 놓는다.
+  const twoUp = !canShare;
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [tagInput, setTagInput] = useState("");
@@ -675,8 +678,18 @@ export default function HomeClient({
             ) : (
               // 게스트도 같은 구조 — 위 줄은 공유·복사, 저장은 항상 하단 한 줄.
               // `공유하기` 는 터치 기기에서만 붙으므로 데스크톱은 위 줄이 `원본 복사` 하나다.
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2">
+              //
+              // 버튼이 2개뿐일 때(= 공유하기가 없을 때)는 넓은 화면에서 한 줄로 놓는다.
+              // 그러지 않으면 686px 짜리 버튼 두 개가 세로로 쌓여 화면을 낭비한다.
+              // 3개일 때는 위 줄 2개 + 저장 한 줄이라는 기존 구조를 그대로 둔다.
+              //
+              // flex-row 가 아니라 grid 인 이유: flex 항목은 `min-width: auto` 라
+              // min-content 아래로 줄지 않아 두 버튼 폭이 319/359 로 어긋났다.
+              // `grid-cols-2`(= minmax(0,1fr) 2개)는 그 하한이 없어 정확히 반씩 나뉜다.
+              <div
+                className={`flex flex-col gap-2 ${twoUp ? "sm:grid sm:grid-cols-2" : ""}`}
+              >
+                <div className="flex w-full gap-2">
                   {canShare && (
                     <button
                       type="button"
