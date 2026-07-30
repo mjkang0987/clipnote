@@ -12,6 +12,11 @@ const ko = {
     /** 내 클립 화면 이름. 링크 라벨로도 쓴다. */
     myClips: "내 클립",
     login: "로그인",
+    logout: "로그아웃",
+    settings: "설정",
+    privacy: "개인정보처리방침",
+    /** 브랜드 로고 링크의 aria-label */
+    homeAria: "ClipNote 홈",
   },
 
   /** 홈 화면 */

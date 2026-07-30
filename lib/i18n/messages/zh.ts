@@ -8,6 +8,10 @@ const zh: PartialMessages = {
   common: {
     myClips: "我的剪藏",
     login: "登录",
+    logout: "退出登录",
+    settings: "设置",
+    privacy: "隐私政策",
+    homeAria: "ClipNote 首页",
   },
 
   home: {

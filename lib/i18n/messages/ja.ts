@@ -8,6 +8,10 @@ const ja: PartialMessages = {
   common: {
     myClips: "マイクリップ",
     login: "ログイン",
+    logout: "ログアウト",
+    settings: "設定",
+    privacy: "プライバシーポリシー",
+    homeAria: "ClipNote ホーム",
   },
 
   home: {

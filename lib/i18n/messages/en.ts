@@ -9,6 +9,10 @@ const en: PartialMessages = {
   common: {
     myClips: "My Clips",
     login: "Sign in",
+    logout: "Sign out",
+    settings: "Settings",
+    privacy: "Privacy Policy",
+    homeAria: "ClipNote home",
   },
 
   home: {

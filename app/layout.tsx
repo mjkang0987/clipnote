@@ -4,6 +4,8 @@ import "./globals.css";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, ogImagePath } from "@/lib/site";
 import ServiceWorkerRegister from "@/app/_components/ServiceWorkerRegister";
 import Footer from "@/app/_components/Footer";
+import { LOCALE_TAGS } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n/server";
 
 // 구글 애드센스 퍼블리셔 ID(ca-pub-...). 공개값이라 코드에 둔다.
 const ADSENSE_CLIENT = "ca-pub-5655041057903258";
@@ -98,13 +100,16 @@ const jsonLd = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // 미들웨어가 요청 경로에서 읽어 헤더로 넘긴 값. `<html lang>` 과 푸터 사전이 이걸 쓴다.
+  const locale = await getRequestLocale();
+
   return (
-    <html lang="ko" className="h-full antialiased">
+    <html lang={LOCALE_TAGS[locale]} className="h-full antialiased">
       <body className="min-h-full flex flex-col">
         {/* 구글 애드센스 로더 */}
         <Script
@@ -121,7 +126,7 @@ export default function RootLayout({
         />
         <ServiceWorkerRegister />
         {children}
-        <Footer />
+        <Footer locale={locale} />
       </body>
     </html>
   );
