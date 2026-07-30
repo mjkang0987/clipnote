@@ -22,12 +22,22 @@ import { addLocalClip, getKnownTags, recordTags } from "@/lib/local-clips";
  */
 const COARSE_POINTER = "(pointer: coarse)";
 
-// 1차 액션 버튼 스타일. 모바일에서도 좌우로 나란히 놓으므로 폭이 좁다 →
+// 액션 버튼 스타일. 모바일에서도 좌우로 나란히 놓으므로 폭이 좁다 →
 // 글자를 한 단계 줄이고(sm 이상에서 원래 크기) 줄바꿈을 막아 라벨이 잘리지 않게 한다.
-const PRIMARY_BUTTON =
-  "h-12 flex-1 whitespace-nowrap rounded-[8px] bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:text-base";
-const SECONDARY_BUTTON =
-  "h-12 flex-1 whitespace-nowrap rounded-[8px] border border-brand bg-brand-soft px-4 text-sm font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:text-base";
+//
+// 폭은 `flex-1` 이 아니라 `w-full` 로 준다. `flex-1`(= flex:1 1 0%)은 세로 flex 컨테이너에서
+// **높이**에 적용돼 h-12 를 덮어써 버튼이 납작해진다. `w-full` 은 가로 줄에서 균등 분할되고
+// 세로에서는 높이가 그대로 유지된다.
+//
+// 색 규칙: 공유 링크·복사 계열만 보라색, 저장은 기본색(app/clips/page.tsx 의 관행과 동일).
+const BUTTON_BASE =
+  "h-12 w-full whitespace-nowrap rounded-[8px] px-4 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed sm:px-5 sm:text-base";
+/** 1차(링크 만들기·링크 복사) — 보라 채움 */
+const PRIMARY_BUTTON = `${BUTTON_BASE} bg-brand text-white hover:bg-brand-strong disabled:opacity-50`;
+/** 보조 공유·복사(공유하기·원본 복사) — 보라 테두리 */
+const SECONDARY_BUTTON = `${BUTTON_BASE} border border-brand bg-brand-soft text-brand-strong hover:bg-brand hover:text-white disabled:opacity-60`;
+/** 저장(내 클립에 저장·이 브라우저에 저장) — 기본색 */
+const NEUTRAL_BUTTON = `${BUTTON_BASE} border border-border bg-surface text-fg hover:bg-bg disabled:opacity-60`;
 
 function subscribePointer(onStoreChange: () => void): () => void {
   if (typeof window === "undefined") return () => {};
@@ -597,23 +607,17 @@ export default function HomeClient({
                   type="button"
                   onClick={handleSaveToClips}
                   disabled={saveClipDisabled}
-                  className={SECONDARY_BUTTON}
+                  className={NEUTRAL_BUTTON}
                 >
                   {saveClipLabel}
                 </button>
               </div>
             ) : (
-              // 네이티브 공유가 가능한 기기(터치)는 저장 위에 공유·복사 두 개를 한 줄로 둔다.
-              // 데스크톱은 공유하기가 없으므로 저장 + 복사하기를 한 줄에 나란히 둔다
-              // (로그인 상태의 2버튼 배치와 같은 모양).
-              // 네이티브 공유가 가능한 기기(터치)만 `공유하기` 가 붙어 3개가 되므로 2줄로 나눈다.
-              // 데스크톱은 2개라 로그인 상태와 같은 한 줄 배치.
-              <div className={canShare ? "flex flex-col gap-2" : "flex gap-2"}>
-                <button type="submit" disabled={primaryDisabled} className={PRIMARY_BUTTON}>
-                  {primaryLabel}
-                </button>
-                {canShare ? (
-                  <div className="flex gap-2">
+              // 게스트도 같은 구조 — 위 줄은 공유·복사, 저장은 항상 하단 한 줄.
+              // `공유하기` 는 터치 기기에서만 붙으므로 데스크톱은 위 줄이 `원본 복사` 하나다.
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  {canShare && (
                     <button
                       type="button"
                       onClick={handleNativeShare}
@@ -622,16 +626,7 @@ export default function HomeClient({
                     >
                       공유하기
                     </button>
-                    <button
-                      type="button"
-                      onClick={handlePlainCopy}
-                      disabled={!hasInput}
-                      className={SECONDARY_BUTTON}
-                    >
-                      {plainCopied ? "복사됨 ✓" : "원본 복사"}
-                    </button>
-                  </div>
-                ) : (
+                  )}
                   <button
                     type="button"
                     onClick={handlePlainCopy}
@@ -640,7 +635,10 @@ export default function HomeClient({
                   >
                     {plainCopied ? "복사됨 ✓" : "원본 복사"}
                   </button>
-                )}
+                </div>
+                <button type="submit" disabled={primaryDisabled} className={NEUTRAL_BUTTON}>
+                  {primaryLabel}
+                </button>
               </div>
             )}
             {isLoggedIn === false && (
