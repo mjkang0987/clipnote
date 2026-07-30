@@ -286,6 +286,74 @@ tags                              -- MVP에 표시, 정리는 단계적
 - 메인 콘텐츠/레이아웃 변경은 Google 재검수 트리거 아님(동의화면 등록값=홈 URL·개인정보 URL·앱명·로고만).
   검수 요건상 홈의 "앱 설명 + 개인정보처리방침 링크"는 유지. 하단 소개/FAQ 블록 그대로 둠.
 
+## 14. 계획: 웹 다국어 (한국어·영어·일본어·중국어) — 2026-07-30
+
+### 요구사항
+- 사용자가 서비스 안에서 표시 언어를 직접 바꿀 수 있다.
+- 지원 언어 4종: 한국어(원본) · 영어 · 일본어 · 중국어 간체.
+- iOS 앱(`clipnote-ios`)이 같은 4종을 이미 지원한다 — **문구·키를 앱과 맞춘다.**
+
+### URL 전략 (결정: 경로 분리, 한국어는 prefix 없음)
+
+```
+/              한국어 (기존 URL 그대로)
+/en /ja /zh    영어 · 일본어 · 중국어
+/aB3xY9        공유 링크 (기존 그대로)
+```
+
+**왜 경로 분리인가** — 쿠키·localStorage 전환은 같은 URL이 사용자마다 다른 언어를 반환한다.
+크롤러는 한 언어만 인덱싱하고, 공유 시 언어가 따라가지 않고, CDN 캐시도 어긋난다.
+경로가 갈리면 언어별 인덱싱·hreflang·언어별 OG가 성립한다.
+
+**왜 한국어에 prefix를 두지 않는가** — 이미 유통된 공유 링크와 인덱싱된 `/clips`·`/privacy`
+URL을 보존한다. 모든 언어에 prefix를 두려면 공유 링크를 `/s/{slug}` 로 옮겨야 해서
+카톡·SNS에 뿌려진 기존 링크가 깨진다.
+
+**왜 `app/[locale]` 이 아니라 정적 폴더인가** — 루트에 이미 동적 세그먼트 `app/[slug]` 가 있다.
+같은 레벨에 `[locale]` 을 두면 `/en` 이 slug인지 locale인지 판별할 수 없어 Next.js가 라우트
+충돌로 거부한다. `app/en/` 처럼 정적 세그먼트면 동적보다 우선 매칭돼 충돌하지 않는다.
+
+**슬러그 충돌 없음** — `lib/slug.ts` 는 7자 고정 생성이라 2자 로케일(`en`·`ja`·`zh`)과 겹칠 수
+없다. 예약어 처리가 필요하지 않다.
+
+### i18n 구현 방식 (결정: 자체 사전)
+`next-intl` 등 라이브러리는 `[locale]` 세그먼트 라우팅을 전제하므로 위 구조와 맞지 않는다.
+현재 의존성이 매우 얇아(`next`·`react`·`supabase`) 자체 사전이 더 가볍다.
+
+- `lib/i18n/locales.ts` — `LOCALES = ["ko","en","ja","zh"]`, 기본 `ko`, 경로 helper
+- `lib/i18n/messages/{ko,en,ja,zh}.ts` — 중첩 사전. 키는 앱의 문자열 카탈로그와 동일하게 맞춘다
+- `lib/i18n/index.ts` — 서버용 `getMessages(locale)`, 클라이언트용 `LocaleProvider` + `useT()`
+- 각 로케일 폴더는 공용 페이지 컴포넌트에 `locale` 만 넘기는 얇은 래퍼 (로직 중복 없음)
+
+### 범위
+- **포함**: 홈·내 클립·설정·로그인·공유 페이지의 UI 문자열, `generateMetadata`(title·description·OG),
+  `faqJsonLd`, `sitemap.ts`, `layout.tsx` 의 `lang` 속성, 언어 선택 UI
+- **제외**: 개인정보 처리방침 본문 — 법적 문서라 기계 번역 게시는 위험. 한국어 유지하고
+  다른 언어에서는 "한국어로 제공됩니다" 안내를 붙인다.
+- **제외**: 사용자가 입력한 클립 제목·태그(원문 유지)
+
+### 영향 파일
+- 신규: `lib/i18n/*`, `app/{en,ja,zh}/**` (얇은 래퍼), 언어 선택 컴포넌트
+- 수정: `app/page.tsx`·`app/clips/page.tsx`·`app/settings/page.tsx`·`app/login/page.tsx`·
+  `app/[slug]/page.tsx`, `app/_components/{HomeClient,ClipsClient,Header,Footer}.tsx`,
+  `app/layout.tsx`, `app/sitemap.ts`, `app/robots.ts`, `lib/site.ts`
+
+### 작업 순서 (각 단위마다 작업>리뷰>개선>검증)
+1. `lib/i18n` 기반 + 한국어 사전만 (동작 변화 0, 회귀 위험 최소)
+2. 홈 문자열 치환 + `/en` 라우트 1개로 왕복 검증
+3. 나머지 페이지 치환 · `/ja` `/zh` 추가
+4. `generateMetadata`·hreflang·`sitemap` 언어별 생성
+5. 언어 선택 UI (현재 경로 유지하며 로케일만 교체)
+6. 영어·일본어·중국어 번역 채우기
+
+### 기대 결과
+- `/`·`/en`·`/ja`·`/zh` 가 각 언어로 렌더되고 hreflang 이 상호 참조된다.
+- 기존 URL(공유 링크·`/clips`·`/privacy`)이 그대로 동작한다.
+- 언어 선택 시 같은 페이지의 해당 로케일 경로로 이동한다.
+
+### 검증
+`npx tsc --noEmit` · `npx eslint`(신규 지적 0) · 각 로케일 경로 200 응답 · 공유 링크 회귀 확인.
+
 ## 8. 메타데이터 추출 전략 (단계별 폴백)
 
 URL마다 메타 품질이 천차만별. 아래 순서로 시도해 첫 성공값 사용:
