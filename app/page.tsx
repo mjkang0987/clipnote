@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { gradientCss, pickGradient } from "@/lib/gradients";
 import type { ClipMetadata } from "@/lib/metadata";
+import { buildShareText } from "@/lib/shareText";
 import Header from "@/app/_components/Header";
 import Brand from "@/app/_components/Brand";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -296,8 +297,9 @@ export default function Home() {
   async function handleCopy() {
     if (!shareUrl) return;
     // 제목 + 링크만 복사(빈 값은 줄에서 제외). 설명은 길어서 제외.
+    // 제목 길이 제한·말줄임은 `lib/shareText.ts`가 담당(웹·앱 공통 규약).
     const copyTitle = title.trim() || meta?.title || "";
-    const text = [copyTitle, shareUrl].filter(Boolean).join("\n");
+    const text = buildShareText(copyTitle, shareUrl);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -310,7 +312,7 @@ export default function Home() {
   // 게스트 공유/복사 텍스트 — 카드 생성 없이 스크랩된 제목 + 원본 URL.
   function guestShareText() {
     const t = title.trim() || meta?.title || "";
-    return [t, url.trim()].filter(Boolean).join("\n");
+    return buildShareText(t, url.trim());
   }
 
   async function handleGuestCopy() {

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Clip } from "@/lib/store";
 import { gradientCss, pickGradient } from "@/lib/gradients";
+import { buildShareText } from "@/lib/shareText";
 import {
   getLocalClips,
   removeLocalClip,
@@ -555,9 +556,10 @@ function ClipCard({
   const selectable = selectMode && Boolean(item.slug);
 
   // 복사 텍스트: 제목 + 링크(빈 값은 줄에서 제외). 설명은 길어서 제외.
+  // 제목 길이 제한·말줄임은 `lib/shareText.ts`가 담당(웹·앱 공통 규약).
   function shareText() {
     const url = `${window.location.origin}/${item.slug}`;
-    return [item.title, url].filter(Boolean).join("\n");
+    return buildShareText(item.title, url);
   }
 
   async function copyShare() {
