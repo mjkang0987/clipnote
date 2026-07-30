@@ -12,6 +12,7 @@ import type { ClipMetadata } from "@/lib/metadata";
 import { buildShareText } from "@/lib/shareText";
 import type { Messages } from "@/lib/i18n";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
+import { interpolateNode } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
 import Brand from "@/app/_components/Brand";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -79,6 +80,8 @@ export default function HomeClient({
   initialLoggedIn: boolean;
 }) {
   const t = messages.homeActions;
+  const h = messages.home;
+  const c = messages.common;
   // 본문 안내문의 내부 링크도 현재 로케일을 유지한다(`/en` 에서 한국어 페이지로 새지 않게).
   const path = useLocalizedPath();
   // 데스크톱 등 미지원 환경에서는 공유하기 버튼을 아예 노출하지 않는다(복사하기만 남는다).
@@ -164,7 +167,7 @@ export default function HomeClient({
 
   // 미리보기 값: 사용자 입력 우선 → 가져온 메타 → 호스트
   const effectiveTitle =
-    title.trim() || meta?.title || (url ? prettyHost(url) : "여기에 제목이 표시됩니다");
+    title.trim() || meta?.title || (url ? prettyHost(url) : h.preview.titlePlaceholder);
   const description = meta?.description ?? null;
   const image = meta?.image ?? null;
 
@@ -219,7 +222,7 @@ export default function HomeClient({
       return data;
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return null;
-      setError("내용을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setError(h.errors.metaFailed);
       return null;
     } finally {
       // 더 새로운 요청으로 교체된 경우 loading 은 그 요청이 관리
@@ -281,7 +284,7 @@ export default function HomeClient({
   async function handleCreateShare(m: ClipMetadata | null = meta) {
     const sendTitle = title.trim() || m?.title || "";
     if (!sendTitle) {
-      setError("공유 링크를 만들려면 제목이 필요해요. 제목을 입력해 주세요.");
+      setError(h.errors.titleRequiredForLink);
       return;
     }
     setCreating(true);
@@ -307,7 +310,7 @@ export default function HomeClient({
         error?: string;
       };
       if (!res.ok || !data.shareUrl) {
-        setError(data.error ?? "공유 링크 생성에 실패했어요.");
+        setError(data.error ?? h.errors.linkCreateFailed);
         return;
       }
       setShareUrl(data.shareUrl);
@@ -315,7 +318,7 @@ export default function HomeClient({
       recordTags(tags);
       setKnownTags(getKnownTags());
     } catch {
-      setError("공유 링크 생성 중 문제가 발생했어요.");
+      setError(h.errors.linkCreateError);
     } finally {
       setCreating(false);
     }
@@ -327,7 +330,7 @@ export default function HomeClient({
   async function handleAddClip(m: ClipMetadata | null = meta) {
     const sendTitle = title.trim() || m?.title || (url ? prettyHost(url) : "");
     if (!sendTitle) {
-      setError("클립을 추가하려면 제목이 필요해요. 제목을 입력해 주세요.");
+      setError(h.errors.titleRequiredForClip);
       return;
     }
     setAdding(true);
@@ -354,7 +357,7 @@ export default function HomeClient({
         alreadySaved?: boolean;
       };
       if (!res.ok || !data.slug) {
-        setError(data.error ?? "클립 추가에 실패했어요.");
+        setError(data.error ?? h.errors.clipAddFailed);
         return;
       }
       recordTags(tags);
@@ -362,7 +365,7 @@ export default function HomeClient({
       setAlreadySaved(Boolean(data.alreadySaved));
       setAdded(true);
     } catch {
-      setError("클립 추가 중 문제가 발생했어요.");
+      setError(h.errors.clipAddError);
     } finally {
       setAdding(false);
     }
@@ -428,7 +431,7 @@ export default function HomeClient({
   function handleSaveLocal() {
     const saveTitle = title.trim() || meta?.title || (url ? prettyHost(url) : "");
     if (!saveTitle) {
-      setError("저장하려면 제목이 필요해요.");
+      setError(h.errors.titleRequiredForSave);
       return;
     }
     addLocalClip({
@@ -479,23 +482,27 @@ export default function HomeClient({
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3 sm:px-5 sm:py-8">
         <section className="py-4 text-center sm:py-8">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight text-fg sm:text-3xl">
-            밋밋한 링크를 <span className="text-brand">카드 한 장으로</span>
+          {/* text-balance: 언어마다 문장 길이가 달라 줄바꿈이 한 글자만 넘어가는 일이 생긴다
+              (일본어에서 마지막 「に」만 다음 줄로 떨어졌다). 두 줄을 고르게 나눈다. */}
+          <h1 className="text-balance text-2xl font-bold leading-tight tracking-tight text-fg sm:text-3xl">
+            {interpolateNode(h.hero.title, {
+              accent: <span className="text-brand">{h.hero.titleAccent}</span>,
+            })}
           </h1>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-muted sm:text-base">
-            제목·대표 이미지가 담긴 카드와 짧은 링크를 한 번에. 카카오톡·SNS에서 깔끔하게 보여요.
+            {h.hero.subtitle}
           </p>
         </section>
 
         <form
           onSubmit={handleSubmit}
           className="mt-3 rounded-xl border border-border bg-surface p-3.5 shadow-soft sm:mt-5 sm:p-5"
-          aria-label="클립 만들기"
+          aria-label={h.form.label}
         >
           <div className="flex flex-col gap-3 sm:gap-3.5">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="clip-url" className="text-sm font-medium text-fg">
-                URL <span className="text-danger">*</span>
+                {h.form.urlLabel} <span className="text-danger">*</span>
               </label>
               <ClearableInput
                 id="clip-url"
@@ -503,30 +510,28 @@ export default function HomeClient({
                 type="url"
                 required
                 inputMode="url"
-                placeholder="공유할 링크 붙여넣기"
+                placeholder={h.form.urlPlaceholder}
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 onPaste={handleUrlPaste}
                 onClear={() => setUrl("")}
               />
               <p className="text-xs leading-relaxed text-fg-muted">
-                링크를 붙여넣으면 미리보기를 자동으로 불러와요.
+                {h.form.urlHint}
               </p>
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="clip-title" className="text-sm font-medium text-fg">
-                제목{" "}
-                <span className="font-normal text-fg-muted">
-                  (안 쓰면 자동으로 채워져요)
-                </span>
+                {h.form.titleLabel}{" "}
+                <span className="font-normal text-fg-muted">{h.form.titleNote}</span>
               </label>
               <ClearableInput
                 id="clip-title"
                 name="title"
                 type="text"
                 maxLength={80}
-                placeholder="공유 카드에 보일 제목"
+                placeholder={h.form.titlePlaceholder}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 onClear={() => setTitle("")}
@@ -535,24 +540,29 @@ export default function HomeClient({
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="clip-tags" className="text-sm font-medium text-fg">
-                태그{" "}
-                <span className="font-normal text-fg-muted">(선택 · 쉼표로 구분)</span>
+                {h.form.tagsLabel}{" "}
+                <span className="font-normal text-fg-muted">{h.form.tagsNote}</span>
               </label>
               <ClearableInput
                 id="clip-tags"
                 name="tags"
                 type="text"
-                placeholder="개발, 디자인, 읽을거리"
+                placeholder={h.form.tagsPlaceholder}
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onClear={() => setTagInput("")}
               />
               <p className="text-xs leading-relaxed text-fg-muted">
-                태그를 달아두면{" "}
-                <a href={path("/clips")} className="font-semibold text-brand-strong underline">
-                  내 클립
-                </a>
-                에서 같은 태그끼리 모아 볼 수 있어요. 쉼표(,)로 여러 개, 최대 6개까지요.
+                {interpolateNode(h.form.tagsHint, {
+                  clips: (
+                    <a
+                      href={path("/clips")}
+                      className="font-semibold text-brand-strong underline"
+                    >
+                      {c.myClips}
+                    </a>
+                  ),
+                })}
               </p>
               {tags.length > 0 && (
                 <ul className="mt-1 flex flex-wrap gap-1.5">
@@ -569,7 +579,7 @@ export default function HomeClient({
 
               {tagSuggestions.length > 0 && (
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-fg-muted">자주 쓴 태그:</span>
+                  <span className="text-xs text-fg-muted">{h.form.frequentTags}</span>
                   {tagSuggestions.map((tag) => (
                     <button
                       key={tag}
@@ -649,11 +659,16 @@ export default function HomeClient({
             )}
             {isLoggedIn === false && (
               <p className="text-center text-xs text-fg-muted">
-                공유 카드·짧은 링크는{" "}
-                <a href={path("/login")} className="font-semibold text-brand-strong underline">
-                  로그인
-                </a>
-                하면 만들어져요.
+                {interpolateNode(t.guestHint, {
+                  login: (
+                    <a
+                      href={path("/login")}
+                      className="font-semibold text-brand-strong underline"
+                    >
+                      {c.login}
+                    </a>
+                  ),
+                })}
               </p>
             )}
             {/* 버튼 이름만으로는 두 동작의 차이를 알 수 없어 한 줄로 설명한다.

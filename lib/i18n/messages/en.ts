@@ -6,6 +6,48 @@
 import type { PartialMessages } from "../types";
 
 const en: PartialMessages = {
+  common: {
+    myClips: "My Clips",
+    login: "Sign in",
+  },
+
+  home: {
+    hero: {
+      title: "Turn a plain link into {accent}",
+      titleAccent: "a card",
+      subtitle:
+        "A card with the title and cover image, plus a short link — in one step. Looks clean on messengers and social.",
+    },
+    form: {
+      label: "Create a clip",
+      urlLabel: "URL",
+      urlPlaceholder: "Paste a link to share",
+      urlHint: "Paste a link and we'll load the preview automatically.",
+      titleLabel: "Title",
+      titleNote: "(filled in automatically if left blank)",
+      titlePlaceholder: "Title shown on the card",
+      tagsLabel: "Tags",
+      tagsNote: "(optional · comma-separated)",
+      tagsPlaceholder: "dev, design, to read",
+      tagsHint:
+        "Tag a clip and you can browse it with others of the same tag in {clips}. Separate with commas, up to 6.",
+      frequentTags: "Recent tags:",
+    },
+    preview: {
+      titlePlaceholder: "The title will appear here",
+    },
+    errors: {
+      metaFailed: "Couldn't load the content. Please try again in a moment.",
+      titleRequiredForLink: "A title is required to create a share link. Please enter one.",
+      linkCreateFailed: "Couldn't create the share link.",
+      linkCreateError: "Something went wrong while creating the share link.",
+      titleRequiredForClip: "A title is required to add a clip. Please enter one.",
+      clipAddFailed: "Couldn't add the clip.",
+      clipAddError: "Something went wrong while adding the clip.",
+      titleRequiredForSave: "A title is required to save.",
+    },
+  },
+
   homeActions: {
     createLink: "Create link",
     creating: "Creating…",
@@ -23,7 +65,7 @@ const en: PartialMessages = {
       "Create link makes a short URL that shows a preview card first. Copy original copies the title and the original URL.",
     hintAfterLink:
       "Copy link copies the short URL you just made. Copy original copies the title and the original URL.",
-    guestHint: "Sign in to create preview cards and short links.",
+    guestHint: "{login} to create preview cards and short links.",
   },
 
   language: {
