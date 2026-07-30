@@ -13,7 +13,7 @@ import {
 } from "@/lib/local-clips";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import { LOCALE_TAGS, type Locale, type Messages } from "@/lib/i18n";
-import { interpolate } from "@/lib/i18n/interpolate";
+import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
 
 type Item = {
@@ -484,6 +484,7 @@ export default function ClipsClient({
 
       {pendingDelete && (
         <DeleteConfirmLayer
+          messages={messages}
           item={pendingDelete}
           onCancel={() => setPendingDelete(null)}
           onConfirm={confirmDelete}
@@ -492,6 +493,7 @@ export default function ClipsClient({
 
       {editing && (
         <EditClipLayer
+          messages={messages}
           item={editing}
           busy={busy}
           onCancel={() => setEditing(null)}
@@ -501,6 +503,7 @@ export default function ClipsClient({
 
       {loggedIn && localPending.length > 0 && migrateStep === "offer" && (
         <MigrateLocalLayer
+          messages={messages}
           count={localPending.length}
           migrating={migrating}
           onMigrate={migrateLocal}
@@ -511,6 +514,7 @@ export default function ClipsClient({
 
       {loggedIn && localPending.length > 0 && migrateStep === "discard" && (
         <DiscardLocalLayer
+          messages={messages}
           count={localPending.length}
           onDiscard={discardLocal}
           onBack={() => setMigrateStep("offer")}
@@ -519,6 +523,7 @@ export default function ClipsClient({
 
       {bulkTagOpen && (
         <BulkTagLayer
+          messages={messages}
           count={selectedSlugs.length}
           busy={busy}
           onCancel={() => setBulkTagOpen(false)}
@@ -528,6 +533,7 @@ export default function ClipsClient({
 
       {pendingBulkDelete && (
         <BulkDeleteConfirm
+          messages={messages}
           count={selectedSlugs.length}
           busy={busy}
           onCancel={() => setPendingBulkDelete(false)}
@@ -540,10 +546,12 @@ export default function ClipsClient({
 
 /** 삭제 확인 레이어. 모바일은 하단 시트, 데스크톱은 가운데 모달. */
 function DeleteConfirmLayer({
+  messages,
   item,
   onCancel,
   onConfirm,
 }: {
+  messages: Messages;
   item: Item;
   onCancel: () => void;
   onConfirm: () => void;
@@ -575,11 +583,12 @@ function DeleteConfirmLayer({
         className="w-full max-w-sm rounded-t-2xl bg-surface p-6 shadow-soft sm:rounded-2xl"
       >
         <h2 id="delete-title" className="text-lg font-bold text-fg">
-          클립을 삭제할까요?
+          {messages.clips.deleteTitle}
         </h2>
         <p id="delete-desc" className="mt-2 text-sm leading-relaxed text-fg-muted">
-          ‘<span className="font-medium text-fg">{item.title}</span>’ 클립을
-          삭제합니다. 이 작업은 되돌릴 수 없어요.
+          {interpolateNode(messages.clips.deleteBody, {
+            title: <span className="font-medium text-fg">{item.title}</span>,
+          })}
         </p>
         <div className="mt-6 flex gap-2">
           <button
@@ -587,7 +596,7 @@ function DeleteConfirmLayer({
             onClick={onCancel}
             className="h-12 flex-1 rounded-xl border border-border bg-bg text-base font-semibold text-fg transition hover:bg-border/40"
           >
-            취소
+            {messages.common.cancel}
           </button>
           <button
             type="button"
@@ -595,7 +604,7 @@ function DeleteConfirmLayer({
             autoFocus
             className="h-12 flex-1 rounded-xl bg-danger text-base font-semibold text-white transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-danger/50"
           >
-            삭제
+            {messages.common.delete}
           </button>
         </div>
       </div>
@@ -847,12 +856,14 @@ function ModalShell({
 
 /** 게스트 로컬 클립을 계정으로 옮길지 묻는 레이어 */
 function MigrateLocalLayer({
+  messages,
   count,
   migrating,
   onMigrate,
   onDismiss,
   onClose,
 }: {
+  messages: Messages;
   count: number;
   migrating: boolean;
   onMigrate: () => void;
@@ -864,13 +875,16 @@ function MigrateLocalLayer({
   return (
     <ModalShell labelledBy="migrate-title" onClose={migrating ? () => {} : onClose}>
       <h2 id="migrate-title" className="text-lg font-bold text-fg">
-        이 기기의 클립을 옮길까요?
+        {messages.clips.migrateTitle}
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-        이 기기에 저장된{" "}
-        <strong className="font-semibold text-brand-strong">{count}개</strong> 클립을
-        계정으로 옮기면 다른 기기에서도 보이고 정리돼요. 옮긴 클립은 ‘내 클립에
-        저장’ 상태가 돼요.
+        {interpolateNode(messages.clips.migrateBody, {
+          count: (
+            <strong className="font-semibold text-brand-strong">
+              {interpolate(messages.clips.countUnit, { count })}
+            </strong>
+          ),
+        })}
       </p>
       <div className="mt-5 flex gap-2">
         <button
@@ -879,7 +893,11 @@ function MigrateLocalLayer({
           disabled={migrating}
           className="h-11 flex-1 rounded-[8px] bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {migrating ? "옮기는 중…" : `${count}개 옮기기`}
+          {migrating
+            ? messages.clips.migrating
+            : interpolate(messages.clips.migrateConfirm, {
+                count: interpolate(messages.clips.countUnit, { count }),
+              })}
         </button>
         <button
           type="button"
@@ -887,7 +905,7 @@ function MigrateLocalLayer({
           disabled={migrating}
           className="h-11 flex-1 rounded-[8px] border border-border px-4 text-sm font-semibold text-fg transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
         >
-          취소
+          {messages.common.cancel}
         </button>
       </div>
     </ModalShell>
@@ -902,10 +920,12 @@ function MigrateLocalLayer({
  * → 기본 동작은 '취소'(옮기기 레이어로 복귀)이고, 삭제 버튼만 위험 색으로 구분한다.
  */
 function DiscardLocalLayer({
+  messages,
   count,
   onDiscard,
   onBack,
 }: {
+  messages: Messages;
   count: number;
   onDiscard: () => void;
   onBack: () => void;
@@ -913,13 +933,21 @@ function DiscardLocalLayer({
   return (
     <ModalShell labelledBy="discard-title" onClose={onBack}>
       <h2 id="discard-title" className="text-lg font-bold text-fg">
-        이 브라우저의 클립을 삭제할까요?
+        {messages.clips.discardTitle}
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-        옮기지 않으면 이 브라우저에 저장된{" "}
-        <strong className="font-semibold text-fg">{count}개</strong> 클립이 모두
-        삭제됩니다. 이 클립은 이 브라우저에만 있어서{" "}
-        <strong className="font-semibold text-fg">되돌릴 수 없어요.</strong>
+        {interpolateNode(messages.clips.discardBody, {
+          count: (
+            <strong className="font-semibold text-fg">
+              {interpolate(messages.clips.countUnit, { count })}
+            </strong>
+          ),
+          irreversible: (
+            <strong className="font-semibold text-fg">
+              {messages.clips.discardIrreversible}
+            </strong>
+          ),
+        })}
       </p>
       <div className="mt-5 flex gap-2">
         <button
@@ -927,14 +955,14 @@ function DiscardLocalLayer({
           onClick={onBack}
           className="h-11 flex-1 rounded-[8px] bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong"
         >
-          취소
+          {messages.common.cancel}
         </button>
         <button
           type="button"
           onClick={onDiscard}
           className="h-11 flex-1 rounded-[8px] border border-danger px-4 text-sm font-semibold text-danger transition hover:bg-danger hover:text-white"
         >
-          삭제
+          {messages.common.delete}
         </button>
       </div>
     </ModalShell>
@@ -943,11 +971,13 @@ function DiscardLocalLayer({
 
 /** A: 단건 편집(제목·태그) */
 function EditClipLayer({
+  messages,
   item,
   busy,
   onCancel,
   onSave,
 }: {
+  messages: Messages;
   item: Item;
   busy: boolean;
   onCancel: () => void;
@@ -960,10 +990,10 @@ function EditClipLayer({
   return (
     <ModalShell labelledBy="edit-title" onClose={onCancel}>
       <h2 id="edit-title" className="text-lg font-bold text-fg">
-        클립 편집
+        {messages.clips.editTitle}
       </h2>
       <label htmlFor="edit-title-input" className="mt-4 block text-sm font-medium text-fg">
-        제목
+        {messages.clips.editTitleLabel}
       </label>
       <input
         id="edit-title-input"
@@ -973,13 +1003,14 @@ function EditClipLayer({
         className="mt-1 h-11 w-full rounded-lg border border-border bg-bg px-3 text-sm text-fg outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40"
       />
       <label htmlFor="edit-tags-input" className="mt-3 block text-sm font-medium text-fg">
-        태그 <span className="font-normal text-fg-muted">(쉼표로 구분, 최대 6개)</span>
+        {messages.clips.editTagsLabel}{" "}
+        <span className="font-normal text-fg-muted">{messages.clips.editTagsNote}</span>
       </label>
       <input
         id="edit-tags-input"
         value={tagInput}
         onChange={(e) => setTagInput(e.target.value)}
-        placeholder="개발, 디자인"
+        placeholder={messages.clips.editTagsPlaceholder}
         className="mt-1 h-11 w-full rounded-lg border border-border bg-bg px-3 text-sm text-fg outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40"
       />
       <div className="mt-6 flex gap-2">
@@ -988,7 +1019,7 @@ function EditClipLayer({
           onClick={onCancel}
           className="h-12 flex-1 rounded-xl border border-border bg-bg text-base font-semibold text-fg transition hover:bg-border/40"
         >
-          취소
+          {messages.common.cancel}
         </button>
         <button
           type="button"
@@ -996,7 +1027,7 @@ function EditClipLayer({
           onClick={() => onSave(title.trim().slice(0, 80), parseTags(tagInput))}
           className="h-12 flex-1 rounded-xl bg-brand text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? "저장 중…" : "저장"}
+          {busy ? messages.clips.savingEdit : messages.common.save}
         </button>
       </div>
     </ModalShell>
@@ -1005,11 +1036,13 @@ function EditClipLayer({
 
 /** C: 선택 클립 태그 일괄 적용/교체 */
 function BulkTagLayer({
+  messages,
   count,
   busy,
   onCancel,
   onApply,
 }: {
+  messages: Messages;
   count: number;
   busy: boolean;
   onCancel: () => void;
@@ -1023,14 +1056,18 @@ function BulkTagLayer({
   return (
     <ModalShell labelledBy="bulktag-title" onClose={onCancel}>
       <h2 id="bulktag-title" className="text-lg font-bold text-fg">
-        태그 일괄 적용
+        {messages.clips.bulkTagTitle}
       </h2>
-      <p className="mt-1 text-sm text-fg-muted">{count}개 클립에 적용해요.</p>
+      <p className="mt-1 text-sm text-fg-muted">
+        {interpolate(messages.clips.bulkTagBody, {
+          count: interpolate(messages.clips.countUnit, { count }),
+        })}
+      </p>
       <input
         value={tagInput}
         onChange={(e) => setTagInput(e.target.value)}
-        placeholder="태그 입력 (쉼표로 구분)"
-        aria-label="적용할 태그"
+        placeholder={messages.clips.bulkTagPlaceholder}
+        aria-label={messages.clips.bulkTagAria}
         className="mt-4 h-11 w-full rounded-lg border border-border bg-bg px-3 text-sm text-fg outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40"
       />
       <fieldset className="mt-3 flex flex-col gap-2">
@@ -1042,7 +1079,11 @@ function BulkTagLayer({
             onChange={() => setMode("add")}
             className="h-4 w-4 accent-brand"
           />
-          기존 태그에 <span className="font-semibold">추가</span>
+          {interpolateNode(messages.clips.bulkTagModeAdd, {
+            emphasis: (
+              <span className="font-semibold">{messages.clips.bulkTagModeAddEmphasis}</span>
+            ),
+          })}
         </label>
         <label className="flex items-center gap-2 text-sm text-fg">
           <input
@@ -1052,7 +1093,13 @@ function BulkTagLayer({
             onChange={() => setMode("replace")}
             className="h-4 w-4 accent-brand"
           />
-          기존 태그를 <span className="font-semibold">이걸로 교체</span>
+          {interpolateNode(messages.clips.bulkTagModeReplace, {
+            emphasis: (
+              <span className="font-semibold">
+                {messages.clips.bulkTagModeReplaceEmphasis}
+              </span>
+            ),
+          })}
         </label>
       </fieldset>
       <div className="mt-6 flex gap-2">
@@ -1061,7 +1108,7 @@ function BulkTagLayer({
           onClick={onCancel}
           className="h-12 flex-1 rounded-xl border border-border bg-bg text-base font-semibold text-fg transition hover:bg-border/40"
         >
-          취소
+          {messages.common.cancel}
         </button>
         <button
           type="button"
@@ -1069,7 +1116,7 @@ function BulkTagLayer({
           onClick={() => onApply(tags, mode)}
           className="h-12 flex-1 rounded-xl bg-brand text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? "적용 중…" : "적용"}
+          {busy ? messages.clips.bulkTagApplying : messages.clips.bulkTagApply}
         </button>
       </div>
     </ModalShell>
@@ -1078,11 +1125,13 @@ function BulkTagLayer({
 
 /** B: 선택 일괄 삭제 확인 */
 function BulkDeleteConfirm({
+  messages,
   count,
   busy,
   onCancel,
   onConfirm,
 }: {
+  messages: Messages;
   count: number;
   busy: boolean;
   onCancel: () => void;
@@ -1091,10 +1140,12 @@ function BulkDeleteConfirm({
   return (
     <ModalShell labelledBy="bulkdel-title" onClose={onCancel}>
       <h2 id="bulkdel-title" className="text-lg font-bold text-fg">
-        선택한 {count}개 클립을 삭제할까요?
+        {interpolate(messages.clips.bulkDeleteTitle, {
+          count: interpolate(messages.clips.countUnit, { count }),
+        })}
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-        이 작업은 되돌릴 수 없어요.
+        {messages.clips.irreversible}
       </p>
       <div className="mt-6 flex gap-2">
         <button
@@ -1102,7 +1153,7 @@ function BulkDeleteConfirm({
           onClick={onCancel}
           className="h-12 flex-1 rounded-xl border border-border bg-bg text-base font-semibold text-fg transition hover:bg-border/40"
         >
-          취소
+          {messages.common.cancel}
         </button>
         <button
           type="button"
@@ -1110,7 +1161,7 @@ function BulkDeleteConfirm({
           onClick={onConfirm}
           className="h-12 flex-1 rounded-xl bg-danger text-base font-semibold text-white transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-danger/50 disabled:opacity-50"
         >
-          {busy ? "삭제 중…" : "삭제"}
+          {busy ? messages.clips.deleting : messages.common.delete}
         </button>
       </div>
     </ModalShell>

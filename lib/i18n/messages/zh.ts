@@ -38,6 +38,44 @@ const zh: PartialMessages = {
     creatingShareLink: "创建中…",
     copied: "已复制 ✓",
     openOriginal: "打开",
+
+    deleteTitle: "要删除这个剪藏吗?",
+    deleteBody: "将删除「{title}」。此操作无法撤销。",
+
+    migrateTitle: "要迁移此设备上的剪藏吗?",
+    migrateBody:
+      "把此设备上保存的{count}迁移到账号后，在其他设备也能查看和整理。迁移后的剪藏会变成「已保存到我的剪藏」状态。",
+    migrateConfirm: "迁移{count}",
+    migrating: "迁移中…",
+
+    discardTitle: "要删除此浏览器中的剪藏吗?",
+    discardBody:
+      "如果不迁移，此浏览器中保存的{count}将全部删除。这些剪藏只存在于此浏览器，所以{irreversible}",
+    discardIrreversible: "无法撤销。",
+
+    editTitle: "编辑剪藏",
+    editTitleLabel: "标题",
+    editTagsLabel: "标签",
+    editTagsNote: "(用逗号分隔，最多 6 个)",
+    editTagsPlaceholder: "开发, 设计",
+    savingEdit: "保存中…",
+
+    bulkTagTitle: "批量应用标签",
+    bulkTagBody: "将应用于{count}。",
+    bulkTagPlaceholder: "输入标签 (用逗号分隔)",
+    bulkTagAria: "要应用的标签",
+    bulkTagModeAdd: "在现有标签上{emphasis}",
+    bulkTagModeAddEmphasis: "追加",
+    bulkTagModeReplace: "把现有标签{emphasis}",
+    bulkTagModeReplaceEmphasis: "替换为此",
+    bulkTagApply: "应用",
+    bulkTagApplying: "应用中…",
+
+    bulkDeleteTitle: "要删除所选的{count}吗?",
+    irreversible: "此操作无法撤销。",
+    deleting: "删除中…",
+
+    countUnit: "{count} 个",
   },
 
   home: {

@@ -23,7 +23,6 @@ const ko = {
     save: "저장",
   },
 
-  /** 홈 화면 */
   /** 내 클립 화면 */
   clips: {
     /** 로그인 상태별 부제 */
@@ -50,8 +49,55 @@ const ko = {
     creatingShareLink: "만드는 중…",
     copied: "복사됨 ✓",
     openOriginal: "바로가기",
+
+    /** 클립 하나 삭제 확인 레이어. `{title}` 은 클립 제목(강조 표시) */
+    deleteTitle: "클립을 삭제할까요?",
+    deleteBody: "‘{title}’ 클립을 삭제합니다. 이 작업은 되돌릴 수 없어요.",
+
+    /** 로컬 클립 → 계정 옮기기. `{count}` 는 클립 수(강조 표시) */
+    migrateTitle: "이 기기의 클립을 옮길까요?",
+    migrateBody:
+      "이 기기에 저장된 {count} 클립을 계정으로 옮기면 다른 기기에서도 보이고 정리돼요. 옮긴 클립은 ‘내 클립에 저장’ 상태가 돼요.",
+    migrateConfirm: "{count} 옮기기",
+    migrating: "옮기는 중…",
+
+    /** 옮기기를 취소했을 때 — 로컬 클립을 지우는 되돌릴 수 없는 단계 */
+    discardTitle: "이 브라우저의 클립을 삭제할까요?",
+    discardBody:
+      "옮기지 않으면 이 브라우저에 저장된 {count} 클립이 모두 삭제됩니다. 이 클립은 이 브라우저에만 있어서 {irreversible}",
+    discardIrreversible: "되돌릴 수 없어요.",
+
+    /** 클립 편집 레이어 */
+    editTitle: "클립 편집",
+    editTitleLabel: "제목",
+    editTagsLabel: "태그",
+    editTagsNote: "(쉼표로 구분, 최대 6개)",
+    editTagsPlaceholder: "개발, 디자인",
+    savingEdit: "저장 중…",
+
+    /** 선택한 클립에 태그 일괄 적용 */
+    bulkTagTitle: "태그 일괄 적용",
+    bulkTagBody: "{count} 클립에 적용해요.",
+    bulkTagPlaceholder: "태그 입력 (쉼표로 구분)",
+    bulkTagAria: "적용할 태그",
+    /** `{emphasis}` 는 강조되는 낱말 */
+    bulkTagModeAdd: "기존 태그에 {emphasis}",
+    bulkTagModeAddEmphasis: "추가",
+    bulkTagModeReplace: "기존 태그를 {emphasis}",
+    bulkTagModeReplaceEmphasis: "이걸로 교체",
+    bulkTagApply: "적용",
+    bulkTagApplying: "적용 중…",
+
+    /** 선택한 클립 일괄 삭제 */
+    bulkDeleteTitle: "선택한 {count} 클립을 삭제할까요?",
+    irreversible: "이 작업은 되돌릴 수 없어요.",
+    deleting: "삭제 중…",
+
+    /** `{count}` 자리에 들어가는 수량 표기 — 언어마다 단위 위치가 달라 분리한다 */
+    countUnit: "{count}개",
   },
 
+  /** 홈 화면 */
   home: {
     hero: {
       /** `{accent}` 는 브랜드 색으로 강조되는 부분 */

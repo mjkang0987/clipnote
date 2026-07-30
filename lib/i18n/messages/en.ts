@@ -40,6 +40,44 @@ const en: PartialMessages = {
     creatingShareLink: "Creating…",
     copied: "Copied ✓",
     openOriginal: "Open",
+
+    deleteTitle: "Delete this clip?",
+    deleteBody: "\u2018{title}\u2019 will be deleted. This can't be undone.",
+
+    migrateTitle: "Move clips from this device?",
+    migrateBody:
+      "Move the {count} saved on this device to your account and you'll see them anywhere. Moved clips become saved to My Clips.",
+    migrateConfirm: "Move {count}",
+    migrating: "Moving…",
+
+    discardTitle: "Delete the clips in this browser?",
+    discardBody:
+      "If you don't move them, all {count} saved in this browser will be deleted. They exist only in this browser, so {irreversible}",
+    discardIrreversible: "this can't be undone.",
+
+    editTitle: "Edit clip",
+    editTitleLabel: "Title",
+    editTagsLabel: "Tags",
+    editTagsNote: "(comma-separated, up to 6)",
+    editTagsPlaceholder: "dev, design",
+    savingEdit: "Saving…",
+
+    bulkTagTitle: "Apply tags in bulk",
+    bulkTagBody: "Applies to {count}.",
+    bulkTagPlaceholder: "Enter tags (comma-separated)",
+    bulkTagAria: "Tags to apply",
+    bulkTagModeAdd: "{emphasis} to existing tags",
+    bulkTagModeAddEmphasis: "Add",
+    bulkTagModeReplace: "{emphasis} existing tags",
+    bulkTagModeReplaceEmphasis: "Replace",
+    bulkTagApply: "Apply",
+    bulkTagApplying: "Applying…",
+
+    bulkDeleteTitle: "Delete the {count} selected?",
+    irreversible: "This can't be undone.",
+    deleting: "Deleting…",
+
+    countUnit: "{count} clips",
   },
 
   home: {

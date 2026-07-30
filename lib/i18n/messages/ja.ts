@@ -39,6 +39,44 @@ const ja: PartialMessages = {
     creatingShareLink: "作成中…",
     copied: "コピーしました ✓",
     openOriginal: "開く",
+
+    deleteTitle: "このクリップを削除しますか?",
+    deleteBody: "「{title}」を削除します。この操作は取り消せません。",
+
+    migrateTitle: "この端末のクリップを移動しますか?",
+    migrateBody:
+      "この端末に保存された{count}をアカウントに移動すると、他の端末でも見られて整理できます。移動したクリップは「マイクリップに保存」の状態になります。",
+    migrateConfirm: "{count}を移動",
+    migrating: "移動中…",
+
+    discardTitle: "このブラウザのクリップを削除しますか?",
+    discardBody:
+      "移動しない場合、このブラウザに保存された{count}すべてが削除されます。このクリップはこのブラウザにしかないため{irreversible}",
+    discardIrreversible: "取り消せません。",
+
+    editTitle: "クリップを編集",
+    editTitleLabel: "タイトル",
+    editTagsLabel: "タグ",
+    editTagsNote: "(カンマ区切り、最大6個)",
+    editTagsPlaceholder: "開発, デザイン",
+    savingEdit: "保存中…",
+
+    bulkTagTitle: "タグを一括適用",
+    bulkTagBody: "{count}に適用します。",
+    bulkTagPlaceholder: "タグを入力 (カンマ区切り)",
+    bulkTagAria: "適用するタグ",
+    bulkTagModeAdd: "既存のタグに{emphasis}",
+    bulkTagModeAddEmphasis: "追加",
+    bulkTagModeReplace: "既存のタグを{emphasis}",
+    bulkTagModeReplaceEmphasis: "これに置き換え",
+    bulkTagApply: "適用",
+    bulkTagApplying: "適用中…",
+
+    bulkDeleteTitle: "選択した{count}を削除しますか?",
+    irreversible: "この操作は取り消せません。",
+    deleting: "削除中…",
+
+    countUnit: "{count}件",
   },
 
   home: {
