@@ -515,6 +515,7 @@ export default function HomeClient({
                 onChange={(e) => setUrl(e.target.value)}
                 onPaste={handleUrlPaste}
                 onClear={() => setUrl("")}
+                clearLabel={h.clearInputAria}
               />
               <p className="text-xs leading-relaxed text-fg-muted">
                 {h.form.urlHint}
@@ -535,6 +536,7 @@ export default function HomeClient({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 onClear={() => setTitle("")}
+                clearLabel={h.clearInputAria}
               />
             </div>
 
@@ -551,6 +553,7 @@ export default function HomeClient({
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onClear={() => setTagInput("")}
+                clearLabel={h.clearInputAria}
               />
               <p className="text-xs leading-relaxed text-fg-muted">
                 {interpolateNode(h.form.tagsHint, {
@@ -703,17 +706,17 @@ export default function HomeClient({
         {hasInput && (
           <>
         {/* ① 공유 카드: 링크를 공유했을 때 보이는 이미지 */}
-        <section className="mt-10 sm:mt-12" aria-label="공유 카드 미리보기">
+        <section className="mt-10 sm:mt-12" aria-label={h.cardPreview.sectionAria}>
           <div className="mb-2">
             <h2 className="flex items-center gap-2 text-base font-semibold text-fg">
-              공유 카드
+              {h.cardPreview.title}
               {loading && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-strong">
-                  <Spinner /> 불러오는 중
+                  <Spinner /> {h.cardPreview.loading}
                 </span>
               )}
             </h2>
-            <p className="mt-0.5 text-xs text-fg-muted">링크를 공유하면 이렇게 보여요</p>
+            <p className="mt-0.5 text-xs text-fg-muted">{h.cardPreview.note}</p>
           </div>
           {/* 실제 OG(/api/og, 1200×630)의 비율·폰트·여백을 cqw 로 그대로 축소 복제 */}
           <div className="overflow-hidden rounded-xl shadow-soft" style={{ containerType: "inline-size" }}>
@@ -796,15 +799,15 @@ export default function HomeClient({
             </div>
           </div>
           <p className="mt-1.5 text-xs text-fg-muted">
-            실제 공유 시 뜨는 이미지예요. 원본 대표 이미지가 있으면 배경으로 쓰고, 없으면 제목에 맞춰 만든 그라디언트로 채워져요.
+            {h.cardPreview.caption}
           </p>
         </section>
 
         {/* ② 내 클립 저장 모습: 목록에서 보이는 카드(왼쪽 썸네일 = 원본 이미지) */}
-        <section className="mt-10 sm:mt-12" aria-label="내 클립 저장 미리보기">
+        <section className="mt-10 sm:mt-12" aria-label={h.clipPreview.sectionAria}>
           <div className="mb-2">
-            <h2 className="text-base font-semibold text-fg">내 클립에 저장하면</h2>
-            <p className="mt-0.5 text-xs text-fg-muted">목록에서 이렇게 보여요</p>
+            <h2 className="text-base font-semibold text-fg">{h.clipPreview.title}</h2>
+            <p className="mt-0.5 text-xs text-fg-muted">{h.clipPreview.note}</p>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-soft">
             <div
@@ -843,7 +846,7 @@ export default function HomeClient({
             </div>
           </div>
           <p className="mt-1.5 text-xs text-fg-muted">
-            왼쪽 썸네일은 원본 페이지의 대표 이미지예요. 없으면 그라디언트로 채워져요.
+            {h.clipPreview.caption}
           </p>
         </section>
           </>
@@ -969,6 +972,7 @@ export default function HomeClient({
 
       {shareUrl && layerOpen && (
         <ShareResultLayer
+          messages={messages}
           url={shareUrl}
           copied={copied}
           onCopy={handleCopy}
@@ -990,6 +994,7 @@ export default function HomeClient({
 
 /** 공유 링크 생성 결과 레이어(모달). 링크 복사·열기·내 클립 저장·닫기. */
 function ShareResultLayer({
+  messages,
   url,
   copied,
   onCopy,
@@ -999,6 +1004,7 @@ function ShareResultLayer({
   alreadySaved,
   onClose,
 }: {
+  messages: Messages;
   url: string;
   copied: boolean;
   onCopy: () => void;
@@ -1020,13 +1026,15 @@ function ShareResultLayer({
     };
   }, [onClose]);
 
+  const t = messages.homeActions;
+  const r = messages.home.result;
   const saveLabel = saved
     ? alreadySaved
-      ? "이미 추가됨 ✓"
-      : "내 클립에 저장됨 ✓"
+      ? r.alreadyInClips
+      : r.savedToClips
     : saving
-      ? "저장 중…"
-      : "내 클립에 저장";
+      ? t.saving
+      : t.saveToClips;
 
   return (
     <div
@@ -1042,16 +1050,14 @@ function ShareResultLayer({
         className="w-full max-w-sm rounded-t-xl bg-surface p-6 shadow-soft sm:rounded-xl"
       >
         <h2 id="share-title" className="text-lg font-bold text-fg">
-          공유 링크가 만들어졌어요 🎉
+          {r.title}
         </h2>
-        <p className="mt-1 text-sm leading-relaxed text-fg-muted">
-          링크를 복사해 공유하세요. 열면 공유 카드가 먼저 보인 뒤 원본으로 이동해요.
-        </p>
+        <p className="mt-1 text-sm leading-relaxed text-fg-muted">{r.body}</p>
         <input
           id="share-url"
           readOnly
           value={url}
-          aria-label="공유 링크"
+          aria-label={r.urlAria}
           onFocus={(e) => e.currentTarget.select()}
           className="mt-4 h-11 w-full rounded-[8px] border border-border bg-bg px-3 text-sm text-fg outline-none"
         />
@@ -1061,7 +1067,7 @@ function ShareResultLayer({
             onClick={onCopy}
             className="h-11 flex-1 rounded-[8px] bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50"
           >
-            {copied ? "복사됨 ✓" : "링크 복사"}
+            {copied ? t.copied : t.copyLink}
           </button>
           <a
             href={url}
@@ -1069,7 +1075,7 @@ function ShareResultLayer({
             rel="noreferrer"
             className="flex h-11 items-center justify-center rounded-[8px] border border-border px-4 text-sm font-semibold text-fg transition hover:bg-bg"
           >
-            열기
+            {r.open}
           </a>
         </div>
         <button
@@ -1085,7 +1091,7 @@ function ShareResultLayer({
           onClick={onClose}
           className="mt-2 h-11 w-full rounded-[8px] text-sm font-semibold text-fg-muted transition hover:bg-bg"
         >
-          닫기
+          {r.close}
         </button>
       </div>
     </div>
@@ -1127,9 +1133,11 @@ function Spinner() {
 function ClearableInput({
   value,
   onClear,
+  clearLabel,
   ...props
 }: Omit<React.InputHTMLAttributes<HTMLInputElement>, "className"> & {
   onClear: () => void;
+  clearLabel: string;
 }) {
   const hasValue = String(value ?? "").length > 0;
   return (
@@ -1143,7 +1151,7 @@ function ClearableInput({
         <button
           type="button"
           onClick={onClear}
-          aria-label="입력 지우기"
+          aria-label={clearLabel}
           className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-fg-muted transition hover:bg-border hover:text-fg active:scale-90"
         >
           <svg viewBox="0 0 20 20" className="h-5 w-5" aria-hidden="true">

@@ -128,6 +128,32 @@ const ko = {
     preview: {
       titlePlaceholder: "여기에 제목이 표시됩니다",
     },
+    /** 입력 후 보이는 두 미리보기 */
+    cardPreview: {
+      sectionAria: "공유 카드 미리보기",
+      title: "공유 카드",
+      loading: "불러오는 중",
+      note: "링크를 공유하면 이렇게 보여요",
+      caption:
+        "실제 공유 시 뜨는 이미지예요. 원본 대표 이미지가 있으면 배경으로 쓰고, 없으면 제목에 맞춰 만든 그라디언트로 채워져요.",
+    },
+    clipPreview: {
+      sectionAria: "내 클립 저장 미리보기",
+      title: "내 클립에 저장하면",
+      note: "목록에서 이렇게 보여요",
+      caption: "왼쪽 썸네일은 원본 페이지의 대표 이미지예요. 없으면 그라디언트로 채워져요.",
+    },
+    /** 공유 링크 생성 결과 레이어 */
+    result: {
+      title: "공유 링크가 만들어졌어요 🎉",
+      body: "링크를 복사해 공유하세요. 열면 공유 카드가 먼저 보인 뒤 원본으로 이동해요.",
+      urlAria: "공유 링크",
+      open: "열기",
+      close: "닫기",
+      savedToClips: "내 클립에 저장됨 ✓",
+      alreadyInClips: "이미 추가됨 ✓",
+    },
+    clearInputAria: "입력 지우기",
     errors: {
       metaFailed: "내용을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
       titleRequiredForLink: "공유 링크를 만들려면 제목이 필요해요. 제목을 입력해 주세요.",

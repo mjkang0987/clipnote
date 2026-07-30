@@ -102,6 +102,30 @@ const zh: PartialMessages = {
     preview: {
       titlePlaceholder: "标题将显示在这里",
     },
+    cardPreview: {
+      sectionAria: "分享卡片预览",
+      title: "分享卡片",
+      loading: "加载中",
+      note: "分享链接后会这样显示",
+      caption:
+        "这是实际分享时显示的图片。有原始封面图时用作背景，没有时会根据标题生成渐变填充。",
+    },
+    clipPreview: {
+      sectionAria: "我的剪藏保存预览",
+      title: "保存到我的剪藏后",
+      note: "在列表中会这样显示",
+      caption: "左侧缩略图是原页面的封面图。没有时会用渐变填充。",
+    },
+    result: {
+      title: "分享链接已生成 🎉",
+      body: "复制链接分享出去。打开后会先显示分享卡片，然后跳转到原页面。",
+      urlAria: "分享链接",
+      open: "打开",
+      close: "关闭",
+      savedToClips: "已保存到我的剪藏 ✓",
+      alreadyInClips: "已添加 ✓",
+    },
+    clearInputAria: "清空输入",
     errors: {
       metaFailed: "无法加载内容。请稍后再试。",
       titleRequiredForLink: "创建分享链接需要标题，请先填写。",

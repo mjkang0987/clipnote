@@ -105,6 +105,31 @@ const en: PartialMessages = {
     preview: {
       titlePlaceholder: "The title will appear here",
     },
+    cardPreview: {
+      sectionAria: "Share card preview",
+      title: "Share card",
+      loading: "Loading",
+      note: "This is how the link will look when shared",
+      caption:
+        "This is the image people will see. The page's cover image is used as the background, or a gradient built from the title when there isn't one.",
+    },
+    clipPreview: {
+      sectionAria: "My Clips preview",
+      title: "Saved to My Clips",
+      note: "This is how it looks in the list",
+      caption:
+        "The thumbnail on the left is the page's cover image. A gradient fills in when there isn't one.",
+    },
+    result: {
+      title: "Your share link is ready 🎉",
+      body: "Copy the link and share it. Opening it shows the share card first, then goes to the original.",
+      urlAria: "Share link",
+      open: "Open",
+      close: "Close",
+      savedToClips: "Saved to My Clips ✓",
+      alreadyInClips: "Already added ✓",
+    },
+    clearInputAria: "Clear input",
     errors: {
       metaFailed: "Couldn't load the content. Please try again in a moment.",
       titleRequiredForLink: "A title is required to create a share link. Please enter one.",

@@ -106,6 +106,31 @@ const ja: PartialMessages = {
     preview: {
       titlePlaceholder: "ここにタイトルが表示されます",
     },
+    cardPreview: {
+      sectionAria: "共有カードのプレビュー",
+      title: "共有カード",
+      loading: "読み込み中",
+      note: "リンクを共有するとこう表示されます",
+      caption:
+        "実際の共有時に表示される画像です。元のカバー画像があれば背景に使い、なければタイトルに合わせたグラデーションで埋めます。",
+    },
+    clipPreview: {
+      sectionAria: "マイクリップ保存時のプレビュー",
+      title: "マイクリップに保存すると",
+      note: "一覧ではこう表示されます",
+      caption:
+        "左のサムネイルは元ページのカバー画像です。ない場合はグラデーションで埋まります。",
+    },
+    result: {
+      title: "共有リンクができました 🎉",
+      body: "リンクをコピーして共有してください。開くと共有カードが表示されたあと元のページへ移動します。",
+      urlAria: "共有リンク",
+      open: "開く",
+      close: "閉じる",
+      savedToClips: "マイクリップに保存しました ✓",
+      alreadyInClips: "すでに追加済み ✓",
+    },
+    clearInputAria: "入力をクリア",
     errors: {
       metaFailed: "内容を読み込めませんでした。しばらくしてからもう一度お試しください。",
       titleRequiredForLink: "共有リンクを作るにはタイトルが必要です。入力してください。",
