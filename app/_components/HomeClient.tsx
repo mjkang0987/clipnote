@@ -29,15 +29,13 @@ const COARSE_POINTER = "(pointer: coarse)";
 // **높이**에 적용돼 h-12 를 덮어써 버튼이 납작해진다. `w-full` 은 가로 줄에서 균등 분할되고
 // 세로에서는 높이가 그대로 유지된다.
 //
-// 색 규칙: 공유 링크·복사 계열만 보라색, 저장은 기본색(app/clips/page.tsx 의 관행과 동일).
+// 색 규칙: **저장이 보라색 채움**(그 화면의 주 동작), 링크·복사·공유는 테두리+연보라.
 const BUTTON_BASE =
   "h-12 w-full whitespace-nowrap rounded-[8px] px-4 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed sm:px-5 sm:text-base";
-/** 1차(링크 만들기·링크 복사) — 보라 채움 */
+/** 저장(내 클립에 저장·이 브라우저에 저장) — 보라 채움 */
 const PRIMARY_BUTTON = `${BUTTON_BASE} bg-brand text-white hover:bg-brand-strong disabled:opacity-50`;
-/** 보조 공유·복사(공유하기·원본 복사) — 보라 테두리 */
+/** 링크·복사·공유(링크 만들기·링크 복사·원본 복사·공유하기) — 테두리 + 연보라 */
 const SECONDARY_BUTTON = `${BUTTON_BASE} border border-brand bg-brand-soft text-brand-strong hover:bg-brand hover:text-white disabled:opacity-60`;
-/** 저장(내 클립에 저장·이 브라우저에 저장) — 기본색 */
-const NEUTRAL_BUTTON = `${BUTTON_BASE} border border-border bg-surface text-fg hover:bg-bg disabled:opacity-60`;
 
 function subscribePointer(onStoreChange: () => void): () => void {
   if (typeof window === "undefined") return () => {};
@@ -586,11 +584,11 @@ export default function HomeClient({
               <div className="flex flex-col gap-2">
                 <div className="flex gap-2">
                   {shareUrl ? (
-                    <button type="button" onClick={handleCopy} className={PRIMARY_BUTTON}>
+                    <button type="button" onClick={handleCopy} className={SECONDARY_BUTTON}>
                       {copied ? "복사됨 ✓" : "링크 복사"}
                     </button>
                   ) : (
-                    <button type="submit" disabled={primaryDisabled} className={PRIMARY_BUTTON}>
+                    <button type="submit" disabled={primaryDisabled} className={SECONDARY_BUTTON}>
                       {primaryLabel}
                     </button>
                   )}
@@ -607,7 +605,7 @@ export default function HomeClient({
                   type="button"
                   onClick={handleSaveToClips}
                   disabled={saveClipDisabled}
-                  className={NEUTRAL_BUTTON}
+                  className={PRIMARY_BUTTON}
                 >
                   {saveClipLabel}
                 </button>
@@ -636,7 +634,7 @@ export default function HomeClient({
                     {plainCopied ? "복사됨 ✓" : "원본 복사"}
                   </button>
                 </div>
-                <button type="submit" disabled={primaryDisabled} className={NEUTRAL_BUTTON}>
+                <button type="submit" disabled={primaryDisabled} className={PRIMARY_BUTTON}>
                   {primaryLabel}
                 </button>
               </div>
