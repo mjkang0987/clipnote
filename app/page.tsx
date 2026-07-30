@@ -15,11 +15,22 @@ import Brand from "@/app/_components/Brand";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { addLocalClip, getKnownTags, recordTags } from "@/lib/local-clips";
 
-/** Web Share API 지원 여부는 런타임 중 변하지 않으므로 구독은 no-op. */
-const noopSubscribe = () => () => {};
+/**
+ * 주 입력장치가 터치인지 — 데스크톱(마우스/트랙패드)과 모바일을 가르는 기준.
+ * macOS 의 Safari·Chrome 도 Web Share API 를 지원하기 때문에 `navigator.share` 만으로는
+ * 데스크톱을 걸러낼 수 없다.
+ */
+const COARSE_POINTER = "(pointer: coarse)";
+
+function subscribePointer(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const query = window.matchMedia(COARSE_POINTER);
+  query.addEventListener("change", onStoreChange);
+  return () => query.removeEventListener("change", onStoreChange);
+}
 
 /**
- * 네이티브 공유 시트를 쓸 수 있는 환경인지.
+ * 네이티브 공유 시트를 노출할 환경인지 — 공유 API 지원 **그리고** 터치 기기.
  *
  * 서버에는 `navigator` 가 없어 렌더 중에 읽으면 하이드레이션이 어긋난다. 서버 스냅샷을
  * `false` 로 두고 클라이언트에서만 실제 값을 읽는다(`useSyncExternalStore` — 효과 안에서
@@ -27,8 +38,11 @@ const noopSubscribe = () => () => {};
  */
 function useCanShare(): boolean {
   return useSyncExternalStore(
-    noopSubscribe,
-    () => typeof navigator !== "undefined" && typeof navigator.share === "function",
+    subscribePointer,
+    () =>
+      typeof navigator !== "undefined" &&
+      typeof navigator.share === "function" &&
+      window.matchMedia(COARSE_POINTER).matches,
     () => false,
   );
 }
