@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 
 import PrivacyPage from "@/app/_components/PrivacyPage";
 
+/**
+ * 개인정보처리방침 — **한국어 판본만 존재한다**(본문을 번역하지 않기로 했다).
+ *
+ * 그래서 hreflang 상호 참조를 두지 않는다. 다른 언어 경로(`/en/privacy` 등)는
+ * 같은 한국어 본문을 보여주는 편의 경로이고 canonical 로 이 페이지를 가리킨다.
+ */
 export const metadata: Metadata = {
   title: "개인정보처리방침",
   description:
@@ -10,7 +16,6 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-/** 한국어(원본). 본문은 `PrivacyPage` 에 있고 이 파일은 로케일과 메타데이터만 지정한다. */
 export default function Page() {
   return <PrivacyPage locale="ko" />;
 }

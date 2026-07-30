@@ -1,7 +1,12 @@
 import SettingsPage from "@/app/_components/SettingsPage";
+import { getMessages } from "@/lib/i18n";
+import { localePageMetadata } from "@/lib/i18n/pageMetadata";
 
-// 영어 로케일. 번역이 채워지기 전까지는 색인 제외(`lib/i18n/pendingMetadata.ts` 참고).
-export { PENDING_TRANSLATION_METADATA as metadata } from "@/lib/i18n/pendingMetadata";
+// 영어 로케일. canonical 과 hreflang 상호 참조는 localePageMetadata 가 만든다.
+export const metadata = localePageMetadata("en", "/settings", {
+  title: getMessages("en").settings.title,
+  index: false,
+});
 
 export default function Page() {
   return <SettingsPage locale="en" />;
