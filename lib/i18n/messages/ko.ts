@@ -17,9 +17,41 @@ const ko = {
     privacy: "개인정보처리방침",
     /** 브랜드 로고 링크의 aria-label */
     homeAria: "ClipNote 홈",
+    /** 여러 레이어에서 반복되는 버튼 라벨 */
+    cancel: "취소",
+    delete: "삭제",
+    save: "저장",
   },
 
   /** 홈 화면 */
+  /** 내 클립 화면 */
+  clips: {
+    /** 로그인 상태별 부제 */
+    guestNote: "이 브라우저에 저장된 클립이에요. 로그인하면 어디서나 보고 공유할 수 있어요.",
+    accountNote: "내 계정에 저장된 클립이에요.",
+    newClip: "+ 새 클립",
+    select: "선택",
+    allTags: "전체",
+    loading: "불러오는 중…",
+    loadFailed: "목록을 불러오지 못했어요. 저장된 클립이 사라진 건 아니에요.",
+    retry: "다시 시도",
+    empty: "아직 저장한 클립이 없어요.",
+    emptyCta: "첫 클립 만들기",
+    /** `{tag}` 는 선택된 태그 이름 */
+    emptyForTag: "‘{tag}’ 태그의 클립이 없어요.",
+    /** `{count}` 는 선택된 클립 수 */
+    selectedCount: "{count}개 선택됨",
+    applyTags: "태그 적용",
+    /** `{title}` 은 클립 제목 — 체크박스 aria-label */
+    selectAria: "{title} 선택",
+    edit: "편집",
+    copyShareLink: "공유 링크 복사",
+    createShareLink: "공유 링크 만들기",
+    creatingShareLink: "만드는 중…",
+    copied: "복사됨 ✓",
+    openOriginal: "바로가기",
+  },
+
   home: {
     hero: {
       /** `{accent}` 는 브랜드 색으로 강조되는 부분 */

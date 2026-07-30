@@ -12,6 +12,8 @@ import {
   type LocalClip,
 } from "@/lib/local-clips";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
+import type { Messages } from "@/lib/i18n";
+import { interpolate } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
 
 type Item = {
@@ -33,15 +35,20 @@ type Item = {
  * 마운트 후 fetch 를 기다리지 않으므로 로그인 사용자는 첫 렌더에 목록이 이미 있다.
  */
 export default function ClipsClient({
+  messages,
   initialLoggedIn,
   initialClips,
   initialLoadFailed,
 }: {
+  /** 서버에서 고른 사전 — 클라이언트 번들에 모든 언어가 실리지 않게 props 로 받는다. */
+  messages: Messages;
   initialLoggedIn: boolean;
   initialClips: Clip[];
   /** 서버에서 목록 조회가 실패했는지 — 빈 목록과 구분해 재시도를 제안한다. */
   initialLoadFailed: boolean;
 }) {
+  const t = messages.clips;
+  const c = messages.common;
   // 내부 링크는 현재 로케일을 유지한다(`/en/clips` 에서 홈으로 나갈 때 `/en` 으로).
   const path = useLocalizedPath();
   // 게스트 목록은 localStorage 라 서버에서 알 수 없다 → 마운트 후 채운다.
@@ -325,15 +332,15 @@ export default function ClipsClient({
         }`}
       >
         <div className="flex items-baseline justify-between">
-          <h1 className="text-2xl font-bold tracking-tight text-fg">내 클립</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-fg">{c.myClips}</h1>
           <a href={path("/")} className="text-sm font-semibold text-brand-strong hover:underline">
-            + 새 클립
+            {t.newClip}
           </a>
         </div>
         <p className="mt-1 text-sm text-fg-muted">
           {loggedIn === false
-            ? "이 브라우저에 저장된 클립이에요. 로그인하면 어디서나 보고 공유할 수 있어요."
-            : "내 계정에 저장된 클립이에요."}
+            ? t.guestNote
+            : t.accountNote}
         </p>
 
         {/* 선택 모드 진입 버튼(상단). 선택 시 도구는 하단 고정바로. */}
@@ -344,7 +351,7 @@ export default function ClipsClient({
               onClick={() => setSelectMode(true)}
               className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-fg transition hover:bg-surface"
             >
-              선택
+              {t.select}
             </button>
           </div>
         )}
@@ -357,7 +364,7 @@ export default function ClipsClient({
               onClick={() => setActiveTag(null)}
               className={chipClass(activeTag === null)}
             >
-              전체
+              {t.allTags}
             </button>
             {allTags.map((t) => (
               <button
@@ -373,11 +380,11 @@ export default function ClipsClient({
         )}
 
         {loading ? (
-          <p className="mt-10 text-center text-sm text-fg-muted">불러오는 중…</p>
+          <p className="mt-10 text-center text-sm text-fg-muted">{t.loading}</p>
         ) : loadFailed ? (
           <div className="mt-10 rounded-2xl border border-dashed border-border bg-surface p-10 text-center">
             <p className="text-sm text-fg-muted">
-              목록을 불러오지 못했어요. 저장된 클립이 사라진 건 아니에요.
+              {t.loadFailed}
             </p>
             <button
               type="button"
@@ -385,22 +392,22 @@ export default function ClipsClient({
               disabled={loading}
               className="mt-3 inline-block rounded-[8px] bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-60"
             >
-              다시 시도
+              {t.retry}
             </button>
           </div>
         ) : items.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-dashed border-border bg-surface p-10 text-center">
-            <p className="text-sm text-fg-muted">아직 저장한 클립이 없어요.</p>
+            <p className="text-sm text-fg-muted">{t.empty}</p>
             <a
               href={path("/")}
               className="mt-3 inline-block rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-strong"
             >
-              첫 클립 만들기
+              {t.emptyCta}
             </a>
           </div>
         ) : filtered.length === 0 ? (
           <p className="mt-10 text-center text-sm text-fg-muted">
-            ‘{activeTag}’ 태그의 클립이 없어요.
+            {interpolate(t.emptyForTag, { tag: activeTag ?? "" })}
           </p>
         ) : (
           <div className="mt-6 flex flex-col gap-8">
@@ -413,6 +420,7 @@ export default function ClipsClient({
                   {group.items.map((item) => (
                     <ClipCard
                       key={item.key}
+                      messages={messages}
                       item={item}
                       onRequestDelete={setPendingDelete}
                       onEdit={() => setEditing(item)}
@@ -440,7 +448,7 @@ export default function ClipsClient({
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 backdrop-blur-md">
           <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-5 py-3">
             <span className="text-sm font-medium text-fg">
-              {selected.size}개 선택됨
+              {interpolate(t.selectedCount, { count: selected.size })}
             </span>
             <div className="flex flex-wrap gap-2">
               <button
@@ -449,7 +457,7 @@ export default function ClipsClient({
                 onClick={() => setBulkTagOpen(true)}
                 className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-fg transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
               >
-                태그 적용
+                {t.applyTags}
               </button>
               <button
                 type="button"
@@ -457,14 +465,14 @@ export default function ClipsClient({
                 onClick={() => setPendingBulkDelete(true)}
                 className="rounded-lg border border-danger/40 px-3 py-1.5 text-sm font-semibold text-danger transition hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                삭제
+                {c.delete}
               </button>
               <button
                 type="button"
                 onClick={exitSelect}
                 className="rounded-lg px-3 py-1.5 text-sm font-semibold text-fg-muted transition hover:bg-surface"
               >
-                취소
+                {c.cancel}
               </button>
             </div>
           </div>
@@ -593,6 +601,7 @@ function DeleteConfirmLayer({
 }
 
 function ClipCard({
+  messages,
   item,
   onRequestDelete,
   onEdit,
@@ -601,6 +610,7 @@ function ClipCard({
   selected,
   onToggleSelect,
 }: {
+  messages: Messages;
   item: Item;
   onRequestDelete: (item: Item) => void;
   onEdit: () => void;
@@ -609,6 +619,7 @@ function ClipCard({
   selected: boolean;
   onToggleSelect: () => void;
 }) {
+  const t = messages.clips;
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
   // 선택 모드는 공유 슬러그가 있는 로그인 클립만 대상
@@ -667,7 +678,7 @@ function ClipCard({
             type="checkbox"
             checked={selected}
             onChange={onToggleSelect}
-            aria-label={`${item.title} 선택`}
+            aria-label={interpolate(t.selectAria, { title: item.title })}
             className="h-4 w-4 shrink-0 accent-brand"
           />
         )}
@@ -719,14 +730,14 @@ function ClipCard({
               onClick={onEdit}
               className="font-medium text-fg-muted transition hover:text-fg"
             >
-              편집
+              {t.edit}
             </button>
             <button
               type="button"
               onClick={() => onRequestDelete(item)}
               className="font-medium text-danger/80 transition hover:text-danger"
             >
-              삭제
+              {messages.common.delete}
             </button>
           </div>
         )}
@@ -746,7 +757,7 @@ function ClipCard({
                     onClick={copyShare}
                     className="flex-1 py-3 text-center text-brand-strong transition hover:bg-bg"
                   >
-                    {copied ? "복사됨 ✓" : "공유 링크 복사"}
+                    {copied ? t.copied : t.copyShareLink}
                   </button>
                 ) : (
                   <button
@@ -755,7 +766,7 @@ function ClipCard({
                     disabled={sharing}
                     className="flex-1 py-3 text-center text-brand-strong transition hover:bg-bg disabled:opacity-60"
                   >
-                    {sharing ? "만드는 중…" : copied ? "복사됨 ✓" : "공유 링크 만들기"}
+                    {sharing ? t.creatingShareLink : copied ? t.copied : t.createShareLink}
                   </button>
                 )}
                 <span className="w-px bg-border" aria-hidden />
@@ -767,7 +778,7 @@ function ClipCard({
               rel="noreferrer"
               className="flex-1 py-3 text-center transition hover:bg-bg"
             >
-              바로가기
+              {t.openOriginal}
             </a>
           </div>
         </div>

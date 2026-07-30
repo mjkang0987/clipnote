@@ -12,6 +12,33 @@ const ja: PartialMessages = {
     settings: "設定",
     privacy: "プライバシーポリシー",
     homeAria: "ClipNote ホーム",
+    cancel: "キャンセル",
+    delete: "削除",
+    save: "保存",
+  },
+
+  clips: {
+    guestNote:
+      "このブラウザに保存されたクリップです。ログインするとどこからでも見て共有できます。",
+    accountNote: "アカウントに保存されたクリップです。",
+    newClip: "+ 新しいクリップ",
+    select: "選択",
+    allTags: "すべて",
+    loading: "読み込み中…",
+    loadFailed: "一覧を読み込めませんでした。保存したクリップが消えたわけではありません。",
+    retry: "再試行",
+    empty: "まだ保存したクリップがありません。",
+    emptyCta: "最初のクリップを作成",
+    emptyForTag: "「{tag}」タグのクリップがありません。",
+    selectedCount: "{count}件選択中",
+    applyTags: "タグを適用",
+    selectAria: "{title} を選択",
+    edit: "編集",
+    copyShareLink: "共有リンクをコピー",
+    createShareLink: "共有リンクを作成",
+    creatingShareLink: "作成中…",
+    copied: "コピーしました ✓",
+    openOriginal: "開く",
   },
 
   home: {

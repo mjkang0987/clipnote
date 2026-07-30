@@ -13,6 +13,33 @@ const en: PartialMessages = {
     settings: "Settings",
     privacy: "Privacy Policy",
     homeAria: "ClipNote home",
+    cancel: "Cancel",
+    delete: "Delete",
+    save: "Save",
+  },
+
+  clips: {
+    guestNote:
+      "These clips are saved in this browser. Sign in to see and share them anywhere.",
+    accountNote: "These clips are saved to your account.",
+    newClip: "+ New clip",
+    select: "Select",
+    allTags: "All",
+    loading: "Loading…",
+    loadFailed: "Couldn't load the list. Your saved clips are still there.",
+    retry: "Try again",
+    empty: "No clips saved yet.",
+    emptyCta: "Create your first clip",
+    emptyForTag: "No clips tagged \u2018{tag}\u2019.",
+    selectedCount: "{count} selected",
+    applyTags: "Apply tags",
+    selectAria: "Select {title}",
+    edit: "Edit",
+    copyShareLink: "Copy share link",
+    createShareLink: "Create share link",
+    creatingShareLink: "Creating…",
+    copied: "Copied ✓",
+    openOriginal: "Open",
   },
 
   home: {

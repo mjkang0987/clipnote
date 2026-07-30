@@ -1,5 +1,22 @@
 import { Fragment, type ReactNode } from "react";
 
+const TOKEN = /\{([a-zA-Z][a-zA-Z0-9]*)\}/g;
+
+/**
+ * 번역문 안의 `{key}` 를 문자열·숫자로 바꾼다. 노드가 아니라 평문이 필요한 곳
+ * (aria-label, 단순 문장)에서 쓴다. 값이 없는 토큰은 그대로 남긴다.
+ *
+ *   interpolate(t.selectedCount, { count: 3 })  →  "3개 선택됨"
+ */
+export function interpolate(
+  template: string,
+  values: Record<string, string | number>,
+): string {
+  return template.replace(TOKEN, (whole, key: string) =>
+    key in values ? String(values[key]) : whole,
+  );
+}
+
 /**
  * 번역문 안의 `{key}` 를 React 노드로 바꾼다. 문장 중간에 링크·강조가 들어가는 문구용.
  *
