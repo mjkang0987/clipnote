@@ -90,7 +90,11 @@ export default function Home() {
       return;
     }
     const supabase = createSupabaseBrowserClient();
-    supabase.auth.getUser().then(({ data }) => setIsLoggedIn(Boolean(data.user)));
+    // getUser() 는 인증 서버에 왕복해 JWT 를 검증한다 → 그동안 isLoggedIn 이 null 로 남아
+    // 버튼 영역이 자리표시로 비어 있고, 응답이 오는 순간 아래 안내문이 끼어들어 레이아웃이 밀렸다.
+    // 여기서 필요한 건 "어떤 버튼을 보일지"라는 표시용 판단이라 로컬 세션으로 충분하다
+    // (실제 권한 검사는 서버 API 라우트에서 한다). getSession() 은 저장된 세션을 즉시 준다.
+    supabase.auth.getSession().then(({ data }) => setIsLoggedIn(Boolean(data.session?.user)));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) =>
       setIsLoggedIn(Boolean(session?.user)),
     );
