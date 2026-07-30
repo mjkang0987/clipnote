@@ -13,6 +13,9 @@ import {
 } from "@/lib/local-clips";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import { LOCALE_TAGS, type Locale, type Messages } from "@/lib/i18n";
+
+/** 내 클립 화면이 쓰는 사전 조각 */
+type ClipsMessages = Pick<Messages, "common" | "clips">;
 import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
 
@@ -31,7 +34,7 @@ type Item = {
 };
 
 /**
- * 내 클립 본문. 로그인 여부와 목록은 **서버에서 채워 받는다**(`app/clips/page.tsx`).
+ * 내 클립 본문. 로그인 여부와 목록은 **서버에서 채워 받는다**(`app/_components/ClipsPage.tsx`).
  * 마운트 후 fetch 를 기다리지 않으므로 로그인 사용자는 첫 렌더에 목록이 이미 있다.
  */
 export default function ClipsClient({
@@ -41,8 +44,12 @@ export default function ClipsClient({
   initialClips,
   initialLoadFailed,
 }: {
-  /** 서버에서 고른 사전 — 클라이언트 번들에 모든 언어가 실리지 않게 props 로 받는다. */
-  messages: Messages;
+  /**
+   * 서버에서 고른 사전 — **이 화면이 쓰는 namespace 만** 받는다.
+   * 언어를 하나로 줄이는 것과 별개로, 화면이 안 쓰는 사전까지 넘기면 그만큼
+   * RSC 페이로드가 커진다(요청마다 새로 오므로 캐시되지도 않는다).
+   */
+  messages: ClipsMessages;
   /** 날짜 그룹 라벨을 `Intl` 로 만들 때 쓴다(사전에 넣지 않는다 — 아래 dateGroupLabel 주석). */
   locale: Locale;
   initialLoggedIn: boolean;
@@ -551,7 +558,7 @@ function DeleteConfirmLayer({
   onCancel,
   onConfirm,
 }: {
-  messages: Messages;
+  messages: ClipsMessages;
   item: Item;
   onCancel: () => void;
   onConfirm: () => void;
@@ -622,7 +629,7 @@ function ClipCard({
   selected,
   onToggleSelect,
 }: {
-  messages: Messages;
+  messages: ClipsMessages;
   item: Item;
   onRequestDelete: (item: Item) => void;
   onEdit: () => void;
@@ -863,7 +870,7 @@ function MigrateLocalLayer({
   onDismiss,
   onClose,
 }: {
-  messages: Messages;
+  messages: ClipsMessages;
   count: number;
   migrating: boolean;
   onMigrate: () => void;
@@ -925,7 +932,7 @@ function DiscardLocalLayer({
   onDiscard,
   onBack,
 }: {
-  messages: Messages;
+  messages: ClipsMessages;
   count: number;
   onDiscard: () => void;
   onBack: () => void;
@@ -977,7 +984,7 @@ function EditClipLayer({
   onCancel,
   onSave,
 }: {
-  messages: Messages;
+  messages: ClipsMessages;
   item: Item;
   busy: boolean;
   onCancel: () => void;
@@ -1042,7 +1049,7 @@ function BulkTagLayer({
   onCancel,
   onApply,
 }: {
-  messages: Messages;
+  messages: ClipsMessages;
   count: number;
   busy: boolean;
   onCancel: () => void;
@@ -1131,7 +1138,7 @@ function BulkDeleteConfirm({
   onCancel,
   onConfirm,
 }: {
-  messages: Messages;
+  messages: ClipsMessages;
   count: number;
   busy: boolean;
   onCancel: () => void;

@@ -7,7 +7,11 @@ import { useLocalizedPath } from "@/lib/i18n/useLocale";
 
 // 헤더 우측: 로그인 상태에 따라 "로그인" 링크 또는 로그아웃 버튼.
 // 이메일 등 개인정보는 수집·표시하지 않고 로그인 여부만 본다.
-export default function AuthNav({ messages }: { messages: Messages }) {
+export default function AuthNav({
+  messages,
+}: {
+  messages: Pick<Messages, "common">;
+}) {
   const c = messages.common;
   const [loggedIn, setLoggedIn] = useState(false);
   const [ready, setReady] = useState(false);

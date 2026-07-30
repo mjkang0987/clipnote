@@ -8,5 +8,8 @@ import { getMessages, type Locale } from "@/lib/i18n";
  * 클라이언트에서 사전을 고르면 4개 언어가 전부 번들에 실린다.
  */
 export default function LoginPage({ locale }: { locale: Locale }) {
-  return <LoginClient messages={getMessages(locale)} />;
+  const m = getMessages(locale);
+  // 화면이 쓰는 namespace 만 골라 넘긴다. 사전을 통째로 넘기면 그 화면이 쓰지 않는
+  // 문구까지 RSC 페이로드에 실려 나간다(예: 내 클립 응답에 FAQ 문구가 들어갔다).
+  return <LoginClient messages={{ common: m.common, login: m.login }} />;
 }

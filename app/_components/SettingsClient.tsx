@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Messages } from "@/lib/i18n";
+
+/** 설정 화면이 쓰는 사전 조각(RSC 페이로드를 화면 단위로 좁힌다) */
+type SettingsMessages = Pick<Messages, "common" | "settings">;
 import { interpolate } from "@/lib/i18n/interpolate";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import Header from "@/app/_components/Header";
@@ -12,7 +15,7 @@ import Header from "@/app/_components/Header";
 // 사전은 서버(`SettingsPage`)에서 골라 받는다.
 const CONTACT_EMAIL = "pikaworks.help@gmail.com";
 
-export default function SettingsClient({ messages }: { messages: Messages }) {
+export default function SettingsClient({ messages }: { messages: SettingsMessages }) {
   const t = messages.settings;
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
@@ -156,7 +159,7 @@ function WithdrawConfirmLayer({
   onCancel,
   onDone,
 }: {
-  messages: Messages;
+  messages: SettingsMessages;
   onCancel: () => void;
   onDone: () => void;
 }) {

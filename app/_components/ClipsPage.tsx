@@ -36,10 +36,13 @@ export default async function ClipsPage({ locale }: { locale: Locale }) {
     }
   }
 
+  const m = getMessages(locale);
+
   return (
-    // 사전은 서버에서 골라 props 로 내린다 — 클라이언트 번들에 모든 언어가 실리지 않는다.
+    // 화면이 쓰는 namespace 만 골라 넘긴다. 사전을 통째로 넘기면 그 화면이 쓰지 않는
+    // 문구까지 RSC 페이로드에 실려 나간다(예: 내 클립 응답에 FAQ 문구가 들어갔다).
     <ClipsClient
-      messages={getMessages(locale)}
+      messages={{ common: m.common, clips: m.clips }}
       locale={locale}
       initialLoggedIn={initialLoggedIn}
       initialClips={initialClips}

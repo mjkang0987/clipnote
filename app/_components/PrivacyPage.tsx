@@ -14,7 +14,9 @@ const EFFECTIVE_DATE = "2026년 7월 10일";
  * 대신 비한국어 로케일에는 한국어로만 제공된다는 안내를 위에 붙인다(그 안내문만 번역).
  */
 export default function PrivacyPage({ locale }: { locale: Locale }) {
-  const messages = getMessages(locale);
+  const m = getMessages(locale);
+  // 이 화면은 안내문(language)과 헤더(common)만 쓴다.
+  const messages = { common: m.common, language: m.language };
   const koreanOnly = locale !== DEFAULT_LOCALE;
 
   return (

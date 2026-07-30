@@ -11,6 +11,9 @@ import { gradientCss, pickGradient } from "@/lib/gradients";
 import type { ClipMetadata } from "@/lib/metadata";
 import { buildShareText } from "@/lib/shareText";
 import type { Messages } from "@/lib/i18n";
+
+/** 홈이 쓰는 사전 조각 — clips·settings·login namespace 는 이 화면에 필요 없다. */
+type HomeMessages = Pick<Messages, "common" | "home" | "homeActions" | "about" | "faq">;
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
@@ -75,8 +78,8 @@ export default function HomeClient({
   messages,
   initialLoggedIn,
 }: {
-  /** 서버에서 고른 사전 — 클라이언트 번들에 모든 언어가 실리지 않게 props 로 받는다. */
-  messages: Messages;
+  /** 서버에서 고른 사전 — 이 화면이 쓰는 namespace 만 받는다(ClipsClient 주석 참고). */
+  messages: HomeMessages;
   initialLoggedIn: boolean;
 }) {
   const t = messages.homeActions;
@@ -982,7 +985,7 @@ function ShareResultLayer({
   alreadySaved,
   onClose,
 }: {
-  messages: Messages;
+  messages: Pick<Messages, "common" | "home" | "homeActions">;
   url: string;
   copied: boolean;
   onCopy: () => void;
@@ -1150,7 +1153,7 @@ function ClearableInput({
  * FAQ 항목 — 화면(`<dl>`)과 구조화 데이터가 **이 배열 하나**를 공유한다.
  * 전에는 양쪽에 문구가 따로 적혀 있어서 구글 리치 결과에 화면과 다른 문장이 나갔다.
  */
-function faqItems(messages: Messages): { q: string; a: string }[] {
+function faqItems(messages: HomeMessages): { q: string; a: string }[] {
   const f = messages.faq;
   const t = messages.homeActions;
   // 버튼 이름이 들어가는 문구는 사전이 아니라 실제 라벨에서 채운다.

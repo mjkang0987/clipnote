@@ -19,9 +19,20 @@ export default async function HomePage({ locale }: { locale: Locale }) {
     initialLoggedIn = Boolean(data.session?.user);
   }
 
+  const m = getMessages(locale);
+
   return (
-    // 내부 링크(`/clips`·`/login`)의 로케일 반영은 그 페이지들의 로케일 라우트가 생기는
-    // 다음 단계에서 함께 붙인다 — 지금 붙이면 없는 경로로 404 가 된다.
-    <HomeClient messages={getMessages(locale)} initialLoggedIn={initialLoggedIn} />
+    // 화면이 쓰는 namespace 만 골라 넘긴다. 사전을 통째로 넘기면 그 화면이 쓰지 않는
+    // 문구까지 RSC 페이로드에 실려 나간다(예: 내 클립 응답에 FAQ 문구가 들어갔다).
+    <HomeClient
+      messages={{
+        common: m.common,
+        home: m.home,
+        homeActions: m.homeActions,
+        about: m.about,
+        faq: m.faq,
+      }}
+      initialLoggedIn={initialLoggedIn}
+    />
   );
 }

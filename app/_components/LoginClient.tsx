@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Messages } from "@/lib/i18n";
+
+/** 로그인 화면이 쓰는 사전 조각(RSC 페이로드를 화면 단위로 좁힌다) */
+type LoginMessages = Pick<Messages, "common" | "login">;
 import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import Header from "@/app/_components/Header";
@@ -14,7 +17,7 @@ type Provider = "google" | "kakao" | "naver";
 const LAST_PROVIDER_KEY = "clipnote:last-login-provider";
 
 // 사전은 서버(`LoginPage`)에서 골라 받는다.
-export default function LoginClient({ messages }: { messages: Messages }) {
+export default function LoginClient({ messages }: { messages: LoginMessages }) {
   const t = messages.login;
   const [loading, setLoading] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);

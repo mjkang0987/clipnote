@@ -15,7 +15,8 @@ export default function Header({
   messages,
   showClipsLink = true,
 }: {
-  messages: Messages;
+  /** 이 컴포넌트가 쓰는 namespace 만 받는다 — 안 쓰는 사전이 RSC 페이로드로 나가지 않게. */
+  messages: Pick<Messages, "common">;
   showClipsLink?: boolean;
 }) {
   const c = messages.common;
