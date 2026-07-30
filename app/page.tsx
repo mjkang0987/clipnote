@@ -564,18 +564,25 @@ export default function Home() {
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col gap-2">
+              // 네이티브 공유가 가능한 기기(터치)는 저장 위에 공유·복사 두 개를 한 줄로 둔다.
+              // 데스크톱은 공유하기가 없으므로 저장 + 복사하기를 한 줄에 나란히 둔다
+              // (로그인 상태의 2버튼 배치와 같은 모양).
+              <div
+                className={
+                  canShare ? "flex flex-col gap-2" : "flex flex-col gap-2 sm:flex-row"
+                }
+              >
                 <button
                   type="submit"
                   disabled={primaryDisabled}
-                  className="h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`h-12 w-full rounded-[8px] bg-brand px-5 text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50${
+                    canShare ? "" : " sm:flex-1"
+                  }`}
                 >
                   {primaryLabel}
                 </button>
-                <div className="flex gap-2">
-                  {/* 네이티브 공유 시트가 없는 환경(주로 데스크톱)에서는 숨긴다 — 눌러도
-                      복사로 폴백될 뿐이라 복사하기와 구분이 안 된다. */}
-                  {canShare && (
+                {canShare ? (
+                  <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={handleGuestShare}
@@ -584,7 +591,16 @@ export default function Home() {
                     >
                       공유하기
                     </button>
-                  )}
+                    <button
+                      type="button"
+                      onClick={handleGuestCopy}
+                      disabled={!hasInput}
+                      className="h-12 w-full rounded-[8px] border border-brand bg-brand-soft px-5 text-base font-semibold text-brand-strong transition hover:bg-brand hover:text-white focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1"
+                    >
+                      {guestCopied ? "복사됨 ✓" : "복사하기"}
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
                     onClick={handleGuestCopy}
@@ -593,7 +609,7 @@ export default function Home() {
                   >
                     {guestCopied ? "복사됨 ✓" : "복사하기"}
                   </button>
-                </div>
+                )}
               </div>
             )}
             {isLoggedIn === false && (
