@@ -12,7 +12,11 @@ import {
   type LocalClip,
 } from "@/lib/local-clips";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
-import { LOCALE_TAGS, type Locale, type Messages } from "@/lib/i18n";
+// 값(LOCALE_TAGS)은 배럴이 아니라 `locales` 에서 직접 가져온다 — 배럴(`@/lib/i18n`)은
+// 4개 언어 사전을 로드·병합하므로, 클라이언트 컴포넌트가 값을 가져오면 사전 전체가
+// 클라이언트 번들에 실린다. 타입은 지워지므로 배럴에서 가져와도 무방하다.
+import { LOCALE_TAGS, type Locale } from "@/lib/i18n/locales";
+import type { Messages } from "@/lib/i18n";
 
 /** 내 클립 화면이 쓰는 사전 조각 */
 type ClipsMessages = Pick<Messages, "common" | "clips">;

@@ -2,7 +2,14 @@
 
 import { usePathname } from "next/navigation";
 
-import { LOCALES, LOCALE_LABELS, switchLocalePath, type Locale } from "@/lib/i18n";
+// 배럴(`@/lib/i18n`)이 아니라 `locales` 에서 가져온다 — 배럴은 4개 언어 사전을
+// 로드·병합하므로 클라이언트 번들에 사전 전체가 실린다(ClipsClient 주석 참고).
+import {
+  LOCALES,
+  LOCALE_LABELS,
+  switchLocalePath,
+  type Locale,
+} from "@/lib/i18n/locales";
 
 /**
  * 언어 선택. 네이티브 `<select>` 를 쓴다(프로젝트 규약) — 기기 기본 선택 UI 가
