@@ -833,7 +833,7 @@ function MigrateLocalLayer({
           type="button"
           onClick={onMigrate}
           disabled={migrating}
-          className="h-11 flex-1 rounded-lg bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-11 flex-1 rounded-[8px] bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
         >
           {migrating ? "옮기는 중…" : `${count}개 옮기기`}
         </button>
@@ -841,7 +841,7 @@ function MigrateLocalLayer({
           type="button"
           onClick={onDismiss}
           disabled={migrating}
-          className="h-11 flex-1 rounded-lg border border-border px-4 text-sm font-semibold text-fg transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-11 flex-1 rounded-[8px] border border-border px-4 text-sm font-semibold text-fg transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
         >
           취소
         </button>
@@ -881,14 +881,14 @@ function DiscardLocalLayer({
         <button
           type="button"
           onClick={onBack}
-          className="h-11 flex-1 rounded-lg bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong"
+          className="h-11 flex-1 rounded-[8px] bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong"
         >
           취소
         </button>
         <button
           type="button"
           onClick={onDiscard}
-          className="h-11 flex-1 rounded-lg border border-danger px-4 text-sm font-semibold text-danger transition hover:bg-danger hover:text-white"
+          className="h-11 flex-1 rounded-[8px] border border-danger px-4 text-sm font-semibold text-danger transition hover:bg-danger hover:text-white"
         >
           삭제
         </button>
