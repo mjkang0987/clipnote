@@ -618,11 +618,15 @@ function ClipCard({
           aria-hidden
         >
           {item.image && (
-            // 원본 썸네일. 실패하면 숨겨져 그라디언트 노출
+            // 원본 썸네일. 실패하면 숨겨져 그라디언트 노출.
+            // lazy/async 필수 — 목록은 최대 200개라 즉시 로드하면 외부 호스트 수백 곳에
+            // 동시에 요청이 나가고, 느린(또는 hotlink 를 막는) 원본 하나가 전체 렌더를 붙든다.
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={item.image}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="h-full w-full object-cover"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
