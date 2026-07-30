@@ -333,18 +333,37 @@ URL을 보존한다. 모든 언어에 prefix를 두려면 공유 링크를 `/s/{
 - **제외**: 사용자가 입력한 클립 제목·태그(원문 유지)
 
 ### 영향 파일
-- 신규: `lib/i18n/*`, `app/{en,ja,zh}/**` (얇은 래퍼), 언어 선택 컴포넌트
+- 신규: `lib/i18n/*`(`locales.ts`·`index.ts`·`messages/ko.ts`·`useLocale.ts`·`pendingMetadata.ts`),
+  `app/{en,ja,zh}/**` (얇은 재export 래퍼), `app/_components/HomePage.tsx`, 언어 선택 컴포넌트
 - 수정: `app/page.tsx`·`app/clips/page.tsx`·`app/settings/page.tsx`·`app/login/page.tsx`·
   `app/[slug]/page.tsx`, `app/_components/{HomeClient,ClipsClient,Header,Footer}.tsx`,
   `app/layout.tsx`, `app/sitemap.ts`, `app/robots.ts`, `lib/site.ts`
 
 ### 작업 순서 (각 단위마다 작업>리뷰>개선>검증)
-1. `lib/i18n` 기반 + 한국어 사전만 (동작 변화 0, 회귀 위험 최소)
-2. 홈 문자열 치환 + `/en` 라우트 1개로 왕복 검증
-3. 나머지 페이지 치환 · `/ja` `/zh` 추가
-4. `generateMetadata`·hreflang·`sitemap` 언어별 생성
+1. ✅ `lib/i18n` 기반 + 한국어 사전만 (동작 변화 0, 회귀 위험 최소) — `3014fbe`
+2. ✅ 홈 문자열 치환 + `/en` 라우트 1개로 왕복 검증 — `01a1aa4`
+3. **라우트 구조 완료.** 문자열 치환은 3b로 남음
+   - ✅ 3a-1 `/en` 하위 라우트 골격 + 번역 대기 `noindex` — `7b7903c`
+   - ✅ 3a-2 공통 헤더·푸터·인증 내비 링크 로케일 유지 — `b80455a`
+   - ✅ 3a-3 본문 링크·리다이렉트 로케일 유지 (11곳) — `5f7fc64`
+   - ✅ 3a-4 `/ja`·`/zh` 라우트 추가 + `pendingMetadata` 를 `lib/i18n` 으로 이동 — `089d9ae`
+   - ⬜ 3b `/clips`·`/settings`·`/login`·`/privacy` 문자열 사전화
+4. `generateMetadata`·hreflang·`sitemap` 언어별 생성 — **여기서 `noindex` 를 걷어낸다**
 5. 언어 선택 UI (현재 경로 유지하며 로케일만 교체)
 6. 영어·일본어·중국어 번역 채우기
+
+### 구현 메모 (2026-07-30)
+- **로케일 라우트는 얇은 재export.** `app/{en,ja,zh}/<page>/page.tsx` 가 한국어 페이지의
+  `default` 를 그대로 재export 한다. 페이지 본문을 로케일마다 복사하지 않기 위한 선택.
+- **그래서 페이지는 자기 로케일을 모른다.** 로케일을 prop 으로 내릴 수 없으므로 내부 링크는
+  `useLocalizedPath()`(= `usePathname()` + `stripLocale`)로 URL 에서 읽는다. Context 를 두지
+  않은 이유도 같다 — 로케일의 진실은 URL 이고, Context 는 SSR 결과와 어긋날 여지가 생긴다.
+- 이 때문에 `Header`·`Footer` 가 클라이언트 컴포넌트로 바뀌었다(마크업은 정적, 비용 없음).
+- **번역 전까지 `noindex, follow`**(`lib/i18n/pendingMetadata.ts`). 사전이 한국어로 폴백하는
+  동안 같은 본문이 4개 URL 로 색인되면 중복 콘텐츠가 된다. 4단계에서 hreflang 과 함께 제거.
+- `/api/*`·`/auth/*` 는 로케일과 무관해 그대로 두고, 공유 링크 `/{slug}` 도 단일 URL 을 유지한다.
+- 부수 효과: `href` 가 표현식이 되면서 `@next/next/no-html-link-for-pages` 선재 오류 11개가
+  사라졌다(eslint 오류 15 → 4, 잔여는 전부 선재 `set-state-in-effect`).
 
 ### 기대 결과
 - `/`·`/en`·`/ja`·`/zh` 가 각 언어로 렌더되고 hreflang 이 상호 참조된다.
