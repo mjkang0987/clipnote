@@ -570,9 +570,9 @@ export default function HomeClient({
 
             {/* 1차 액션. 로그인 상태는 서버에서 받아 첫 렌더부터 확정이라 자리표시가 없다. */}
             {isLoggedIn ? (
-              // 링크 없음 → `링크 만들기` + `복사하기`(제목+원본 URL)
-              // 링크 있음 → `링크 복사`(짧은 주소) + `내 클립에 저장`
-              // 복사 버튼이 두 개 공존하지 않으므로 무엇이 복사되는지 헷갈리지 않는다.
+              // 1차: 링크가 없으면 `링크 만들기`, 있으면 `링크 복사`(짧은 주소).
+              // 2차: `원본 복사`(제목+원본 URL) — 링크 유무와 무관하게 항상 노출한다.
+              // `내 클립에 저장` 은 결과 레이어에 있어 여기서 빼고 버튼 2개를 유지한다.
               <div className="flex gap-2">
                 {shareUrl ? (
                   <button type="button" onClick={handleCopy} className={PRIMARY_BUTTON}>
@@ -583,25 +583,14 @@ export default function HomeClient({
                     {primaryLabel}
                   </button>
                 )}
-                {shareUrl ? (
-                  <button
-                    type="button"
-                    onClick={handleSaveToClips}
-                    disabled={saveClipDisabled}
-                    className={SECONDARY_BUTTON}
-                  >
-                    {saveClipLabel}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handlePlainCopy}
-                    disabled={!hasInput}
-                    className={SECONDARY_BUTTON}
-                  >
-                    {plainCopied ? "복사됨 ✓" : "복사하기"}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={handlePlainCopy}
+                  disabled={!hasInput}
+                  className={SECONDARY_BUTTON}
+                >
+                  {plainCopied ? "복사됨 ✓" : "원본 복사"}
+                </button>
               </div>
             ) : (
               // 네이티브 공유가 가능한 기기(터치)는 저장 위에 공유·복사 두 개를 한 줄로 둔다.
@@ -629,7 +618,7 @@ export default function HomeClient({
                       disabled={!hasInput}
                       className={SECONDARY_BUTTON}
                     >
-                      {plainCopied ? "복사됨 ✓" : "복사하기"}
+                      {plainCopied ? "복사됨 ✓" : "원본 복사"}
                     </button>
                   </div>
                 ) : (
@@ -639,7 +628,7 @@ export default function HomeClient({
                     disabled={!hasInput}
                     className={SECONDARY_BUTTON}
                   >
-                    {plainCopied ? "복사됨 ✓" : "복사하기"}
+                    {plainCopied ? "복사됨 ✓" : "원본 복사"}
                   </button>
                 )}
               </div>
@@ -655,12 +644,23 @@ export default function HomeClient({
             )}
             {/* 버튼 이름만으로는 두 동작의 차이를 알 수 없어 한 줄로 설명한다.
                 링크를 만든 뒤에는 결과 레이어가 같은 설명을 담고 있어 반복하지 않는다. */}
-            {isLoggedIn && !shareUrl && (
+            {isLoggedIn && (
               <p className="text-center text-xs leading-relaxed text-fg-muted">
-                <strong className="font-semibold text-fg">링크 만들기</strong>는 공유 카드가
-                먼저 보이는 짧은 주소를 만들고,{" "}
-                <strong className="font-semibold text-fg">복사하기</strong>는 제목과 원본
-                주소를 복사해요.
+                {shareUrl ? (
+                  <>
+                    <strong className="font-semibold text-fg">링크 복사</strong>는 방금 만든
+                    짧은 주소를,{" "}
+                    <strong className="font-semibold text-fg">원본 복사</strong>는 제목과
+                    원본 주소를 복사해요.
+                  </>
+                ) : (
+                  <>
+                    <strong className="font-semibold text-fg">링크 만들기</strong>는 공유
+                    카드가 먼저 보이는 짧은 주소를 만들고,{" "}
+                    <strong className="font-semibold text-fg">원본 복사</strong>는 제목과
+                    원본 주소를 복사해요.
+                  </>
+                )}
               </p>
             )}
           </div>
