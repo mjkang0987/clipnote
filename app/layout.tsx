@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
-import { SITE_NAME, SITE_URL, ogImagePath } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import ServiceWorkerRegister from "@/app/_components/ServiceWorkerRegister";
 import Footer from "@/app/_components/Footer";
 import {
@@ -11,7 +11,7 @@ import {
   localizePath,
   type Locale,
 } from "@/lib/i18n";
-import { LOCALE_OG, otherOgLocales } from "@/lib/i18n/ogLocale";
+import { localeOpenGraph } from "@/lib/i18n/pageMetadata";
 import { getRequestLocale } from "@/lib/i18n/server";
 
 // 구글 애드센스 퍼블리셔 ID(ca-pub-...). 공개값이라 코드에 둔다.
@@ -41,12 +41,6 @@ const KO_KEYWORDS = [
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getRequestLocale();
   const m = getMessages(locale).meta;
-  const ogImage = ogImagePath({
-    title: m.ogTitle,
-    desc: m.ogDescription,
-    site: SITE_NAME,
-    g: "grape",
-  });
 
   return {
     metadataBase: new URL(SITE_URL),
@@ -56,22 +50,8 @@ export async function generateMetadata(): Promise<Metadata> {
     keywords: locale === DEFAULT_LOCALE ? KO_KEYWORDS : undefined,
     authors: [{ name: SITE_NAME }],
     alternates: { canonical: localizePath("/", locale) },
-    openGraph: {
-      type: "website",
-      siteName: SITE_NAME,
-      title: m.siteTitle,
-      description: m.siteDescription,
-      url: `${SITE_URL}${localizePath("/", locale)}`,
-      locale: LOCALE_OG[locale],
-      alternateLocale: otherOgLocales(locale),
-      images: [{ url: ogImage, width: 1200, height: 630, alt: SITE_NAME }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: m.siteTitle,
-      description: m.siteDescription,
-      images: [ogImage],
-    },
+    // OG·트위터 카드는 라우트와 같은 함수로 만든다(값의 출처를 한 곳으로).
+    ...localeOpenGraph(locale, "/"),
     robots: {
       index: true,
       follow: true,
@@ -139,7 +119,9 @@ export default async function RootLayout({
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd(locale)) }}
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(siteJsonLd(locale)),
+          }}
         />
         <ServiceWorkerRegister />
         {children}
