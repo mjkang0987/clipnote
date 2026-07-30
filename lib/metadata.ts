@@ -67,9 +67,24 @@ const SOURCE_RANK: Record<ClipMetadata["source"], number> = {
   adapter: 4,
 };
 
-/** 문서 <title> 이하로만 건진 약한 결과인지 — 크롤러 UA 재시도 대상. */
+/** 문서 <title> 이하로만 건진 약한 결과인지 — 다른 UA 로 재시도할 대상. */
 function isWeak(m: ClipMetadata): boolean {
   return SOURCE_RANK[m.source] <= SOURCE_RANK.html;
+}
+
+/**
+ * 크롤러 UA 를 먼저 시도할 호스트인지.
+ *
+ * 네이버 계열은 일반 브라우저 UA 에 JS 렌더 껍데기(또는 페이지와 무관한 범용 og)를 주고,
+ * 실제 문서의 og 는 공유 크롤러 UA 에만 내주는 경우가 많다(게임 라운지 등). 순서를 뒤집으면
+ * 한 번의 요청으로 제대로 된 메타를 얻는다. 카페·블로그는 앞단 어댑터가 처리하므로 무관.
+ */
+function prefersCrawlerUA(url: string): boolean {
+  try {
+    return /(^|\.)naver\.com$/i.test(new URL(url).hostname);
+  } catch {
+    return false;
+  }
 }
 
 /** 사용자가 스킴 없이 입력해도 https 로 보정. */
@@ -144,16 +159,18 @@ export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
     return adapted;
   }
 
-  // 1) 일반 브라우저 UA 로 받아 파싱.
-  let result = await fetchAndParse(url, BROWSER_UA);
+  // 1) UA 로 받아 파싱. 네이버 계열은 크롤러 UA 가 실제 og 를 주므로 그쪽을 먼저 쓴다.
+  const firstUA = prefersCrawlerUA(url) ? CRAWLER_UA : BROWSER_UA;
+  const fallbackUA = firstUA === CRAWLER_UA ? BROWSER_UA : CRAWLER_UA;
+  let result = await fetchAndParse(url, firstUA);
 
-  // 2) 메타를 못 얻거나(로그인 벽/JS 렌더) 봇 차단 페이지(Cloudflare 등)면 크롤러 UA 로 한 번 더.
+  // 2) 메타를 못 얻거나(로그인 벽/JS 렌더) 봇 차단 페이지(Cloudflare 등)면 다른 UA 로 한 번 더.
   //    다수 사이트가 facebookexternalhit 등 공유 크롤러에는 OG 를 열어준다.
   if (isWeak(result) || looksBlocked(result)) {
-    const crawled = await fetchAndParse(url, CRAWLER_UA);
+    const retried = await fetchAndParse(url, fallbackUA);
     // 더 강한 출처일 때만 교체한다 — 재시도가 결과를 떨어뜨리지 않도록.
-    if (!looksBlocked(crawled) && SOURCE_RANK[crawled.source] > SOURCE_RANK[result.source]) {
-      result = crawled;
+    if (!looksBlocked(retried) && SOURCE_RANK[retried.source] > SOURCE_RANK[result.source]) {
+      result = retried;
     }
   }
 
