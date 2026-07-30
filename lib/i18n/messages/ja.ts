@@ -118,6 +118,39 @@ const ja: PartialMessages = {
     },
   },
 
+  login: {
+    title: "ログイン",
+    subtitleWithKakao: "Google・Kakao アカウントで手軽に始められます。",
+    subtitleGoogleOnly: "Google アカウントで手軽に始められます。",
+    consent:
+      "ログイン時に会員識別のためソーシャルアカウント情報(固有識別子、メール、プロフィールのニックネーム・画像)が収集されることに同意します。{privacy}を確認しました。",
+    continueWith: "{provider} で続ける",
+    redirecting: "移動中…",
+    recent: "前回利用",
+    or: "または",
+    continueAsGuest: "ゲストとして続ける",
+
+    errorIncomplete: "ログインが完了しませんでした。もう一度お試しください。",
+    errorConsent: "プライバシーポリシーに同意しないとログインできません。",
+    errorStart: "ログインを開始できませんでした。しばらくしてからお試しください。",
+    errorGeneric: "ログイン中に問題が発生しました。",
+
+    compareTitle: "ログイン / ゲストモードについて",
+    signedInTitle: "ログインすると",
+    signedInShortLink: "{emphasis}を作ってメッセンジャーやSNSに送れます。",
+    signedInShortLinkEmphasis: "短い共有リンク",
+    signedInPreview: "共有したリンクがタイトルと画像入りのプレビューカードで表示されます。",
+    signedInSync: "クリップがアカウントに溜まり、{emphasis}そのまま見られてタグで整理できます。",
+    signedInSyncEmphasis: "ほかの端末でも",
+
+    guestTitle: "ログインしなくても",
+    guestPreview: "URLを貼り付けてプレビューカードを作れます。",
+    guestSave: "作ったクリップをこのブラウザに保存して「{clips}」で見返せます。",
+    guestLimit: "ただし保存は{device}残り、{noLink}",
+    guestLimitDevice: "この端末にだけ",
+    guestLimitNoLink: "短い共有リンクは作れません。",
+  },
+
   settings: {
     title: "アカウント設定",
     subtitle: "ログイン情報とアカウントを管理します。",

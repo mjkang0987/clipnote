@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Messages } from "@/lib/i18n";
+import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import Header from "@/app/_components/Header";
 import Brand from "@/app/_components/Brand";
@@ -14,6 +15,7 @@ const LAST_PROVIDER_KEY = "clipnote:last-login-provider";
 
 // 사전은 서버(`LoginPage`)에서 골라 받는다.
 export default function LoginClient({ messages }: { messages: Messages }) {
+  const t = messages.login;
   const [loading, setLoading] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
@@ -28,7 +30,7 @@ export default function LoginClient({ messages }: { messages: Messages }) {
   // 콜백에서 로그인 실패로 돌아온 경우(/login?error=...) 안내 + 최근 로그인 수단 읽기
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("error")) {
-      setError("로그인이 완료되지 않았어요. 다시 시도해 주세요.");
+      setError(t.errorIncomplete);
     }
     try {
       const v = localStorage.getItem(LAST_PROVIDER_KEY);
@@ -40,7 +42,7 @@ export default function LoginClient({ messages }: { messages: Messages }) {
 
   async function signIn(provider: Provider) {
     if (!agreed) {
-      setError("개인정보처리방침에 동의하셔야 로그인할 수 있어요.");
+      setError(t.errorConsent);
       return;
     }
     setLoading(provider);
@@ -63,12 +65,12 @@ export default function LoginClient({ messages }: { messages: Messages }) {
         options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
       if (error) {
-        setError("로그인을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.");
+        setError(t.errorStart);
         setLoading(null);
       }
       // 성공 시 브라우저가 공급자 페이지로 이동
     } catch {
-      setError("로그인 중 문제가 발생했어요.");
+      setError(t.errorGeneric);
       setLoading(null);
     }
   }
@@ -80,12 +82,10 @@ export default function LoginClient({ messages }: { messages: Messages }) {
       {/* ── 로그인 화면(실제 동작 영역) ── */}
       <h1 className="flex items-center justify-center gap-2 text-2xl font-bold tracking-tight text-fg">
         <Brand iconClassName="h-8 w-8" />
-        <span>로그인</span>
+        <span>{t.title}</span>
       </h1>
       <p className="mt-2 text-center text-sm text-fg-muted">
-        {KAKAO_ENABLED
-          ? "Google·카카오 계정으로 간편하게 시작하세요."
-          : "Google 계정으로 간편하게 시작하세요."}
+        {KAKAO_ENABLED ? t.subtitleWithKakao : t.subtitleGoogleOnly}
       </p>
 
       {/* 개인정보 수집·이용 동의 */}
@@ -97,17 +97,18 @@ export default function LoginClient({ messages }: { messages: Messages }) {
           className="mt-0.5 h-4 w-4 shrink-0 accent-brand"
         />
         <span className="text-sm leading-relaxed text-fg-muted">
-          로그인 시 회원 식별을 위해 소셜 계정 정보(고유 식별자, 이메일, 프로필
-          닉네임·이미지)가 수집되는 데 동의합니다.{" "}
-          <a
-            href={path("/privacy")}
-            target="_blank"
-            rel="noreferrer"
-            className="font-semibold text-brand-strong underline"
-          >
-            개인정보처리방침
-          </a>
-          을 확인했어요.
+          {interpolateNode(t.consent, {
+            privacy: (
+              <a
+                href={path("/privacy")}
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-brand-strong underline"
+              >
+                {messages.common.privacy}
+              </a>
+            ),
+          })}
         </span>
       </label>
 
@@ -118,8 +119,10 @@ export default function LoginClient({ messages }: { messages: Messages }) {
           disabled={loading !== null || !agreed}
           className="relative flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-bg px-4 text-base font-semibold text-fg transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading === "google" ? "이동 중…" : "Google로 계속하기"}
-          {lastProvider === "google" && <RecentBadge />}
+          {loading === "google"
+            ? t.redirecting
+            : interpolate(t.continueWith, { provider: "Google" })}
+          {lastProvider === "google" && <RecentBadge label={t.recent} />}
         </button>
 
         {KAKAO_ENABLED && (
@@ -129,8 +132,10 @@ export default function LoginClient({ messages }: { messages: Messages }) {
             disabled={loading !== null || !agreed}
             className="relative flex h-12 items-center justify-center gap-2 rounded-xl bg-[#FEE500] px-4 text-base font-semibold text-[#191600] transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading === "kakao" ? "이동 중…" : "카카오로 계속하기"}
-            {lastProvider === "kakao" && <RecentBadge />}
+            {loading === "kakao"
+              ? t.redirecting
+              : interpolate(t.continueWith, { provider: "Kakao" })}
+            {lastProvider === "kakao" && <RecentBadge label={t.recent} />}
           </button>
         )}
 
@@ -140,8 +145,10 @@ export default function LoginClient({ messages }: { messages: Messages }) {
           disabled={loading !== null || !agreed}
           className="relative flex h-12 items-center justify-center gap-2 rounded-xl bg-[#03C75A] px-4 text-base font-semibold text-white transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading === "naver" ? "이동 중…" : "네이버로 계속하기"}
-          {lastProvider === "naver" && <RecentBadge />}
+          {loading === "naver"
+            ? t.redirecting
+            : interpolate(t.continueWith, { provider: "Naver" })}
+          {lastProvider === "naver" && <RecentBadge label={t.recent} />}
         </button>
       </div>
 
@@ -153,7 +160,7 @@ export default function LoginClient({ messages }: { messages: Messages }) {
 
       <div className="mt-6 flex items-center gap-3">
         <span className="h-px flex-1 bg-border" />
-        <span className="text-xs text-fg-muted">또는</span>
+        <span className="text-xs text-fg-muted">{t.or}</span>
         <span className="h-px flex-1 bg-border" />
       </div>
 
@@ -161,39 +168,60 @@ export default function LoginClient({ messages }: { messages: Messages }) {
         href={path("/")}
         className="mt-4 flex h-12 items-center justify-center rounded-xl px-4 text-base font-semibold text-fg-muted transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-brand/40"
       >
-        게스트로 계속하기
+        {t.continueAsGuest}
       </a>
 
       {/* ── 안내 영역(로그인 화면과 명확히 구분) ── */}
       <section className="mt-12 border-t border-border pt-8">
         <h2 className="text-center text-xs font-semibold uppercase tracking-wider text-fg-muted">
-          로그인 / 게스트 모드 안내
+          {t.compareTitle}
         </h2>
 
         <div className="mt-4 flex flex-col gap-3">
           {/* 로그인 하면 (메인 '이렇게 동작해요'와 동일 텍스트·강조) */}
           <div className="rounded-xl border border-brand/30 bg-brand-soft p-4">
-            <p className="text-sm font-semibold text-brand-strong">로그인 하면</p>
+            <p className="text-sm font-semibold text-brand-strong">{t.signedInTitle}</p>
             <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
               <li>
-                · <strong className="font-semibold text-brand-strong">짧은 공유 링크</strong>를 만들어 카카오톡·SNS에 보낼 수 있어요.
+                ·{" "}
+                {interpolateNode(t.signedInShortLink, {
+                  emphasis: (
+                    <strong className="font-semibold text-brand-strong">
+                      {t.signedInShortLinkEmphasis}
+                    </strong>
+                  ),
+                })}
               </li>
-              <li>· 공유한 링크가 제목·이미지가 담긴 미리보기 카드로 떠요.</li>
+              <li>· {t.signedInPreview}</li>
               <li>
-                · 클립이 계정에 쌓여 <strong className="font-semibold text-brand-strong">다른 기기에서도</strong> 그대로 보이고, 태그로 정리돼요.
+                ·{" "}
+                {interpolateNode(t.signedInSync, {
+                  emphasis: (
+                    <strong className="font-semibold text-brand-strong">
+                      {t.signedInSyncEmphasis}
+                    </strong>
+                  ),
+                })}
               </li>
             </ul>
           </div>
 
           {/* 로그인 안 해도 (게스트) */}
           <div className="rounded-xl border border-border bg-surface p-4">
-            <p className="text-sm font-semibold text-fg">로그인 안 해도</p>
+            <p className="text-sm font-semibold text-fg">{t.guestTitle}</p>
             <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-              <li>· URL을 붙여넣어 미리보기 카드를 만들 수 있어요.</li>
-              <li>· 만든 클립을 이 브라우저에 저장하고 ‘내 클립’에서 다시 봐요.</li>
+              <li>· {t.guestPreview}</li>
+              <li>· {interpolate(t.guestSave, { clips: messages.common.myClips })}</li>
               <li>
-                · 단, 저장은 <strong className="font-semibold text-fg">이 기기에만</strong> 남고{" "}
-                <strong className="font-semibold text-fg">짧은 공유 링크는 못 만들어요.</strong>
+                ·{" "}
+                {interpolateNode(t.guestLimit, {
+                  device: (
+                    <strong className="font-semibold text-fg">{t.guestLimitDevice}</strong>
+                  ),
+                  noLink: (
+                    <strong className="font-semibold text-fg">{t.guestLimitNoLink}</strong>
+                  ),
+                })}
               </li>
             </ul>
           </div>
@@ -205,10 +233,10 @@ export default function LoginClient({ messages }: { messages: Messages }) {
 }
 
 // "최근 로그인" 배지 — 버튼 우상단에 표시(버튼에 relative 필요).
-function RecentBadge() {
+function RecentBadge({ label }: { label: string }) {
   return (
     <span className="absolute -top-2 right-3 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white shadow-soft">
-      최근 로그인
+      {label}
     </span>
   );
 }

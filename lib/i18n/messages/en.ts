@@ -117,6 +117,39 @@ const en: PartialMessages = {
     },
   },
 
+  login: {
+    title: "Sign in",
+    subtitleWithKakao: "Get started quickly with your Google or Kakao account.",
+    subtitleGoogleOnly: "Get started quickly with your Google account.",
+    consent:
+      "I agree that my social account details (unique identifier, email, profile nickname and image) are collected to identify me when signing in. I've read the {privacy}.",
+    continueWith: "Continue with {provider}",
+    redirecting: "Redirecting…",
+    recent: "Last used",
+    or: "or",
+    continueAsGuest: "Continue as guest",
+
+    errorIncomplete: "Sign-in didn't complete. Please try again.",
+    errorConsent: "You need to agree to the privacy policy to sign in.",
+    errorStart: "Couldn't start sign-in. Please try again in a moment.",
+    errorGeneric: "Something went wrong while signing in.",
+
+    compareTitle: "Signed in vs. guest",
+    signedInTitle: "When you sign in",
+    signedInShortLink: "Create a {emphasis} to send on messengers and social.",
+    signedInShortLinkEmphasis: "short share link",
+    signedInPreview: "Shared links show up as preview cards with a title and image.",
+    signedInSync: "Clips collect in your account, stay visible {emphasis}, and sort by tag.",
+    signedInSyncEmphasis: "on your other devices",
+
+    guestTitle: "Without signing in",
+    guestPreview: "Paste a URL to build a preview card.",
+    guestSave: "Save clips in this browser and find them again in {clips}.",
+    guestLimit: "But they stay {device}, and {noLink}",
+    guestLimitDevice: "on this device only",
+    guestLimitNoLink: "you can't create short share links.",
+  },
+
   settings: {
     title: "Account settings",
     subtitle: "Manage your sign-in details and account.",

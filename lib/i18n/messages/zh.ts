@@ -114,6 +114,39 @@ const zh: PartialMessages = {
     },
   },
 
+  login: {
+    title: "登录",
+    subtitleWithKakao: "用 Google 或 Kakao 账号快速开始。",
+    subtitleGoogleOnly: "用 Google 账号快速开始。",
+    consent:
+      "我同意在登录时为识别会员而收集社交账号信息(唯一标识符、邮箱、昵称与头像)。我已阅读{privacy}。",
+    continueWith: "使用 {provider} 继续",
+    redirecting: "跳转中…",
+    recent: "最近使用",
+    or: "或",
+    continueAsGuest: "以访客身份继续",
+
+    errorIncomplete: "登录未完成。请重试。",
+    errorConsent: "需要同意隐私政策才能登录。",
+    errorStart: "无法开始登录。请稍后再试。",
+    errorGeneric: "登录时出现问题。",
+
+    compareTitle: "登录 / 访客模式说明",
+    signedInTitle: "登录后",
+    signedInShortLink: "可以生成{emphasis}，发送到聊天工具和社交平台。",
+    signedInShortLinkEmphasis: "短分享链接",
+    signedInPreview: "分享的链接会显示为带标题和图片的预览卡片。",
+    signedInSync: "剪藏会保存在账号里，{emphasis}也能照样查看，并按标签整理。",
+    signedInSyncEmphasis: "在其他设备上",
+
+    guestTitle: "不登录也可以",
+    guestPreview: "粘贴网址即可生成预览卡片。",
+    guestSave: "把剪藏保存在此浏览器，之后在「{clips}」中再查看。",
+    guestLimit: "但保存只会留在{device}，而且{noLink}",
+    guestLimitDevice: "此设备上",
+    guestLimitNoLink: "无法生成短分享链接。",
+  },
+
   settings: {
     title: "账号设置",
     subtitle: "管理登录信息和账号。",

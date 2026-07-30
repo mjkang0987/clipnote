@@ -140,6 +140,45 @@ const ko = {
     },
   },
 
+  /** 로그인 화면 */
+  login: {
+    title: "로그인",
+    /** 공급자 이름은 라틴 표기로 고정 — 번역하지 않는다 */
+    subtitleWithKakao: "Google·Kakao 계정으로 간편하게 시작하세요.",
+    subtitleGoogleOnly: "Google 계정으로 간편하게 시작하세요.",
+    /** `{privacy}` 는 개인정보처리방침 링크 */
+    consent:
+      "로그인 시 회원 식별을 위해 소셜 계정 정보(고유 식별자, 이메일, 프로필 닉네임·이미지)가 수집되는 데 동의합니다. {privacy}을 확인했어요.",
+    /** `{provider}` 는 Google·Kakao·Naver */
+    continueWith: "{provider}로 계속하기",
+    redirecting: "이동 중…",
+    recent: "최근 로그인",
+    or: "또는",
+    continueAsGuest: "게스트로 계속하기",
+
+    errorIncomplete: "로그인이 완료되지 않았어요. 다시 시도해 주세요.",
+    errorConsent: "개인정보처리방침에 동의하셔야 로그인할 수 있어요.",
+    errorStart: "로그인을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.",
+    errorGeneric: "로그인 중 문제가 발생했어요.",
+
+    compareTitle: "로그인 / 게스트 모드 안내",
+    signedInTitle: "로그인 하면",
+    /** `{emphasis}` 는 강조되는 낱말 */
+    signedInShortLink: "{emphasis}를 만들어 카카오톡·SNS에 보낼 수 있어요.",
+    signedInShortLinkEmphasis: "짧은 공유 링크",
+    signedInPreview: "공유한 링크가 제목·이미지가 담긴 미리보기 카드로 떠요.",
+    signedInSync: "클립이 계정에 쌓여 {emphasis} 그대로 보이고, 태그로 정리돼요.",
+    signedInSyncEmphasis: "다른 기기에서도",
+
+    guestTitle: "로그인 안 해도",
+    guestPreview: "URL을 붙여넣어 미리보기 카드를 만들 수 있어요.",
+    /** `{clips}` 는 내 클립 화면 이름 */
+    guestSave: "만든 클립을 이 브라우저에 저장하고 ‘{clips}’에서 다시 봐요.",
+    guestLimit: "단, 저장은 {device} 남고 {noLink}",
+    guestLimitDevice: "이 기기에만",
+    guestLimitNoLink: "짧은 공유 링크는 못 만들어요.",
+  },
+
   /** 계정 설정 화면 */
   settings: {
     title: "계정 설정",
