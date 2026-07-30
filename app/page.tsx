@@ -540,9 +540,13 @@ export default function Home() {
 
             {/* 1차 액션. 확인 중=스켈레톤, 로그인=공유/저장 2버튼, 게스트=저장 1버튼. */}
             {isLoggedIn === null ? (
-              // 인증 확인 전 잘못된 버튼이 깜빡이지 않도록 자리표시
+              // 인증 확인 전 잘못된 버튼이 깜빡이지 않도록 자리표시.
+              // 높이는 확정 후 실제 버튼 영역과 같아야 한다(안 그러면 레이아웃이 밀린다 — CLS).
+              // 네 조합(로그인/게스트 × 모바일/데스크톱) 모두 같은 크기로 떨어진다:
+              //   모바일 = 버튼 2줄(h-12 + gap-2 + h-12) = 48+8+48 = 104px
+              //   sm 이상 = 버튼 1줄 = 48px
               <div
-                className="h-12 w-full animate-pulse rounded-[8px] bg-surface"
+                className="h-[104px] w-full animate-pulse rounded-[8px] bg-surface sm:h-12"
                 aria-hidden
               />
             ) : isLoggedIn ? (
