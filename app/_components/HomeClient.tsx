@@ -570,10 +570,10 @@ export default function HomeClient({
 
             {/* 1차 액션. 로그인 상태는 서버에서 받아 첫 렌더부터 확정이라 자리표시가 없다. */}
             {isLoggedIn ? (
+              // 버튼 3개 → 1차는 위 한 줄, 보조 2개는 아래 한 줄(게스트와 같은 구조).
               // 1차: 링크가 없으면 `링크 만들기`, 있으면 `링크 복사`(짧은 주소).
-              // 2차: `원본 복사`(제목+원본 URL) — 링크 유무와 무관하게 항상 노출한다.
-              // `내 클립에 저장` 은 결과 레이어에 있어 여기서 빼고 버튼 2개를 유지한다.
-              <div className="flex gap-2">
+              // 보조: `원본 복사`(제목+원본 URL)는 링크 유무와 무관하게 항상 노출.
+              <div className="flex flex-col gap-2">
                 {shareUrl ? (
                   <button type="button" onClick={handleCopy} className={PRIMARY_BUTTON}>
                     {copied ? "복사됨 ✓" : "링크 복사"}
@@ -583,14 +583,24 @@ export default function HomeClient({
                     {primaryLabel}
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={handlePlainCopy}
-                  disabled={!hasInput}
-                  className={SECONDARY_BUTTON}
-                >
-                  {plainCopied ? "복사됨 ✓" : "원본 복사"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePlainCopy}
+                    disabled={!hasInput}
+                    className={SECONDARY_BUTTON}
+                  >
+                    {plainCopied ? "복사됨 ✓" : "원본 복사"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveToClips}
+                    disabled={saveClipDisabled}
+                    className={SECONDARY_BUTTON}
+                  >
+                    {saveClipLabel}
+                  </button>
+                </div>
               </div>
             ) : (
               // 네이티브 공유가 가능한 기기(터치)는 저장 위에 공유·복사 두 개를 한 줄로 둔다.
