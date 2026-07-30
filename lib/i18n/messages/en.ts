@@ -222,6 +222,54 @@ const en: PartialMessages = {
     guestHint: "{login} to create preview cards and short links.",
   },
 
+  about: {
+    titleSuffix: " \u2014 what is it?",
+    body1: "ClipNote is a free service that turns a link into a share card.",
+    body2:
+      "Paste a link and it reads the title, description, and cover image automatically, then builds a card that reads at a glance on messengers and social — plus a short URL.",
+    body3:
+      "It also handles links that usually don't preview well, like Naver Cafe posts and Instagram reels.",
+
+    howTitle: "How it works",
+    how1: "Paste the link you want to share. Title, description, and cover image fill in automatically.",
+    how2:
+      "Press \u201c{createLink}\u201d and you get a short URL that shows the share card first. After that, the same button becomes \u201c{copyLink}\u201d.",
+    how3:
+      "Just need the address without the card? \u201c{copyOriginal}\u201d copies the title and the original URL together.",
+    how4:
+      "\u201c{saveToClips}\u201d keeps it for later, sorted by tag. Before you sign in, \u201c{saveHere}\u201d keeps it on this device only.",
+
+    guestTitle: "Without signing in",
+    guestItem1: "Paste a link and build a preview card right away.",
+    guestItem2: "Save clips in this browser and find them again in \u2018{clips}\u2019.",
+    guestItem3: "But they stay {device}, and {noLink}",
+    guestItem3Device: "on this device only",
+    guestItem3NoLink: "you can't create short share links.",
+
+    signedInTitle: "When you sign in",
+    signedInItem1: "Send a {emphasis} straight to messengers and social.",
+    signedInItem1Emphasis: "short share link",
+    signedInItem2: "Shared links show up as preview cards with a title and image.",
+    signedInItem3: "Clips collect in your account, stay visible {emphasis}, and sort neatly by tag.",
+    signedInItem3Emphasis: "on any device",
+  },
+
+  faq: {
+    title: "Frequently asked questions",
+    q1: "What's the difference between \u201c{copyLink}\u201d and \u201c{copyOriginal}\u201d?",
+    a1: "\u201c{copyLink}\u201d is the short URL ClipNote created. Opening it shows the share card first, then goes to the original. \u201c{copyOriginal}\u201d skips the card and copies the title and original URL as-is. Short URLs require signing in.",
+    q2: "How do tags work?",
+    a2: "When you create a clip, add up to 6 tags in the tag field, separated by commas. Tap a tag on the \u2018{clips}\u2019 screen to see only clips with that tag. Tags you've used before are suggested under \u201cRecent tags\u201d so you can add them in one tap.",
+    q3: "Can I use it without signing in?",
+    a3: "Yes. You can save links in this browser without an account. Creating short share links requires signing in with Google or Kakao.",
+    q4: "Do Naver Cafe and Instagram links work?",
+    a4: "Yes. Dedicated extractors pull Naver Cafe post titles and Instagram reel or post details. Private and members-only posts may be limited.",
+    q5: "What happens when someone opens a share link?",
+    a5: "The preview card appears briefly, then it moves on to the original page.",
+    q6: "Is it free?",
+    a6: "Yes, it's free to use.",
+  },
+
   language: {
     label: "Language",
     koreanOnlyNotice: "This document is provided in Korean only.",

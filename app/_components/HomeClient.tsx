@@ -12,7 +12,7 @@ import type { ClipMetadata } from "@/lib/metadata";
 import { buildShareText } from "@/lib/shareText";
 import type { Messages } from "@/lib/i18n";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
-import { interpolateNode } from "@/lib/i18n/interpolate";
+import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
 import Brand from "@/app/_components/Brand";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -82,6 +82,10 @@ export default function HomeClient({
   const t = messages.homeActions;
   const h = messages.home;
   const c = messages.common;
+  const a = messages.about;
+  const f = messages.faq;
+  // FAQ 는 화면과 JSON-LD 가 같은 배열을 쓴다(문구가 어긋나지 않게).
+  const faqs = useMemo(() => faqItems(messages), [messages]);
   // 본문 안내문의 내부 링크도 현재 로케일을 유지한다(`/en` 에서 한국어 페이지로 새지 않게).
   const path = useLocalizedPath();
   // 데스크톱 등 미지원 환경에서는 공유하기 버튼을 아예 노출하지 않는다(복사하기만 남는다).
@@ -852,27 +856,8 @@ export default function HomeClient({
           </>
         )}
 
-        {/* 비로그인 안내: 게스트가 할 수 있는 것 */}
-        {isLoggedIn === false && (
-          <section className="mt-10 sm:mt-12" aria-label="로그인 안내">
-            <div className="rounded-[8px] border border-border bg-surface p-4">
-              <p className="text-sm font-semibold text-fg">로그인 안 해도 이만큼 돼요</p>
-              <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-                <li>· 링크를 붙여넣어 미리보기 카드를 만들 수 있어요.</li>
-                <li>
-                  · 만든 카드를 이 브라우저에 저장하고{" "}
-                  <a href={path("/clips")} className="font-semibold text-brand-strong underline">
-                    내 클립
-                  </a>
-                  에서 다시 볼 수 있어요.
-                </li>
-                <li>
-                  · 단, 저장한 클립은 이 기기에만 남고, 짧은 공유 링크는 만들 수 없어요.
-                </li>
-              </ul>
-            </div>
-          </section>
-        )}
+        {/* 게스트 안내는 버튼 아래 한 줄(`homeActions.guestHint`)과 아래 소개의
+            `로그인 하면 / 안 해도` 비교로 충분하다 — 같은 내용을 세 번 보여주던 박스를 없앴다. */}
 
         {/* SEO/GEO: 소개·기능·FAQ */}
         <section
@@ -880,93 +865,86 @@ export default function HomeClient({
           aria-labelledby="about-heading"
         >
           <h2 id="about-heading" className="text-xl font-bold text-fg">
-            <Brand iconClassName="h-6 w-6">란?</Brand>
+            <Brand iconClassName="h-6 w-6">{a.titleSuffix}</Brand>
           </h2>
-          <p className="mt-3 leading-relaxed text-fg-muted">
-            ClipNote(클립노트)는 밋밋하고 긴 링크를 클릭하고 싶어지는 공유 카드로
-            바꿔 주는 무료 웹 서비스예요. 링크만 붙여넣으면 페이지의 제목·설명·대표
-            이미지를 자동으로 읽어와 카드 미리보기를 만들고, 카카오톡이나 SNS에
-            올렸을 때 한눈에 들어오는 이미지와 짧은 링크를 만들어 드려요. 네이버 카페
-            게시글, 인스타그램 릴처럼 미리보기가 잘 안 잡히는 링크도 문제없어요.
-          </p>
+          <p className="mt-3 leading-relaxed text-fg-muted">{a.body1}</p>
+          <p className="mt-2 leading-relaxed text-fg-muted">{a.body2}</p>
+          <p className="mt-2 leading-relaxed text-fg-muted">{a.body3}</p>
 
-          <h2 className="mt-8 text-xl font-bold text-fg sm:mt-10">이렇게 동작해요</h2>
+          <h2 className="mt-8 text-xl font-bold text-fg sm:mt-10">{a.howTitle}</h2>
+          {/* 실제 버튼 이름을 사전에서 끌어와 넣는다 — 버튼 라벨을 바꾸면 사용법도 따라 바뀐다. */}
           <ol className="mt-3 flex flex-col gap-2 leading-relaxed text-fg-muted">
-            <li>1. 공유할 URL을 붙여넣어요. 붙여넣기만 하면 끝이에요.</li>
-            <li>2. 제목·설명·대표 이미지를 자동으로 읽어와 카드를 완성해요.</li>
-            <li>3. 로그인하면 짧은 공유 링크까지 — 어디에 올려도 깔끔한 카드로 떠요.</li>
+            <li>1. {a.how1}</li>
+            <li>2. {interpolate(a.how2, { createLink: t.createLink, copyLink: t.copyLink })}</li>
+            <li>3. {interpolate(a.how3, { copyOriginal: t.copyOriginal })}</li>
+            <li>
+              4. {interpolate(a.how4, { saveToClips: t.saveToClips, saveHere: t.saveHere })}
+            </li>
           </ol>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-border bg-surface p-4">
-              <p className="text-sm font-semibold text-fg">로그인 안 해도</p>
+              <p className="text-sm font-semibold text-fg">{a.guestTitle}</p>
               <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
-                <li>· URL을 붙여넣어 미리보기 카드를 바로 만들 수 있어요.</li>
-                <li>· 만든 클립을 이 브라우저에 저장하고 ‘내 클립’에서 다시 봐요.</li>
+                <li>· {a.guestItem1}</li>
+                <li>· {interpolate(a.guestItem2, { clips: c.myClips })}</li>
                 <li>
-                  · 단, 저장은 <strong className="font-semibold text-fg">이 기기에만</strong> 남고{" "}
-                  <strong className="font-semibold text-fg">짧은 공유 링크는 못 만들어요.</strong>
+                  ·{" "}
+                  {interpolateNode(a.guestItem3, {
+                    device: (
+                      <strong className="font-semibold text-fg">{a.guestItem3Device}</strong>
+                    ),
+                    noLink: (
+                      <strong className="font-semibold text-fg">{a.guestItem3NoLink}</strong>
+                    ),
+                  })}
                 </li>
               </ul>
             </div>
             <div className="rounded-xl border border-brand/30 bg-brand-soft p-4">
-              <p className="text-sm font-semibold text-brand-strong">로그인 하면</p>
+              <p className="text-sm font-semibold text-brand-strong">{a.signedInTitle}</p>
               <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-fg-muted">
                 <li>
-                  · <strong className="font-semibold text-brand-strong">짧은 공유 링크</strong>로 카카오톡·SNS에 바로 보낼 수 있어요.
+                  ·{" "}
+                  {interpolateNode(a.signedInItem1, {
+                    emphasis: (
+                      <strong className="font-semibold text-brand-strong">
+                        {a.signedInItem1Emphasis}
+                      </strong>
+                    ),
+                  })}
                 </li>
-                <li>· 공유한 링크가 제목·이미지가 담긴 미리보기 카드로 떠요.</li>
+                <li>· {a.signedInItem2}</li>
                 <li>
-                  · 클립이 계정에 쌓여 <strong className="font-semibold text-brand-strong">어느 기기에서나</strong> 그대로 보이고, 태그로 깔끔하게 정리돼요.
+                  ·{" "}
+                  {interpolateNode(a.signedInItem3, {
+                    emphasis: (
+                      <strong className="font-semibold text-brand-strong">
+                        {a.signedInItem3Emphasis}
+                      </strong>
+                    ),
+                  })}
                 </li>
               </ul>
             </div>
           </div>
 
-          <h2 className="mt-8 text-xl font-bold text-fg sm:mt-10">자주 묻는 질문</h2>
+          <h2 className="mt-8 text-xl font-bold text-fg sm:mt-10">{f.title}</h2>
+          {/* 질문·답변은 `faqItems()` 하나에서 나온다 — 아래 JSON-LD 도 같은 값을 쓴다. */}
           <dl className="mt-3 flex flex-col gap-4">
-            <div>
-              <dt className="font-semibold text-fg">태그는 어떻게 쓰나요?</dt>
-              <dd className="mt-1 leading-relaxed text-fg-muted">
-                클립을 만들 때 태그 칸에 쉼표(,)로 구분해 최대 6개까지 달 수
-                있어요. ‘내 클립’ 화면에서 태그를 누르면 같은 태그의 클립만 모아
-                볼 수 있고, 한 번 쓴 태그는 다음에 ‘자주 쓴 태그’로 추천돼 한 번에
-                넣을 수 있어요.
-              </dd>
-            </div>
-            <div>
-              <dt className="font-semibold text-fg">로그인 없이도 쓸 수 있나요?</dt>
-              <dd className="mt-1 leading-relaxed text-fg-muted">
-                네. 비로그인 상태에서도 URL을 이 브라우저에 저장할 수 있어요. 다만
-                공유 링크 생성은 로그인(Google·Kakao)이 필요합니다.
-              </dd>
-            </div>
-            <div>
-              <dt className="font-semibold text-fg">
-                네이버 카페·인스타그램 링크도 되나요?
-              </dt>
-              <dd className="mt-1 leading-relaxed text-fg-muted">
-                네. 전용 추출 기능으로 네이버 카페 게시글 제목, 인스타그램 릴·게시물
-                정보까지 가져옵니다. (비공개·멤버 전용 글은 제한될 수 있어요.)
-              </dd>
-            </div>
-            <div>
-              <dt className="font-semibold text-fg">공유 링크를 열면 어떻게 되나요?</dt>
-              <dd className="mt-1 leading-relaxed text-fg-muted">
-                클릭하면 미리보기 카드가 잠깐 보였다가, 원본 페이지로 자연스럽게 넘어가요.
-              </dd>
-            </div>
-            <div>
-              <dt className="font-semibold text-fg">무료인가요?</dt>
-              <dd className="mt-1 leading-relaxed text-fg-muted">네, 무료로 사용할 수 있어요.</dd>
-            </div>
+            {faqs.map((item) => (
+              <div key={item.q}>
+                <dt className="font-semibold text-fg">{item.q}</dt>
+                <dd className="mt-1 leading-relaxed text-fg-muted">{item.a}</dd>
+              </div>
+            ))}
           </dl>
         </section>
 
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(faqs)) }}
         />
       </main>
 
@@ -1168,50 +1146,38 @@ function ClearableInput({
   );
 }
 
+/**
+ * FAQ 항목 — 화면(`<dl>`)과 구조화 데이터가 **이 배열 하나**를 공유한다.
+ * 전에는 양쪽에 문구가 따로 적혀 있어서 구글 리치 결과에 화면과 다른 문장이 나갔다.
+ */
+function faqItems(messages: Messages): { q: string; a: string }[] {
+  const f = messages.faq;
+  const t = messages.homeActions;
+  // 버튼 이름이 들어가는 문구는 사전이 아니라 실제 라벨에서 채운다.
+  const buttons = { copyLink: t.copyLink, copyOriginal: t.copyOriginal };
+  const clips = { clips: messages.common.myClips };
+  return [
+    { q: interpolate(f.q1, buttons), a: interpolate(f.a1, buttons) },
+    { q: f.q2, a: interpolate(f.a2, clips) },
+    { q: f.q3, a: f.a3 },
+    { q: f.q4, a: f.a4 },
+    { q: f.q5, a: f.a5 },
+    { q: f.q6, a: f.a6 },
+  ];
+}
+
 // FAQ 구조화 데이터 — 검색·생성형 AI 가 질문/답을 이해하도록
-const faqJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
+function faqJsonLd(items: { q: string; a: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
       "@type": "Question",
-      name: "태그는 어떻게 쓰나요?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "클립을 만들 때 태그 칸에 쉼표(,)로 구분해 최대 6개까지 달 수 있어요. ‘내 클립’ 화면에서 태그를 누르면 같은 태그의 클립만 모아 볼 수 있고, 한 번 쓴 태그는 다음에 ‘자주 쓴 태그’로 추천됩니다.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "로그인 없이도 쓸 수 있나요?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "네. 비로그인 상태에서도 URL을 이 브라우저에 저장할 수 있어요. 공유 링크 생성은 로그인(Google·Kakao)이 필요합니다.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "네이버 카페·인스타그램 링크도 되나요?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "네. 전용 추출 기능으로 네이버 카페 게시글 제목, 인스타그램 릴·게시물 정보까지 가져옵니다. 비공개·멤버 전용 글은 제한될 수 있어요.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "공유 링크를 열면 어떻게 되나요?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "클릭하면 미리보기 카드가 잠깐 보였다가, 원본 페이지로 자연스럽게 넘어가요.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "무료인가요?",
-      acceptedAnswer: { "@type": "Answer", text: "네, 무료로 사용할 수 있어요." },
-    },
-  ],
-};
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
+}
 
 /** URL에서 보기 좋은 호스트+경로 일부 추출. 실패 시 원문 반환. */
 function prettyHost(raw: string): string {

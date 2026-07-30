@@ -217,6 +217,52 @@ const zh: PartialMessages = {
     guestHint: "{login}后即可生成预览卡片和短链接。",
   },
 
+  about: {
+    titleSuffix: "是什么?",
+    body1: "ClipNote 是把链接变成分享卡片的免费服务。",
+    body2:
+      "粘贴链接后会自动读取标题、说明和封面图，生成在聊天工具和社交平台上一眼就能看懂的卡片，以及一个短网址。",
+    body3: "像 Naver Cafe 帖子、Instagram Reels 这类不容易生成预览的链接也支持。",
+
+    howTitle: "使用方法",
+    how1: "粘贴要分享的链接。标题、说明和封面图会自动填入。",
+    how2:
+      "点击「{createLink}」会生成一个先显示分享卡片的短网址。生成后同一个位置会变成「{copyLink}」。",
+    how3: "只想发网址、不需要卡片时用「{copyOriginal}」— 会一起复制标题和原始网址。",
+    how4:
+      "「{saveToClips}」之后可以按标签整理，随时回来查看。登录前用「{saveHere}」只会留在此设备。",
+
+    guestTitle: "不登录也可以",
+    guestItem1: "粘贴链接就能立刻生成预览卡片。",
+    guestItem2: "把剪藏保存在此浏览器，之后在「{clips}」中再查看。",
+    guestItem3: "但保存只会留在{device}，而且{noLink}",
+    guestItem3Device: "此设备上",
+    guestItem3NoLink: "无法生成短分享链接。",
+
+    signedInTitle: "登录后",
+    signedInItem1: "可以用{emphasis}直接发送到聊天工具和社交平台。",
+    signedInItem1Emphasis: "短分享链接",
+    signedInItem2: "分享的链接会显示为带标题和图片的预览卡片。",
+    signedInItem3: "剪藏会保存在账号里，{emphasis}都能照样查看，并按标签整理得很清楚。",
+    signedInItem3Emphasis: "在任何设备上",
+  },
+
+  faq: {
+    title: "常见问题",
+    q1: "「{copyLink}」和「{copyOriginal}」有什么区别?",
+    a1: "「{copyLink}」是 ClipNote 生成的短网址。打开后会先显示分享卡片，然后跳转到原页面。「{copyOriginal}」不经过卡片，直接复制标题和原始网址。短网址需要登录才能生成。",
+    q2: "标签怎么用?",
+    a2: "创建剪藏时在标签栏用逗号(,)分隔，最多可加 6 个。在「{clips}」页面点击标签可只看带该标签的剪藏，用过的标签下次会作为「常用标签」推荐，一次就能加上。",
+    q3: "不登录也能用吗?",
+    a3: "可以。不登录也能把链接保存到此浏览器。但生成短分享链接需要用 Google 或 Kakao 登录。",
+    q4: "Naver Cafe 和 Instagram 的链接也支持吗?",
+    a4: "支持。专用提取功能可以获取 Naver Cafe 帖子标题以及 Instagram Reels、帖子的信息。非公开和仅成员可见的内容可能受限。",
+    q5: "打开分享链接会怎样?",
+    a5: "点击后会短暂显示预览卡片，然后自然跳转到原页面。",
+    q6: "是免费的吗?",
+    a6: "是的，可以免费使用。",
+  },
+
   language: {
     label: "语言",
     koreanOnlyNotice: "本文件仅提供韩文版本。",
