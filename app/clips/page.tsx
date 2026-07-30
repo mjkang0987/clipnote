@@ -5,6 +5,7 @@ import type { Clip } from "@/lib/store";
 import { gradientCss, pickGradient } from "@/lib/gradients";
 import { buildShareText } from "@/lib/shareText";
 import {
+  clearLocalClips,
   getLocalClips,
   removeLocalClip,
   updateLocalClip,
@@ -43,6 +44,8 @@ export default function ClipsPage() {
   // 게스트→로그인 시 계정으로 옮길 로컬 클립(있으면 배너 노출)
   const [localPending, setLocalPending] = useState<LocalClip[]>([]);
   const [migrating, setMigrating] = useState(false);
+  // 클립 옮기기 레이어 단계: 옮길지 묻기 → (거절 시) 삭제 경고. 경고에서 취소하면 다시 offer.
+  const [migrateStep, setMigrateStep] = useState<"offer" | "discard">("offer");
 
   useEffect(() => {
     let active = true;
@@ -200,9 +203,17 @@ export default function ClipsPage() {
     setMigrating(false);
   }
 
-  // "나중에": 이번 세션에선 배너만 닫음(로컬 클립은 유지)
-  function dismissMigrate() {
+  // 옮기기를 거절하면 로컬 클립은 남겨둘 곳이 없다(로그인 목록은 DB 를 보여준다) →
+  // 삭제 경고를 먼저 띄우고, 거기서 취소하면 옮기기 레이어로 되돌아간다.
+  function askDiscardLocal() {
+    setMigrateStep("discard");
+  }
+
+  /** 경고에서 확인 — 이 브라우저의 클립을 전부 지운다. 되돌릴 수 없다(서버 사본 없음). */
+  function discardLocal() {
+    clearLocalClips();
     setLocalPending([]);
+    setMigrateStep("offer");
   }
 
   function toggleSelect(key: string) {
@@ -438,12 +449,20 @@ export default function ClipsPage() {
         />
       )}
 
-      {loggedIn && localPending.length > 0 && (
+      {loggedIn && localPending.length > 0 && migrateStep === "offer" && (
         <MigrateLocalLayer
           count={localPending.length}
           migrating={migrating}
           onMigrate={migrateLocal}
-          onDismiss={dismissMigrate}
+          onDismiss={askDiscardLocal}
+        />
+      )}
+
+      {loggedIn && localPending.length > 0 && migrateStep === "discard" && (
+        <DiscardLocalLayer
+          count={localPending.length}
+          onDiscard={discardLocal}
+          onBack={() => setMigrateStep("offer")}
         />
       )}
 
@@ -810,7 +829,54 @@ function MigrateLocalLayer({
           disabled={migrating}
           className="h-11 flex-1 rounded-lg border border-border px-4 text-sm font-semibold text-fg transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
         >
-          나중에
+          취소
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+/**
+ * 옮기기를 거절했을 때의 삭제 경고.
+ *
+ * 로그인 목록은 DB 를 보여주므로 옮기지 않은 로컬 클립은 볼 방법이 없다 → 남겨둘 자리가 없어
+ * 삭제를 확인받는다. **되돌릴 수 없다**(로컬 클립은 이 브라우저에만 있고 서버 사본이 없음)
+ * → 기본 동작은 '취소'(옮기기 레이어로 복귀)이고, 삭제 버튼만 위험 색으로 구분한다.
+ */
+function DiscardLocalLayer({
+  count,
+  onDiscard,
+  onBack,
+}: {
+  count: number;
+  onDiscard: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <ModalShell labelledBy="discard-title" onClose={onBack}>
+      <h2 id="discard-title" className="text-lg font-bold text-fg">
+        이 브라우저의 클립을 삭제할까요?
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-fg-muted">
+        옮기지 않으면 이 브라우저에 저장된{" "}
+        <strong className="font-semibold text-fg">{count}개</strong> 클립이 모두
+        삭제됩니다. 이 클립은 이 브라우저에만 있어서{" "}
+        <strong className="font-semibold text-fg">되돌릴 수 없어요.</strong>
+      </p>
+      <div className="mt-5 flex gap-2">
+        <button
+          type="button"
+          onClick={onBack}
+          className="h-11 flex-1 rounded-lg bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong"
+        >
+          취소
+        </button>
+        <button
+          type="button"
+          onClick={onDiscard}
+          className="h-11 flex-1 rounded-lg border border-danger px-4 text-sm font-semibold text-danger transition hover:bg-danger hover:text-white"
+        >
+          삭제
         </button>
       </div>
     </ModalShell>
