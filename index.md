@@ -8,78 +8,87 @@
 - **도메인**: clipnote.co.kr
 - **저장소**: https://github.com/mjkang0987/clipnote.git
 - **스택**: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Supabase(Postgres) · @vercel/og
-- **배포**: Vercel (예정)
+- **배포**: Vercel (운영 중 · `main` 자동 배포)
 
 ## 현재 상태
 
-- 단계: **구글·카카오 로그인 활성화(`KAKAO_ENABLED=true`). 카카오 동의항목(이메일·닉네임·프로필) 설정 완료 후 Supabase 기본 scope 그대로 사용. 카카오 로그인 시 이메일 수집 → 약관 반영함.**
-  - 로그인 → 공유 링크(DB, user_id). 비로그인 → 브라우저 localStorage 저장(공유 X).
-  - ⚠️ 게스트(localStorage) 클립은 로그인 시 화면에 안 보임(DB 모드). 자동 이전(마이그레이션) 미구현 — 후속 검토.
-- 브랜치 전략(2026-06-18 갱신):
+- **배포**: Vercel. `main` = 운영, `develop` = 통합.
+- **로그인**: Google · Kakao(`KAKAO_ENABLED=true`, 기본 scope) · Naver(Supabase 미지원 →
+  `app/api/auth/naver/*` 커스텀 OAuth). 로그인 → DB 클립(공유 링크 발급 가능),
+  비로그인 → 브라우저 localStorage(공유 링크 없음).
+- **게스트 클립 이전**: 구현됨. 로그인 시 로컬 클립이 있으면 계정으로 옮길지 묻고,
+  거절하면 삭제 확인 단계로 넘어간다. 그냥 닫으면 다음 접속에 다시 뜬다.
+- **다국어**: 한국어(원본)·영어·일본어·중국어 간체. 경로 분리(`/`, `/en`, `/ja`, `/zh`),
+  `/ko` 는 `/` 로 308. 로케일의 진실은 **URL** 이며 쿠키·저장소를 두지 않는다.
+  서버는 미들웨어가 넘긴 요청 헤더로, 클라이언트는 `usePathname()` 으로 읽는다.
+  개인정보처리방침 본문은 법적 문서라 **한국어만** 두고 비한국어 경로는 안내문만 번역한다.
+- 브랜치 전략:
   - `main` = 안정/배포용 (직접 작업 X)
   - `develop` = 통합 브랜치 — 기능 작업은 여기로 머지
-  - `feat/*` = 기능 브랜치, `develop`에서 분기 → `develop`으로 머지
-  - 릴리스 시 `develop → main` 승격
-  - 이슈/PR 은 환경상 GitHub API 차단으로 plan.md 작업보드에서 추적.
-- 미해결: Naver 로그인은 Supabase 미지원 → 별도 커스텀 브랜치 예정.
-- 저장소: 클론 완료, 리모트 연결됨 (아직 커밋/푸시 전 — Mac에서 수행 필요, plan.md 참고)
-- 문서: `plan.md`, `index.md`, `design-guide.md` 작성 완료
-- 코드: Next.js 16 + TS + Tailwind v4. 디자인 토큰(globals.css), 랜딩 폼 + 공유 카드 미리보기 구현
-- 검증: `npm run build` 통과 (경고 0)
+  - `feature/*` = 기능 브랜치, `develop` 최신본에서 분기 → `develop` 으로 머지
+  - 릴리스 시 `develop → main` 승격 (**지시자 승인 필요**)
+- **알려진 이슈**
+  - eslint 오류 4건(`react-hooks/set-state-in-effect`) — 선재. `AuthNav`·`HomeClient`·`LoginClient`.
+  - `middleware.ts` 가 Next 16 에서 deprecated(`proxy.ts` 로 이름 변경 권고).
+  - `headers()` 사용으로 모든 페이지가 요청마다 렌더된다(`<html lang>` 을 로케일에 맞추기 위한
+    선택). 홈·내 클립은 세션 쿠키를 읽어 원래도 동적이었다.
 
 ## 디렉터리 구조
 
 ```
 clipnote/
-├── plan.md            # 작업/향후 계획
-├── index.md           # 프로젝트 구조·상태 (이 문서)
-├── design-guide.md    # 디자인 시스템
+├── plan.md · index.md · design-guide.md · CLAUDE.md · REVIEW.md
+├── middleware.ts        # Supabase 세션 갱신 + 경로에서 읽은 로케일을 요청 헤더로 전달
 ├── app/
-│   ├── layout.tsx     # 루트 레이아웃 (메타·lang=ko)
-│   ├── globals.css    # 디자인 토큰 + Tailwind 테마
-│   ├── page.tsx       # 메인 폼 + 메타 조회 + 미리보기 + 공유링크 생성 (구현됨)
-│   ├── [slug]/
-│   │   ├── page.tsx        # 공유 페이지: OG 주입 + 카드 표시 (구현됨)
-│   │   └── SmartRedirect.tsx # 원본으로 JS 리다이렉트 (구현됨)
-│   └── api/
-│       ├── metadata/  # URL 메타 파싱 GET (구현됨)
-│       ├── clip/      # 클립 생성 POST → slug (구현됨)
-│       └── og/        # 동적 OG 이미지 (구현됨)
-├── middleware.ts      # Supabase 세션 갱신 (auth)
-├── app/robots.ts      # /robots.txt (SEO)
-├── app/sitemap.ts     # /sitemap.xml (SEO)
-├── public/llms.txt    # 생성형 AI 크롤러용 사이트 설명 (GEO)
-├── supabase/schema.sql # clips 테이블(user_id 포함)·함수·RLS·GRANT
-├── .env.example       # 환경변수 예시 (서버 키 + NEXT_PUBLIC anon 키)
-├── app/
-│   ├── login/         # 로그인 페이지 (Google·Kakao·게스트)
-│   ├── clips/         # 내 클립 목록 (게스트=localStorage, 로그인=DB)
-│   ├── auth/callback/ # OAuth 콜백
-│   ├── auth/signout/  # 로그아웃
-│   ├── api/clips/     # 내 클립 목록 GET (로그인)
-│   └── _components/AuthNav.tsx # 헤더 로그인 상태
+│   ├── layout.tsx       # 루트 레이아웃. generateMetadata 가 로케일별 title·OG·JSON-LD 생성
+│   ├── globals.css      # 디자인 토큰 + Tailwind 테마
+│   ├── robots.ts · sitemap.ts   # SEO (sitemap 은 로케일별 URL + hreflang)
+│   ├── manifest.ts      # PWA (단일 파일이라 한국어 고정)
+│   ├── page.tsx         # 한국어 홈 — 라우트는 로케일만 지정하고 본문은 _components 에
+│   ├── {clips,settings,login,privacy}/page.tsx   # 한국어 라우트
+│   ├── en/ · ja/ · zh/  # 로케일 라우트 (각 5개, 같은 본문 컴포넌트에 locale 전달)
+│   ├── [slug]/          # 공유 페이지 — OG 주입 + 스마트 리다이렉트 (로케일 무관 단일 URL)
+│   ├── auth/{callback,signout}/
+│   ├── api/
+│   │   ├── metadata/ clip/ clips/ og/ image/   # 메타 파싱 · 클립 CRUD · OG 이미지 · 이미지 프록시
+│   │   └── auth/naver/                          # 네이버 커스텀 OAuth
+│   └── _components/
+│       ├── HomePage·ClipsPage·SettingsPage·LoginPage·PrivacyPage   # 서버: 로케일→사전 선택
+│       ├── HomeClient·ClipsClient·SettingsClient·LoginClient        # 클라이언트: 화면 본문
+│       ├── Header·Footer·AuthNav·Brand·CompareBoxes·LanguageSwitcher
+│       └── ServiceWorkerRegister
 ├── lib/
-│   ├── supabase/client.ts  # 브라우저 클라이언트 (auth)
-│   ├── supabase/server.ts  # 서버 클라이언트 + getCurrentUser (auth)
-│   ├── local-clips.ts      # 비로그인 localStorage 저장
-│   ├── gradients.ts   # 그라디언트 프리셋 + 결정적 선택 (구현됨)
-│   ├── metadata.ts    # 어댑터→OG→HTML 단계별 폴백 (구현됨)
-│   ├── slug.ts        # base-57 슬러그 생성 (구현됨)
-│   ├── store.ts       # ClipStore — env 있으면 Supabase, 없으면 메모리 (구현됨)
-│   ├── store-supabase.ts # Supabase 구현 (feat/supabase-store)
-│   ├── supabase.ts    # 서버 전용 Supabase 클라이언트 (feat/supabase-store)
-│   └── adapters/
-│       ├── naver-cafe.ts  # 네이버 카페 게시글 제목 추출 (구현됨·Mac 동작 확인)
-│       └── instagram.ts   # 인스타 릴/게시물 og 추출 best-effort (구현됨·Mac 동작 확인)
-├── public/fonts/      # Pretendard Bold/Regular woff 서브셋 (OG 이미지용)
-└── ...
+│   ├── i18n/
+│   │   ├── locales.ts        # 로케일 목록·태그·경로 helper (클라이언트가 값을 가져오는 곳)
+│   │   ├── index.ts          # 사전 병합(부분 사전 → 한국어 폴백). **서버 전용으로 취급**
+│   │   ├── types.ts          # Messages / PartialMessages
+│   │   ├── messages/{ko,en,ja,zh}.ts
+│   │   ├── server.ts         # getRequestLocale() — 미들웨어 헤더 읽기
+│   │   ├── useLocale.ts      # 클라이언트: usePathname 기반 로케일·경로
+│   │   ├── interpolate.tsx   # `{token}` → 문자열/React 노드
+│   │   ├── pageMetadata.ts   # canonical · hreflang · OG
+│   │   ├── ogLocale.ts · localeHeader.ts
+│   ├── supabase/{client,server}.ts
+│   ├── metadata.ts · adapters/{naver,naver-cafe,instagram}.ts   # 메타 추출 + 사이트별 어댑터
+│   ├── local-clips.ts · store.ts · store-supabase.ts · slug.ts · gradients.ts
+│   ├── shareText.ts     # 공유 텍스트 제목 80자 제한·말줄임 (iOS 와 같은 규칙)
+│   └── site.ts
+├── public/  fonts/ · app-ads.txt · ads.txt · llms.txt · sw.js · 아이콘
+└── supabase/schema.sql
 ```
 
 ## 다음 할 일
 
-`plan.md` 참고. 우선: ① Mac에서 초기 커밋·푸시 → ② 메타 파싱 API(`/api/clip`) + 동적 OG(`/api/og`) → ③ Supabase 연결.
+`plan.md` 참고. 현재 대기: **`develop → main` 승격(지시자 승인 필요)**.
 
 ## 변경 이력
+
+- 2026-07-31: **웹 다국어(한국어·영어·일본어·중국어)** — `lib/i18n/` 신설, `app/{en,ja,zh}/**` 로케일 라우트 15개, 전 화면 문자열 사전화 + 번역(189키). 미들웨어가 경로에서 읽은 로케일을 요청 헤더로 넘겨 `layout.tsx` 가 `<html lang>`·metadata·OG 를 맞춘다. 로케일별 canonical·hreflang(`x-default`=한국어)·sitemap, 푸터 언어 선택. 날짜 그룹은 사전 대신 `Intl`, FAQ 는 화면과 JSON-LD 가 같은 배열을 쓴다. 상세·검증 결과는 `plan.md` 14장.
+- 2026-07-30: 홈·내 클립 진입 성능 — 로그인 판정과 클립 목록을 서버에서 채워 내려보내 클라이언트 워터폴과 버튼 깜빡임(CLS) 제거. 썸네일 지연 로드.
+- 2026-07-30: 홈 액션 버튼 체계 정리(링크 만들기/링크 복사/원본 복사/공유하기/저장), 저장은 보라 채움·나머지는 테두리+연보라. 데스크톱은 `공유하기` 숨김(터치 기기 조건).
+- 2026-07-30: 게스트 로컬 클립 → 계정 이전 2단계 레이어 구현(index.md 에 "미구현"으로 남아 있던 항목).
+- 2026-07-30: 공유 텍스트 제목 80자 제한·말줄임(`lib/shareText.ts`) — iOS 와 같은 규칙. AdMob `public/app-ads.txt` 추가.
+- 2026-07-30: 네이버 계열 메타 추출을 크롤러 UA 우선으로 전환.
 
 - 2026-06-18: 최초 작성.
 - 2026-06-18: 스캐폴딩, 디자인가이드·토큰, 랜딩 페이지 UI(폼+미리보기) 구현. 빌드 통과.

@@ -339,39 +339,85 @@ URL을 보존한다. 모든 언어에 prefix를 두려면 공유 링크를 `/s/{
   `app/[slug]/page.tsx`, `app/_components/{HomeClient,ClipsClient,Header,Footer}.tsx`,
   `app/layout.tsx`, `app/sitemap.ts`, `app/robots.ts`, `lib/site.ts`
 
-### 작업 순서 (각 단위마다 작업>리뷰>개선>검증)
-1. ✅ `lib/i18n` 기반 + 한국어 사전만 (동작 변화 0, 회귀 위험 최소) — `3014fbe`
+### 작업 순서 (각 단위마다 작업>리뷰>개선>검증) — **전 단계 완료 (2026-07-31)**
+
+1. ✅ `lib/i18n` 기반 + 한국어 사전만 — `3014fbe`
 2. ✅ 홈 문자열 치환 + `/en` 라우트 1개로 왕복 검증 — `01a1aa4`
-3. **라우트 구조 완료.** 문자열 치환은 3b로 남음
-   - ✅ 3a-1 `/en` 하위 라우트 골격 + 번역 대기 `noindex` — `7b7903c`
-   - ✅ 3a-2 공통 헤더·푸터·인증 내비 링크 로케일 유지 — `b80455a`
-   - ✅ 3a-3 본문 링크·리다이렉트 로케일 유지 (11곳) — `5f7fc64`
-   - ✅ 3a-4 `/ja`·`/zh` 라우트 추가 + `pendingMetadata` 를 `lib/i18n` 으로 이동 — `089d9ae`
-   - ⬜ 3b `/clips`·`/settings`·`/login`·`/privacy` 문자열 사전화
-4. `generateMetadata`·hreflang·`sitemap` 언어별 생성 — **여기서 `noindex` 를 걷어낸다**
-5. 언어 선택 UI (현재 경로 유지하며 로케일만 교체)
-6. 영어·일본어·중국어 번역 채우기
+3. ✅ 로케일 라우트 + 전 화면 문자열 사전화·번역
+   - 라우트 골격 `7b7903c` / 헤더·푸터 링크 `b80455a` / 본문 링크 `5f7fc64` / `/ja`·`/zh` `089d9ae`
+   - 부분 사전(번역된 키만, 나머지 한국어 폴백) `428561a`
+   - `/privacy` `5766d30` · `/clips` `6522988`+`37095ac` · `/settings` `99b5b14` · `/login` `045d0d7`
+   - 헤더·인증 내비 + 날짜 그룹 `Intl` 전환 `47c336b`
+   - 홈 미리보기·결과 레이어 `f1c779e` · 소개·사용법·FAQ `fe6b3b9`
+4. ✅ 로케일별 metadata·hreflang·sitemap, `noindex` 해제 — `75d96f2`·`983e82f`·`c28e194`·`57dc82d`
+5. ✅ 언어 선택 UI (푸터) — `796e629`
+6. ✅ 영어·일본어·중국어 번역 — 3단계에서 동시 진행(사전 189키, 미번역은 `home.form.urlLabel`=`URL` 뿐)
 
-### 구현 메모 (2026-07-30)
-- **로케일 라우트는 얇은 재export.** `app/{en,ja,zh}/<page>/page.tsx` 가 한국어 페이지의
-  `default` 를 그대로 재export 한다. 페이지 본문을 로케일마다 복사하지 않기 위한 선택.
-- **그래서 페이지는 자기 로케일을 모른다.** 로케일을 prop 으로 내릴 수 없으므로 내부 링크는
-  `useLocalizedPath()`(= `usePathname()` + `stripLocale`)로 URL 에서 읽는다. Context 를 두지
-  않은 이유도 같다 — 로케일의 진실은 URL 이고, Context 는 SSR 결과와 어긋날 여지가 생긴다.
-- 이 때문에 `Header`·`Footer` 가 클라이언트 컴포넌트로 바뀌었다(마크업은 정적, 비용 없음).
-- **번역 전까지 `noindex, follow`**(`lib/i18n/pendingMetadata.ts`). 사전이 한국어로 폴백하는
-  동안 같은 본문이 4개 URL 로 색인되면 중복 콘텐츠가 된다. 4단계에서 hreflang 과 함께 제거.
-- `/api/*`·`/auth/*` 는 로케일과 무관해 그대로 두고, 공유 링크 `/{slug}` 도 단일 URL 을 유지한다.
-- 부수 효과: `href` 가 표현식이 되면서 `@next/next/no-html-link-for-pages` 선재 오류 11개가
-  사라졌다(eslint 오류 15 → 4, 잔여는 전부 선재 `set-state-in-effect`).
+### 구현 메모 (2026-07-30 ~ 31)
 
-### 기대 결과
-- `/`·`/en`·`/ja`·`/zh` 가 각 언어로 렌더되고 hreflang 이 상호 참조된다.
-- 기존 URL(공유 링크·`/clips`·`/privacy`)이 그대로 동작한다.
-- 언어 선택 시 같은 페이지의 해당 로케일 경로로 이동한다.
+**로케일은 URL 이 진실이다.** Context·쿠키·localStorage 를 두지 않는다. 서버는 미들웨어가
+넘긴 요청 헤더로, 클라이언트는 `usePathname()` 으로 같은 URL 을 읽으므로 어긋날 수 없다.
 
-### 검증
-`npx tsc --noEmit` · `npx eslint`(신규 지적 0) · 각 로케일 경로 200 응답 · 공유 링크 회귀 확인.
+- **미들웨어 → 서버 컴포넌트 로케일 전달**(`691a48b`). `app/layout.tsx` 는 서버 컴포넌트라
+  pathname 을 몰라서 `<html lang>` 이 모든 로케일에서 `ko` 였다. 미들웨어가 경로에서 읽어
+  `x-clipnote-locale` 요청 헤더로 넘기고 레이아웃이 `headers()` 로 읽는다.
+  - 대가: `headers()` 를 읽으면 정적 생성에서 빠진다. 홈·내 클립은 세션 쿠키를 읽어 이미
+    동적이었고, 실제로 잃은 것은 `/login`·`/settings`·`/privacy` × 4 로케일뿐이다.
+  - Supabase `setAll` 콜백이 `NextResponse.next({ request })` 로 응답을 다시 만들면 헤더가
+    유실된다 → 쿠키 갱신 요청에서만 로케일이 사라지는 버그. `headers` 를 다시 넘겨 막았다.
+- **라우트는 로케일을 명시한다.** 초기엔 한국어 페이지를 재export 했지만, 4단계의 로케일별
+  `canonical`·hreflang 을 선언하려면 라우트가 자기 로케일을 알아야 해서 전부 명시로 바꿨다.
+- **사전은 화면 단위로 좁혀 넘긴다**(`48362ac`). `Messages` 를 통째로 내리면 `/clips` 응답에
+  FAQ·설정 문구까지 실린다(12KB 중 실제 사용 2.5KB). `Pick<Messages, …>` 로 좁혔다.
+- **클라이언트 컴포넌트는 배럴에서 값을 가져오지 않는다**(`b290e7a`). `@/lib/i18n` 은 4개 언어
+  사전을 로드·병합하므로, 클라이언트가 값을 import 하면 사전 전체가 번들에 실린다
+  (58KB 청크에 `退会処理中` 까지 들어 있었다). 값은 `@/lib/i18n/locales` 에서 가져온다.
+  타입은 컴파일 시 지워지므로 배럴에서 가져와도 무방하다.
+- **문장 중간의 링크·강조는 `{token}` 으로 둔다**(`lib/i18n/interpolate.tsx`). 앞/링크/뒤로
+  쪼개면 어순이 다른 언어에서 깨진다 — ko `기존 태그에 {emphasis}` vs en `{emphasis} to
+  existing tags` 는 강조 낱말 위치가 반대다.
+- **날짜 그룹은 사전에 넣지 않는다.** `Intl.RelativeTimeFormat`·`DateTimeFormat` 이 4개 언어를
+  만들어 준다. 연월 **형식**(`2025년 3월` / `March 2025` / `2025年3月`)은 사전으로 표현할 수 없다.
+- **FAQ 는 단일 출처**(`faqItems()`). 화면 `<dl>` 과 FAQPage JSON-LD 가 같은 배열을 쓴다.
+  전에는 양쪽에 따로 적혀 있어 구글 리치 결과에 화면과 다른 문장이 나갔다.
+- **언어 선택은 전체 페이지 이동**을 쓴다. 클라이언트 내비게이션은 루트 레이아웃을 다시
+  렌더하지 않아 `<html lang>`·metadata·OG 가 이전 언어로 남는다.
+- **공유 링크(`/{slug}`)는 로케일 판본이 없다.** 언어 전환 시 그대로 prefix 를 붙이면 404 가
+  되므로 `switchLocalePath()` 가 아는 경로만 유지하고 나머지는 그 언어의 홈으로 보낸다.
+
+### 색인 정책
+
+| 경로 | robots | 이유 |
+|---|---|---|
+| `/`·`/clips`·`/login` × 4 로케일 | index | hreflang 상호 참조 + `x-default`=한국어 |
+| `/settings` × 4 | **noindex** | 비로그인은 `/login` 으로 리다이렉트되는 개인 페이지 |
+| `/privacy` (한국어) | index | 원문 |
+| `/{en,ja,zh}/privacy` | **noindex** | 본문을 번역하지 않기로 결정 → 판본이 하나뿐, canonical=`/privacy` |
+| `/{slug}` | noindex | 원본으로 넘기는 기능성 페이지(기존) |
+
+### 결과 (달성)
+- `/`·`/en`·`/ja`·`/zh` 가 각 언어로 렌더되고 hreflang 이 상호 참조된다(`x-default`=한국어).
+- 기존 URL(공유 링크·`/clips`·`/privacy`)이 그대로 동작한다. `/ko` 는 `/` 로 308.
+- 푸터 언어 선택으로 같은 화면의 해당 로케일 경로로 이동한다.
+
+### 검증 (2026-07-31)
+- `tsc --noEmit` 통과. eslint 오류 4개 — 전부 선재 `set-state-in-effect`
+  (같은 파일의 `develop` 기준선은 7개였다).
+- `next build` 통과.
+- 라우트 20개(5화면 × 4로케일) 200. `/ko`·`/ko/clips` 308 리다이렉트.
+- metadata 14경로에서 `<html lang>`·`og:locale`·`robots`·`canonical`·`og:url`·`og:title`
+  전부 기대값 일치. hreflang 은 홈·clips·login 각각 4개 로케일이 동일 목록.
+- sitemap 9개 URL, `<loc>` 이 페이지 canonical 과 글자까지 일치.
+- 사전 189키 / 토큰 30개가 en·ja·zh 전부 보존 / 미참조 키 0.
+- 내부 링크가 로케일 밖으로 새지 않음(4로케일). 버튼 라벨 넘침 0(320·390px).
+- FAQ ↔ JSON-LD 4로케일 6문항 일치.
+- 클라이언트 번들에 사전 문자열 0건(`退会処理中`·`マイクリップ`·`我的剪藏` 등).
+
+### 남은 것
+- `main` 머지(지시자 승인 필요).
+- `switchLocalePath` 의 `LOCALIZED_ROUTES` 와 `sitemap.ts` 의 `LOCALIZED_PAGES` 가
+  각각 경로 목록을 들고 있다. 지금은 5개라 관리되지만 늘어나면 한 곳으로 모은다.
+- `middleware.ts` 가 Next 16 에서 deprecated(`proxy.ts` 권고). 선재 이슈.
 
 ## 8. 메타데이터 추출 전략 (단계별 폴백)
 
@@ -391,6 +437,13 @@ URL마다 메타 품질이 천차만별. 아래 순서로 시도해 첫 성공�
 - → 이런 경우 **수동 입력으로 폴백**. 완전 자동화하려면 헤드리스 브라우저(느림·비용) 또는 공식 API 필요 — 후순위 검토.
 
 ## 9. 변경 이력
+
+- 2026-07-31: **웹 다국어 완료(14장)** — 한국어·영어·일본어·중국어 4개 언어. `lib/i18n/` 신설(로케일 정의·경로 helper·부분 사전 병합·토큰 치환), `app/{en,ja,zh}/**` 로케일 라우트 15개, 전 화면 문자열 사전화 + 3개 언어 번역(189키). 미들웨어가 경로에서 읽은 로케일을 요청 헤더로 넘겨 `layout.tsx` 가 `<html lang>`·metadata·OG 를 로케일에 맞춘다. 로케일별 canonical·hreflang(`x-default`=한국어)·sitemap, 푸터 언어 선택 UI. 날짜 그룹은 사전 대신 `Intl`, FAQ 는 화면과 JSON-LD 가 같은 배열을 쓴다. **`develop` 까지 머지·푸시 완료, `main` 은 승인 대기.**
+- 2026-07-31: 게스트 버튼이 2개일 때(공유하기 미지원 = 데스크톱) `sm`(640px) 이상에서 한 줄로 배치. 1280px 에서도 686px 짜리 버튼 둘이 세로로 쌓여 화면을 낭비했다. `flex-row` 가 아니라 `grid-cols-2` 를 쓴 이유는 flex 항목의 `min-width:auto` 때문에 두 버튼 폭이 319/359 로 어긋나서다. 3버튼(터치) 배치는 그대로 둔다.
+- 2026-07-30: 홈·내 클립 진입 체감 개선 — 홈 로그인 판정을 서버로 옮겨 버튼 깜빡임(CLS) 제거, 내 클립 목록을 서버에서 채워 내려보내 클라이언트 워터폴 제거(마운트→fetch→Auth→DB 왕복이 사라짐), 썸네일 지연 로드, 목록 조회 실패를 빈 목록과 구분해 재시도 경로 추가.
+- 2026-07-30: 홈 액션 버튼 정리 — 로그인·게스트 모두 같은 구조(링크·복사 한 줄 + 저장 자기 줄), `원본 복사`를 링크 유무와 무관하게 항상 노출, 저장은 보라 채움 / 링크·복사·공유는 테두리+연보라, 데스크톱에서는 `공유하기` 숨김(터치 기기 조건 추가 — macOS 브라우저도 `navigator.share` 를 지원해 API 유무만으로는 못 거른다).
+- 2026-07-30: 클립 옮기기 2단계 — 게스트 로컬 클립을 계정으로 옮길지 묻고, 거절하면 삭제 확인 단계로 넘어간다. 그냥 닫으면 결정을 미룬 것으로 보고 다음 접속에 다시 띄운다.
+- 2026-07-30: 네이버 계열 메타 추출을 크롤러 UA 우선으로 — 일반 UA 에는 JS 렌더 껍데기나 범용 og 를 주고 공유 크롤러 UA 에만 실제 og 를 준다. 문서 `<title>` 만 건진 결과도 크롤러 UA 로 재시도한다.
 
 - 2026-07-30: 공유 텍스트 제목 길이 제한 도입 — `lib/shareText.ts` 신설(`SHARE_TITLE_MAX=80`, 말줄임 `…`, 공백·개행을 한 칸으로 정리, `Intl.Segmenter`로 그래핌 단위 계산). 인라인으로 흩어져 있던 3곳(`app/page.tsx` 복사·게스트공유, `app/clips/page.tsx` 복사)을 공용 유틸 호출로 교체. 배경: 인스타 어댑터가 `og:title`(=캡션 전문)을 제목으로 쓰기 때문에(`lib/adapters/instagram.ts`) 공유문이 캡션 통째로 길어졌다. iOS `ClipNote/Util/ShareText.swift`가 같은 규칙·같은 상수를 구현하므로 **한쪽만 바꾸지 않는다**.
 - 2026-07-30: AdMob `public/app-ads.txt` 추가(`pub-3019917862455282`). app-ads.txt 가 없어 AdMob 앱 인증(ClipNote by pikaworks, Apple ID 6792600343)이 실패하고 광고가 게재되지 않았다. 기존 `public/ads.txt`는 퍼블리셔 ID가 다른(`pub-5655041057903258`) 웹 인벤토리용이라 그대로 둔다 — 앱 인증은 `ads.txt`를 보지 않는다.
