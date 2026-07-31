@@ -2,12 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import type { Messages } from "@/lib/i18n";
+import { useLocalizedPath } from "@/lib/i18n/useLocale";
 
 // 헤더 우측: 로그인 상태에 따라 "로그인" 링크 또는 로그아웃 버튼.
 // 이메일 등 개인정보는 수집·표시하지 않고 로그인 여부만 본다.
-export default function AuthNav() {
+export default function AuthNav({
+  messages,
+}: {
+  messages: Pick<Messages, "common">;
+}) {
+  const c = messages.common;
   const [loggedIn, setLoggedIn] = useState(false);
   const [ready, setReady] = useState(false);
+  const path = useLocalizedPath();
 
   useEffect(() => {
     // 인증 env 가 없으면 로그인 UI 자체를 숨김
@@ -33,10 +41,10 @@ export default function AuthNav() {
   if (!loggedIn) {
     return (
       <a
-        href="/login"
+        href={path("/login")}
         className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-fg transition hover:bg-surface"
       >
-        로그인
+        {c.login}
       </a>
     );
   }
@@ -44,17 +52,17 @@ export default function AuthNav() {
   return (
     <div className="flex items-center gap-3">
       <a
-        href="/settings"
+        href={path("/settings")}
         className="text-sm font-semibold text-fg-muted transition hover:text-fg"
       >
-        설정
+        {c.settings}
       </a>
       <form action="/auth/signout" method="post">
         <button
           type="submit"
           className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-fg transition hover:bg-surface"
         >
-          로그아웃
+          {c.logout}
         </button>
       </form>
     </div>

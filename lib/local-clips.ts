@@ -40,6 +40,21 @@ export function removeLocalClip(url: string): LocalClip[] {
   return list;
 }
 
+/**
+ * 이 브라우저에 저장된 클립을 전부 비운다.
+ *
+ * 되돌릴 수 없다 — 로컬 클립은 localStorage 에만 있고 서버 사본이 없다.
+ * 호출부는 반드시 사용자 확인을 먼저 받아야 한다(클립 옮기기 레이어의 2단계 확인).
+ */
+export function clearLocalClips(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(KEY);
+  } catch {
+    // 저장소 접근 불가(프라이빗 모드 등)는 무시 — 애초에 저장된 것도 없다.
+  }
+}
+
 /** 로컬 클립의 제목·태그 수정(게스트 편집). url 로 식별. */
 export function updateLocalClip(
   url: string,

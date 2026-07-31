@@ -40,7 +40,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const image = clip.image
     ? { url: clip.image }
     : { url: ogImageUrl(clip), width: 1200, height: 630 };
-  const description = clip.description ?? `${clip.siteName ?? "ClipNote"} 공유 링크`;
+  const description =
+    clip.description ?? `${clip.siteName ?? "ClipNote"} 공유 링크`;
 
   return {
     title: clip.title,
