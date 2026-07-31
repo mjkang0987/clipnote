@@ -330,6 +330,15 @@ const ko = {
     ogDescription: "링크 하나로 공유 카드와 짧은 링크를 만들어요",
   },
 
+  /**
+   * 공유 링크(`/{slug}`) 브릿지. **받는 사람이 보는 유일한 화면**이라, 로케일 경로가 없어도
+   * `Accept-Language` 로 그 사람 언어를 골라 그린다(`lib/i18n/acceptLanguage.ts`).
+   */
+  bridge: {
+    redirecting: "원본 페이지로 이동 중…",
+    goNow: "지금 이동하기",
+  },
+
   language: {
     label: "언어",
     /** 번역하지 않는 화면에 붙이는 안내 (개인정보 처리방침 등) */

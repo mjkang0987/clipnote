@@ -1,3 +1,7 @@
+import { headers } from "next/headers";
+
+import { getMessages } from "@/lib/i18n";
+import { matchAcceptLanguage } from "@/lib/i18n/acceptLanguage";
 import { cache } from "react";
 import type { Metadata } from "next";
 import { after } from "next/server";
@@ -74,6 +78,11 @@ export default async function SharePage({ params }: Params) {
   after(() => clipStore.incrementView(slug));
   const gradient = pickGradient(clip.gradient);
 
+  // 이 페이지는 로케일 경로가 없다(공유된 링크가 하나로 유지돼야 한다). 대신 **보는 사람의**
+  // 브라우저 설정을 따른다 — 링크를 만든 사람이 아니라 받은 사람의 언어여야 한다.
+  const locale = matchAcceptLanguage((await headers()).get("accept-language"));
+  const t = getMessages(locale).bridge;
+
   return (
     <main
       className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center"
@@ -91,12 +100,12 @@ export default async function SharePage({ params }: Params) {
         </p>
       )}
 
-      <p className="mt-8 text-sm text-white/80">원본 페이지로 이동 중…</p>
+      <p className="mt-8 text-sm text-white/80">{t.redirecting}</p>
       <a
         href={clip.url}
         className="mt-3 rounded-xl bg-white/95 px-5 py-2.5 text-sm font-semibold text-fg shadow-soft transition hover:bg-white"
       >
-        지금 이동하기
+        {t.goNow}
       </a>
 
       <SmartRedirect url={clip.url} />
