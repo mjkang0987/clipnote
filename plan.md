@@ -430,6 +430,9 @@ URL을 보존한다. 모든 언어에 prefix를 두려면 공유 링크를 `/s/{
 - 앱에만 있는 네임스페이스(`onboarding.*`·`share.*`)는 웹으로 가져오지 않는다. 해당 UI 가 없다.
 
 ### 남은 것
+- 영어에서 `settings.dangerTitle` 과 `settings.withdraw` 가 둘 다 `Delete account` 다. 설정
+  페이지의 같은 상자 안에 제목과 버튼으로 나란히 놓여 구분이 안 된다. 앱은 버튼을
+  `Delete my account` 로 두어 피했다 — 웹도 맞추는 게 낫다(운영 문구라 별도 확인 후).
 - `switchLocalePath` 의 `LOCALIZED_ROUTES` 와 `sitemap.ts` 의 `LOCALIZED_PAGES` 가
   각각 경로 목록을 들고 있다. 지금은 5개라 관리되지만 늘어나면 한 곳으로 모은다.
 - `middleware.ts` 가 Next 16 에서 deprecated(`proxy.ts` 권고). 선재 이슈.
