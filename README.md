@@ -52,5 +52,9 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Supabase
 
 ## 브랜치
 
-`main`(운영) ← `develop`(통합) ← `feature/*`.
-`develop → main` 승격은 **지시자 승인이 있을 때만** 한다.
+`main`(운영) ← `feature/*`. 작업 브랜치는 **`main` 최신본에서 딴다.**
+
+`main` 머지는 **지시자 승인이 있을 때만** 한다 — `main` 푸시가 곧 Vercel 프로덕션 배포다.
+PR 직전 `origin/main`을 다시 병합해 검증을 통과시킨다(브랜치를 딴 뒤 `main`이 움직였으면 검증 기준이 낡은 것).
+
+`develop`은 더 이상 배포 경로가 아니다. 상세 규약은 `CLAUDE.md`.
