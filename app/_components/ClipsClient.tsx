@@ -84,14 +84,17 @@ export default function ClipsClient({
   const [bulkTagOpen, setBulkTagOpen] = useState(false);
   const [pendingBulkDelete, setPendingBulkDelete] = useState(false);
   const [busy, setBusy] = useState(false);
-  // 게스트→로그인 시 계정으로 옮길 로컬 클립(있으면 배너 노출)
-  const [localPending, setLocalPending] = useState<LocalClip[]>([]);
+  // 이 브라우저에만 남은 로컬 클립. 로그인 상태에서 목록 위 진입 줄과 전용 화면이 쓴다.
+  const [localClips, setLocalClips] = useState<LocalClip[]>([]);
   const [migrating, setMigrating] = useState(false);
-  // 클립 옮기기 레이어 단계: 옮길지 묻기 → (거절 시) 삭제 경고. 경고에서 취소하면 다시 offer.
-  const [migrateStep, setMigrateStep] = useState<"offer" | "discard">("offer");
+  // 로그인 직후 한 번 권하는 옮기기 레이어. 닫으면 진입 줄로만 남는다.
+  const [migrateOpen, setMigrateOpen] = useState(false);
+  // 이 브라우저에 남은 클립 화면(계정 목록 대신 본문에 들어선다).
+  const [localPanel, setLocalPanel] = useState(false);
+  const [pendingLocalDeleteAll, setPendingLocalDeleteAll] = useState(false);
 
   // 서버가 목록을 이미 채워줬으므로 여기서는 localStorage 만 읽는다(서버가 알 수 없는 값).
-  //  - 로그인: 옮길 로컬 클립이 남아 있는지 확인 → 옮기기 레이어
+  //  - 로그인: 이 브라우저에 남은 클립을 읽어 진입 줄에 쓰고, 있으면 한 번 옮기기를 권한다
   //  - 게스트: 목록 자체가 localStorage
   useEffect(() => {
     let active = true;
@@ -99,7 +102,10 @@ export default function ClipsClient({
     async function loadLocal() {
       if (initialLoggedIn) {
         const locals = getLocalClips();
-        if (active && locals.length > 0) setLocalPending(locals);
+        if (active && locals.length > 0) {
+          setLocalClips(locals);
+          setMigrateOpen(true);
+        }
         return;
       }
       if (!active) return;
@@ -127,14 +133,29 @@ export default function ClipsClient({
 
   const groups = useMemo(() => groupByDate(filtered, locale), [filtered, locale]);
 
+  /** ‘이 브라우저에 남은 클립’ 화면이 그리는 목록 — 계정 목록과 같은 카드·같은 날짜 묶음. */
+  const localGroups = useMemo(
+    () => groupByDate(localClips.map(localToItem), locale),
+    [localClips, locale],
+  );
+
+  /** 수량 표기(`3개`·`3 clips`) — 언어마다 단위 위치가 달라 문장에서 떼어 만든다. */
+  function countUnit(count: number) {
+    return interpolate(t.countUnit, { count });
+  }
+
   async function confirmDelete() {
     const target = pendingDelete;
     if (!target) return;
     setPendingDelete(null);
 
     if (target.local) {
-      // 게스트: localStorage 에서 제거
-      setItems(removeLocalClip(target.url).map(localToItem));
+      // localStorage 에서 제거. 게스트는 목록 자체가 로컬이고, 로그인 상태에서는
+      // ‘이 브라우저에 남은 클립’ 화면이 이 목록을 그린다 — 둘 다 갱신해야 한다.
+      const rest = removeLocalClip(target.url);
+      setLocalClips(rest);
+      if (!loggedIn) setItems(rest.map(localToItem));
+      else if (rest.length === 0) setLocalPanel(false);
       return;
     }
 
@@ -185,12 +206,12 @@ export default function ClipsClient({
     }
   }
 
-  // 게스트 로컬 클립을 계정(DB)으로 업로드 후 로컬에서 제거.
+  // 이 브라우저의 로컬 클립을 계정(DB)으로 업로드 후 로컬에서 제거.
   async function migrateLocal() {
-    if (migrating || localPending.length === 0) return;
+    if (migrating || localClips.length === 0) return;
     setMigrating(true);
     const moved: string[] = [];
-    for (const c of localPending) {
+    for (const c of localClips) {
       try {
         const res = await fetch("/api/clip", {
           method: "POST",
@@ -212,7 +233,11 @@ export default function ClipsClient({
       }
     }
     moved.forEach((url) => removeLocalClip(url));
-    setLocalPending(getLocalClips());
+    const rest = getLocalClips();
+    setLocalClips(rest);
+    setMigrateOpen(false);
+    // 전량 성공이면 볼 것이 없으니 계정 목록으로 돌아간다. 남았으면 그대로 두고 보여 준다.
+    if (rest.length === 0) setLocalPanel(false);
     // 업로드 결과를 반영해 DB 목록 새로고침
     try {
       const res = await fetch("/api/clips");
@@ -241,26 +266,24 @@ export default function ClipsClient({
     }
   }
 
-  // 옮기기를 거절하면 로컬 클립은 남겨둘 곳이 없다(로그인 목록은 DB 를 보여준다) →
-  // 삭제 경고를 먼저 띄우고, 거기서 취소하면 옮기기 레이어로 되돌아간다.
-  function askDiscardLocal() {
-    setMigrateStep("discard");
-  }
-
   /**
-   * 확인·취소를 누르지 않고 그냥 닫은 경우(배경 클릭·ESC) — 결정을 미룬 것으로 본다.
-   * 로컬 클립은 그대로 두므로 다음 접속 때 목록을 읽어 레이어가 다시 뜬다.
+   * 옮기기 레이어를 닫는다 — 취소·배경 클릭·ESC 모두 같다.
+   *
+   * **거절해도 잃는 게 없다.** 목록 위에 ‘이 브라우저에 남은 클립 3개’ 진입 줄이 서고,
+   * 거기서 언제든 다시 옮기거나 지울 수 있다. 전에는 계정 목록이 DB 만 보여줘서 옮기지
+   * 않은 클립은 볼 방법이 없어졌고 — 그래서 거절하면 "그럼 지울까?" 를 물어야 했다.
+   * 묻지 않고 지우는 단계는 이제 없다.
    */
-  function deferMigrate() {
-    setLocalPending([]);
-    setMigrateStep("offer");
+  function closeMigrate() {
+    setMigrateOpen(false);
   }
 
-  /** 경고에서 확인 — 이 브라우저의 클립을 전부 지운다. 되돌릴 수 없다(서버 사본 없음). */
-  function discardLocal() {
+  /** 이 브라우저의 클립을 전부 지운다. 되돌릴 수 없다(서버 사본이 없다). */
+  function deleteAllLocal() {
     clearLocalClips();
-    setLocalPending([]);
-    setMigrateStep("offer");
+    setLocalClips([]);
+    setPendingLocalDeleteAll(false);
+    setLocalPanel(false);
   }
 
   function toggleSelect(key: string) {
@@ -348,6 +371,21 @@ export default function ClipsClient({
       >
         {/* 공룡은 창 전체를 돈다(`fixed`) — 여기 두는 건 로딩 상태를 아는 자리라서다. */}
         {loading && <RunningDino />}
+
+        {localPanel ? (
+          <LocalClipsPanel
+            messages={messages}
+            groups={localGroups}
+            count={localClips.length}
+            migrating={migrating}
+            onBack={() => setLocalPanel(false)}
+            onMove={() => setMigrateOpen(true)}
+            onDeleteAll={() => setPendingLocalDeleteAll(true)}
+            onRequestDelete={setPendingDelete}
+            onEdit={setEditing}
+          />
+        ) : (
+        <>
         <div className="flex items-baseline justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-fg">{c.myClips}</h1>
           <a href={path("/")} className="text-sm font-semibold text-brand-strong hover:underline">
@@ -359,6 +397,24 @@ export default function ClipsClient({
             ? t.guestNote
             : t.accountNote}
         </p>
+
+        {/* ‘이 브라우저에 남은 클립’ 진입 줄 — 옮기기를 거절했을 때 그 클립으로 가는
+            **유일한 길**이다. 계정 목록이 비어 있어도 그린다(안 그리면 닿을 길이 없다).
+            선택 모드에서는 감춘다 — 선택 대상이 아닌 줄이 섞이면 무엇이 선택되는지 흐려진다. */}
+        {loggedIn && localClips.length > 0 && !selectMode && (
+          <button
+            type="button"
+            onClick={() => setLocalPanel(true)}
+            className="mt-4 flex w-full items-center justify-between gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-left transition hover:bg-border/40"
+          >
+            <span className="text-sm font-medium text-fg">
+              {interpolate(t.localEntry, { count: countUnit(localClips.length) })}
+            </span>
+            <span aria-hidden className="text-sm text-fg-muted">
+              ›
+            </span>
+          </button>
+        )}
 
         {/* 선택 모드 진입 버튼(상단). 선택 시 도구는 하단 고정바로. */}
         {loggedIn && items.length > 0 && !selectMode && (
@@ -458,6 +514,8 @@ export default function ClipsClient({
             ))}
           </div>
         )}
+        </>
+        )}
       </main>
 
       {/* 선택 모드 하단 고정 도구바 — 스크롤해도 항상 보이게 */}
@@ -515,23 +573,23 @@ export default function ClipsClient({
         />
       )}
 
-      {loggedIn && localPending.length > 0 && migrateStep === "offer" && (
+      {loggedIn && migrateOpen && localClips.length > 0 && (
         <MigrateLocalLayer
           messages={messages}
-          count={localPending.length}
+          count={localClips.length}
           migrating={migrating}
           onMigrate={migrateLocal}
-          onDismiss={askDiscardLocal}
-          onClose={deferMigrate}
+          onDismiss={closeMigrate}
+          onClose={closeMigrate}
         />
       )}
 
-      {loggedIn && localPending.length > 0 && migrateStep === "discard" && (
-        <DiscardLocalLayer
+      {loggedIn && pendingLocalDeleteAll && localClips.length > 0 && (
+        <LocalDeleteAllLayer
           messages={messages}
-          count={localPending.length}
-          onDiscard={discardLocal}
-          onBack={() => setMigrateStep("offer")}
+          count={localClips.length}
+          onDelete={deleteAllLocal}
+          onCancel={() => setPendingLocalDeleteAll(false)}
         />
       )}
 
@@ -623,6 +681,112 @@ function DeleteConfirmLayer({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * 이 브라우저에만 남은 클립 — 계정 목록과 **자리를 나눠** 보여 준다.
+ *
+ * **왜 한 목록에 합치지 않나.** 성격이 달라서다. 계정 클립은 다른 기기에서도 보이고 공유 링크를
+ * 만들 수 있지만, 이 브라우저 클립은 둘 다 못 한다(slug 가 없다). 배지 하나로 구분하기엔 차이가
+ * 커서 — 눌러 보고 나서야 안 되는 걸 알게 된다 — 자리를 따로 두고, 여기서만 할 수 있는 일
+ * (옮기기·모두 삭제)을 위에 모은다. 앱(`LocalClipsView`)과 같은 구성이다.
+ *
+ * 별도 라우트로 두지 않은 이유: 라우트는 언어마다 하나씩(`/clips`, `/en/clips`, …) 있어서
+ * 화면 하나를 늘리면 파일이 네 개 는다. 본문만 바꿔 끼우면 네 언어가 그대로 따라온다.
+ */
+function LocalClipsPanel({
+  messages,
+  groups,
+  count,
+  migrating,
+  onBack,
+  onMove,
+  onDeleteAll,
+  onRequestDelete,
+  onEdit,
+}: {
+  messages: ClipsMessages;
+  groups: { label: string; items: Item[] }[];
+  count: number;
+  migrating: boolean;
+  onBack: () => void;
+  onMove: () => void;
+  onDeleteAll: () => void;
+  onRequestDelete: (item: Item) => void;
+  onEdit: (item: Item) => void;
+}) {
+  const t = messages.clips;
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onBack}
+        className="text-sm font-semibold text-brand-strong transition hover:underline"
+      >
+        {t.localBack}
+      </button>
+      <h1 className="mt-3 text-2xl font-bold tracking-tight text-fg">
+        {t.localTitle}
+      </h1>
+      <p className="mt-1 text-sm leading-relaxed text-fg-muted">{t.localIntro}</p>
+
+      {count > 0 && (
+        // 넓은 화면에서 폭을 묶는다. 그냥 늘리면 `모두 삭제` 가 728px 을 차지해 주 동작과
+        // 같은 무게로 보인다 — 되돌릴 수 없는 쪽이 그렇게 커지면 안 된다.
+        <div className="mt-5 flex gap-2 sm:max-w-md">
+          <button
+            type="button"
+            onClick={onMove}
+            disabled={migrating}
+            className="h-11 flex-1 rounded-[8px] bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {migrating ? t.migrating : t.localMove}
+          </button>
+          <button
+            type="button"
+            onClick={onDeleteAll}
+            disabled={migrating}
+            className="h-11 flex-1 rounded-[8px] border border-border px-4 text-sm font-semibold text-fg transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {t.localDeleteAll}
+          </button>
+        </div>
+      )}
+
+      {count === 0 ? (
+        <div className="mt-10 rounded-2xl border border-dashed border-border bg-surface p-10 text-center">
+          <p className="text-sm text-fg-muted">{t.localEmpty}</p>
+        </div>
+      ) : (
+        <div className="mt-6 flex flex-col gap-8">
+          {groups.map((group) => (
+            <section key={group.label}>
+              <h2 className="mb-3 text-sm font-semibold text-fg-muted">
+                {group.label}
+              </h2>
+              <ul className="flex flex-col gap-3">
+                {group.items.map((item) => (
+                  <ClipCard
+                    key={item.key}
+                    messages={messages}
+                    item={item}
+                    onRequestDelete={onRequestDelete}
+                    onEdit={() => onEdit(item)}
+                    // 로컬 클립은 slug 가 없어 공유 링크를 만들 수 없다 — 카드가 그 버튼을
+                    // 아예 그리지 않으므로 이 콜백은 불리지 않는다.
+                    onShareMade={() => {}}
+                    selectMode={false}
+                    selected={false}
+                    onToggleSelect={() => {}}
+                  />
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -927,38 +1091,33 @@ function MigrateLocalLayer({
 }
 
 /**
- * 옮기기를 거절했을 때의 삭제 경고.
+ * 이 브라우저에 남은 클립을 **전부** 지우는 확인.
  *
- * 로그인 목록은 DB 를 보여주므로 옮기지 않은 로컬 클립은 볼 방법이 없다 → 남겨둘 자리가 없어
- * 삭제를 확인받는다. **되돌릴 수 없다**(로컬 클립은 이 브라우저에만 있고 서버 사본이 없음)
- * → 기본 동작은 '취소'(옮기기 레이어로 복귀)이고, 삭제 버튼만 위험 색으로 구분한다.
+ * 되돌릴 수 없다 — 로컬 클립은 이 브라우저에만 있고 서버 사본이 없다. 그래서 기본 동작은
+ * ‘취소’ 쪽에 두지 않고, 확인 버튼만 위험 색으로 채워 무엇을 누르는지 분명히 한다.
+ * (옮기기를 거절했다고 자동으로 이 확인이 뜨지는 않는다 — 사용자가 직접 부를 때만 뜬다.)
  */
-function DiscardLocalLayer({
+function LocalDeleteAllLayer({
   messages,
   count,
-  onDiscard,
-  onBack,
+  onDelete,
+  onCancel,
 }: {
   messages: ClipsMessages;
   count: number;
-  onDiscard: () => void;
-  onBack: () => void;
+  onDelete: () => void;
+  onCancel: () => void;
 }) {
   return (
-    <ModalShell labelledBy="discard-title" onClose={onBack}>
-      <h2 id="discard-title" className="text-lg font-bold text-fg">
-        {messages.clips.discardTitle}
+    <ModalShell labelledBy="local-delete-title" onClose={onCancel}>
+      <h2 id="local-delete-title" className="text-lg font-bold text-fg">
+        {messages.clips.localDeleteAllTitle}
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-        {interpolateNode(messages.clips.discardBody, {
+        {interpolateNode(messages.clips.localDeleteAllBody, {
           count: (
             <strong className="font-semibold text-fg">
               {interpolate(messages.clips.countUnit, { count })}
-            </strong>
-          ),
-          irreversible: (
-            <strong className="font-semibold text-fg">
-              {messages.clips.discardIrreversible}
             </strong>
           ),
         })}
@@ -966,15 +1125,15 @@ function DiscardLocalLayer({
       <div className="mt-5 flex gap-2">
         <button
           type="button"
-          onClick={onBack}
-          className="h-11 flex-1 rounded-[8px] bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong"
+          onClick={onCancel}
+          className="h-11 flex-1 rounded-[8px] border border-border px-4 text-sm font-semibold text-fg transition hover:bg-surface"
         >
           {messages.common.cancel}
         </button>
         <button
           type="button"
-          onClick={onDiscard}
-          className="h-11 flex-1 rounded-[8px] border border-danger px-4 text-sm font-semibold text-danger transition hover:bg-danger hover:text-white"
+          onClick={onDelete}
+          className="h-11 flex-1 rounded-[8px] bg-danger px-4 text-sm font-semibold text-white transition hover:opacity-90"
         >
           {messages.common.delete}
         </button>

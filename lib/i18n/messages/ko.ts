@@ -89,11 +89,20 @@ const ko = {
     migrateConfirm: "{count} 옮기기",
     migrating: "옮기는 중…",
 
-    /** 옮기기를 취소했을 때 — 로컬 클립을 지우는 되돌릴 수 없는 단계 */
-    discardTitle: "이 브라우저의 클립을 삭제할까요?",
-    discardBody:
-      "옮기지 않으면 이 브라우저에 저장된 {count} 클립이 모두 삭제됩니다. 이 클립은 이 브라우저에만 있어서 {irreversible}",
-    discardIrreversible: "되돌릴 수 없어요.",
+    /** 로그인 목록 위의 진입 줄. `{count}` 는 수량 표기 */
+    localEntry: "이 브라우저에 남은 클립 {count}",
+
+    /** 이 브라우저에만 남은 클립을 따로 보는 화면 */
+    localTitle: "이 브라우저에 남은 클립",
+    localBack: "← 내 클립으로",
+    localIntro:
+      "이 클립은 이 브라우저에만 있어요. 계정으로 옮기면 다른 기기에서도 보이고 공유 링크를 만들 수 있어요.",
+    localMove: "계정으로 옮기기",
+    localDeleteAll: "모두 삭제",
+    localEmpty: "이 브라우저에 남은 클립이 없어요.",
+    localDeleteAllTitle: "이 브라우저의 클립을 삭제할까요?",
+    localDeleteAllBody:
+      "이 브라우저에 저장된 {count} 클립을 모두 삭제합니다. 이 클립은 이 브라우저에만 있어서 되돌릴 수 없어요.",
 
     /** 클립 편집 레이어 */
     editTitle: "클립 편집",
