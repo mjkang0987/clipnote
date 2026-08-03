@@ -34,10 +34,14 @@ const HEIGHT = 34;
 const WIDTH = (HEIGHT * SPRITE_W) / SPRITE_H;
 /** 네 프레임을 한 번 도는 데 걷는 거리(px). */
 const STRIDE = 36;
-/** 목표 속도(px/초)와 한 바퀴 시간의 상·하한(초). */
-const TARGET_SPEED = 150;
+/** 목표 속도(px/초)와 한 바퀴 시간의 상·하한(초).
+ *
+ * **앱보다 상한이 훨씬 길다.** 앱은 상자가 폰 화면 하나뿐이라 7초로 충분한데, 웹은 창이
+ * 훨씬 커서 같은 상한을 두면 속도가 상한에 끌려 올라간다 — 1440x900 에서 463px/s 로,
+ * 목표(150)의 세 배가 나왔다. 상한을 늘리면 큰 창에서도 목표 속도를 지킨다. */
+const TARGET_SPEED = 110;
 const LAP_MIN = 3;
-const LAP_MAX = 7;
+const LAP_MAX = 24;
 /** 코너를 넘는 동안 지나가는 거리(px)와 도약 높이(px). */
 const TURN_SPAN = 30;
 const JUMP = 12;
