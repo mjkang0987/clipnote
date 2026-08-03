@@ -341,14 +341,12 @@ export default function ClipsClient({
     <div className="flex flex-1 flex-col">
       <Header messages={messages} showClipsLink={false} />
 
-      {/* `relative` 는 공룡이 돌 상자를 정해 준다. */}
       <main
-        className={`relative mx-auto w-full max-w-3xl flex-1 px-5 py-10 ${
+        className={`mx-auto w-full max-w-3xl flex-1 px-5 py-10 ${
           selectMode ? "pb-28" : ""
         }`}
       >
-        {/* 공룡은 **본문 상자**를 돈다. 바깥 상자에 두면 헤더·푸터까지 포함해,
-            윗면을 걷는 동안 나중에 그려지는 헤더에 가려 보이지 않는다. */}
+        {/* 공룡은 창 전체를 돈다(`fixed`) — 여기 두는 건 로딩 상태를 아는 자리라서다. */}
         {loading && <RunningDino />}
         <div className="flex items-baseline justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-fg">{c.myClips}</h1>

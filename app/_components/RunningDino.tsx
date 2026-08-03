@@ -22,7 +22,9 @@ import { useEffect, useRef } from "react";
  * - **프레임은 시간이 아니라 걸은 거리로 넘긴다.** 시간 기준이면 빨리 달릴수록 다리가
  *   헛돌아 미끄러진다.
  *
- * 부모에 `relative` 가 있어야 그 상자를 돈다. 클릭은 통과시킨다.
+ * **창(뷰포트)을 상자로 삼는다.** `fixed` 라 부모가 무엇이든 상관없다. 위쪽만 헤더 높이만큼
+ * 내려 시작한다 — 헤더는 `sticky` 라 늘 그 자리에 있어서, 그냥 두면 윗면을 걷는 동안
+ * 통째로 가린다. 아래·양옆은 창 끝까지 쓴다. 클릭은 통과시킨다.
  */
 
 const FRAME_COUNT = 4;
@@ -47,6 +49,8 @@ const TURN_SPAN = 30;
 const JUMP = 12;
 /** 뛰는 동안 고정할 프레임(0부터). 다리가 벌어진 자세라 도약으로 읽힌다. */
 const LEAP_FRAME = 1;
+/** 헤더 높이(px). `Header` 의 `h-14` 와 같아야 한다 — 거기를 고치면 여기도 고친다. */
+const HEADER_H = 56;
 /** 건너뛰는 면(0=위 1=오른쪽 2=아래 3=왼쪽). 아래쪽 고정. */
 const SKIPPED = 2;
 /** 반시계로 도는 세 면 — 오른쪽 → 위 → 왼쪽. */
@@ -193,7 +197,8 @@ export default function RunningDino() {
     <div
       ref={box}
       aria-hidden
-      className="pointer-events-none absolute inset-0 overflow-hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-30 overflow-hidden"
+      style={{ top: HEADER_H }}
     >
       <span
         ref={dino}
