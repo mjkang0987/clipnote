@@ -69,10 +69,18 @@ const ja: PartialMessages = {
     migrateConfirm: "{count}を移動",
     migrating: "移動中…",
 
-    discardTitle: "このブラウザのクリップを削除しますか?",
-    discardBody:
-      "移動しない場合、このブラウザに保存された{count}すべてが削除されます。このクリップはこのブラウザにしかないため{irreversible}",
-    discardIrreversible: "取り消せません。",
+    localEntry: "このブラウザに残っているクリップ {count}",
+
+    localTitle: "このブラウザに残っているクリップ",
+    localBack: "← マイクリップへ",
+    localIntro:
+      "このクリップはこのブラウザにしかありません。アカウントに移動すると他の端末でも見られ、共有リンクも作れます。",
+    localMove: "アカウントに移動",
+    localDeleteAll: "すべて削除",
+    localEmpty: "このブラウザに残っているクリップはありません。",
+    localDeleteAllTitle: "このブラウザのクリップを削除しますか?",
+    localDeleteAllBody:
+      "このブラウザに保存された{count}をすべて削除します。このクリップはこのブラウザにしかないため取り消せません。",
 
     editTitle: "クリップを編集",
     editTitleLabel: "タイトル",
