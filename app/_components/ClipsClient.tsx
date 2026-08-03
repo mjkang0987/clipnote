@@ -22,6 +22,7 @@ import type { Messages } from "@/lib/i18n";
 type ClipsMessages = Pick<Messages, "common" | "clips">;
 import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
+import RunningDino from "@/app/_components/RunningDino";
 
 type Item = {
   key: string;
@@ -337,7 +338,9 @@ export default function ClipsClient({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    // `relative` 는 공룡이 돌 상자를 정해 준다 — 없으면 더 바깥 상자를 돈다.
+    <div className="relative flex flex-1 flex-col">
+      {loading && <RunningDino />}
       <Header messages={messages} showClipsLink={false} />
 
       <main

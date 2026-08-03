@@ -15,6 +15,7 @@ import type { Messages } from "@/lib/i18n";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
+import RunningDino from "@/app/_components/RunningDino";
 import Brand from "@/app/_components/Brand";
 import CompareBoxes from "@/app/_components/CompareBoxes";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -501,7 +502,9 @@ export default function HomeClient({
   const saveClipDisabled = primaryDisabled || added;
 
   return (
-    <div className="flex flex-1 flex-col">
+    // `relative` 는 공룡이 돌 상자를 정해 준다 — 없으면 더 바깥 상자를 돈다.
+    <div className="relative flex flex-1 flex-col">
+      {loading && <RunningDino />}
       <Header messages={messages} />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3 sm:px-5 sm:py-8">
