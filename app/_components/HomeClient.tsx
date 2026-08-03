@@ -15,6 +15,7 @@ import type { Messages } from "@/lib/i18n";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
+import RunningDino from "@/app/_components/RunningDino";
 import Brand from "@/app/_components/Brand";
 import CompareBoxes from "@/app/_components/CompareBoxes";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -505,6 +506,8 @@ export default function HomeClient({
       <Header messages={messages} />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-3 sm:px-5 sm:py-8">
+        {/* 공룡은 창 전체를 돈다(`fixed`) — 여기 두는 건 로딩 상태를 아는 자리라서다. */}
+        {loading && <RunningDino />}
         <section className="py-4 text-center sm:py-8">
           {/* text-balance: 언어마다 문장 길이가 달라 줄바꿈이 한 글자만 넘어가는 일이 생긴다
               (일본어에서 마지막 「に」만 다음 줄로 떨어졌다). 두 줄을 고르게 나눈다. */}

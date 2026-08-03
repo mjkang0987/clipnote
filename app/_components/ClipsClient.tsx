@@ -22,6 +22,7 @@ import type { Messages } from "@/lib/i18n";
 type ClipsMessages = Pick<Messages, "common" | "clips">;
 import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
+import RunningDino from "@/app/_components/RunningDino";
 
 type Item = {
   key: string;
@@ -345,6 +346,8 @@ export default function ClipsClient({
           selectMode ? "pb-28" : ""
         }`}
       >
+        {/* 공룡은 창 전체를 돈다(`fixed`) — 여기 두는 건 로딩 상태를 아는 자리라서다. */}
+        {loading && <RunningDino />}
         <div className="flex items-baseline justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-fg">{c.myClips}</h1>
           <a href={path("/")} className="text-sm font-semibold text-brand-strong hover:underline">

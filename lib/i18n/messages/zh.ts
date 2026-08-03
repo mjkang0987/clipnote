@@ -262,6 +262,11 @@ const zh: PartialMessages = {
     ogDescription: "一个链接就能生成分享卡片和短网址",
   },
 
+  bridge: {
+    redirecting: "正在跳转到原页面…",
+    goNow: "立即跳转",
+  },
+
   language: {
     label: "语言",
     koreanOnlyNotice: "本文件仅提供韩文版本。",

@@ -274,6 +274,11 @@ const ja: PartialMessages = {
     ogDescription: "リンク1つで共有カードと短いURLを作成",
   },
 
+  bridge: {
+    redirecting: "元のページへ移動しています…",
+    goNow: "今すぐ移動",
+  },
+
   language: {
     label: "言語",
     koreanOnlyNotice: "この文書は韓国語でのみ提供されます。",

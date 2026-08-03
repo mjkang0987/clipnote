@@ -271,6 +271,11 @@ const en: PartialMessages = {
     ogDescription: "One link becomes a share card and a short URL",
   },
 
+  bridge: {
+    redirecting: "Taking you to the original page…",
+    goNow: "Go now",
+  },
+
   language: {
     label: "Language",
     koreanOnlyNotice: "This document is provided in Korean only.",

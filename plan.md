@@ -413,8 +413,38 @@ URL을 보존한다. 모든 언어에 prefix를 두려면 공유 링크를 `/s/{
 - FAQ ↔ JSON-LD 4로케일 6문항 일치.
 - 클라이언트 번들에 사전 문자열 0건(`退会処理中`·`マイクリップ`·`我的剪藏` 등).
 
+### 운영 반영 (2026-07-31)
+- PR #26 → `main` `760d6c3`. CI 그린(`static-analysis`·Vercel preview), release-please 성공.
+- release-please 가 제안하는 릴리스 PR 은 **1.0.0** 이다. 저장소에 태그·GitHub 릴리스가 하나도
+  없어 "첫 릴리스"로 보고 기본값을 쓰기 때문 — `package.json` 의 `0.8.1` 은 보지 않는다.
+  0.x 를 유지하려면 `.release-please-manifest.json`(`{".": "0.8.1"}`) + `release-please-config.json`
+  으로 기준점을 알려줘야 한다. 지금은 둘 다 없다.
+- 사용자 확인 필요: AdMob → 앱 → "app-ads.txt 업데이트 확인", Search Console sitemap 재제출.
+
+### 앱 이식 (진행 중)
+앱(`clipnote-ios`)이 같은 4개 언어를 지원하지만 문자열은 설정 화면까지만 사전화돼 있다.
+나머지 화면을 **이 사전의 키·문구로** 채우는 작업을 앱 저장소 `plan.md` "앱 다국어" 절에서 진행한다.
+- ⚠️ 이 파일 머리말은 "키 이름을 iOS 카탈로그와 맞춘다"고 적혀 있지만 실제로는 어긋나 있었다
+  (`settings.signedInWith` ↔ 앱 `settings.account.loggedIn` 등). **웹을 기준으로 앱을 고친다** —
+  웹이 이미 운영 반영됐고 사전이 10배 크다.
+- 앱에만 있는 네임스페이스(`onboarding.*`·`share.*`)는 웹으로 가져오지 않는다. 해당 UI 가 없다.
+
+### 빠뜨렸던 것 — 공유 브릿지 `/{slug}` (2026-07-31)
+
+앱을 영어로 두고 만든 링크를 열었더니 브릿지가 한국어였다. 사전화 범위를 홈·내 클립·설정·
+로그인·방침으로 잡으면서 **`/{slug}` 를 빼먹었다** — 정작 링크를 받은 사람이 보는 유일한 화면이다.
+
+로케일 경로를 붙일 수 없다(뿌려진 링크가 하나로 유지돼야 한다). 대신 **보는 사람의**
+`Accept-Language` 로 고른다(`lib/i18n/acceptLanguage.ts`) — 만든 사람이 아니라 받은 사람의
+언어여야 한다. 한국어 사용자가 만든 링크를 영어권 지인이 여는 게 이 페이지의 정상 사용이다.
+
+이 방식은 **브릿지에만** 쓴다. 다른 페이지는 경로가 곧 로케일이고, `/` 를 브라우저 설정에 따라
+영어로 그리면 한국어 정본 URL 이 사라진다. 브릿지는 이미 `noindex` 라 색인 문제도 없다.
+
 ### 남은 것
-- `main` 머지(지시자 승인 필요).
+- 영어에서 `settings.dangerTitle` 과 `settings.withdraw` 가 둘 다 `Delete account` 다. 설정
+  페이지의 같은 상자 안에 제목과 버튼으로 나란히 놓여 구분이 안 된다. 앱은 버튼을
+  `Delete my account` 로 두어 피했다 — 웹도 맞추는 게 낫다(운영 문구라 별도 확인 후).
 - `switchLocalePath` 의 `LOCALIZED_ROUTES` 와 `sitemap.ts` 의 `LOCALIZED_PAGES` 가
   각각 경로 목록을 들고 있다. 지금은 5개라 관리되지만 늘어나면 한 곳으로 모은다.
 - `middleware.ts` 가 Next 16 에서 deprecated(`proxy.ts` 권고). 선재 이슈.
