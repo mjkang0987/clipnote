@@ -12,8 +12,8 @@ import { useEffect, useRef } from "react";
  *
  * - **안쪽에서 벽을 밟는다.** 바깥에 세우면 상자 밖으로 나가는 만큼이 잘린다. 대신 천장
  *   면에서는 거꾸로 매달려 걷는다.
- * - **아래쪽 면은 걷지 않는다.** 광고·하단 UI 와 겹치는 자리다. 오른쪽 → 위 → 왼쪽 세 면만
- *   돌고, 빠진 아래쪽은 잠깐 사라졌다 반대편에서 나타나는 구간이 된다.
+ * - **네 면을 모두 걷는다.** 앱은 광고 배너와 겹쳐 아래쪽을 뺐지만 웹은 가릴 게 없다.
+ *   끊기는 구간이 없어 한 바퀴가 이어진다.
  * - **출발점은 매번 다르다.** 늘 같은 자리에서 나오면 두 번째부터는 그냥 배경이 된다.
  * - **코너는 점프로 돈다.** 앞뒤 30px 를 하나의 도약으로 묶어 각도를 나눠 돌린다. 즉시
  *   꺾으면 걷다가 몸만 홱 돌아가 순간이동처럼 보인다.
@@ -51,10 +51,8 @@ const JUMP = 12;
 const LEAP_FRAME = 1;
 /** 헤더 높이(px). `Header` 의 `h-14` 와 같아야 한다 — 거기를 고치면 여기도 고친다. */
 const HEADER_H = 56;
-/** 건너뛰는 면(0=위 1=오른쪽 2=아래 3=왼쪽). 아래쪽 고정. */
-const SKIPPED = 2;
-/** 반시계로 도는 세 면 — 오른쪽 → 위 → 왼쪽. */
-const ROUTE = [1, 2, 3].map((i) => (SKIPPED + 4 - i) % 4);
+/** 반시계로 도는 네 면 — 오른쪽 → 위 → 왼쪽 → 아래. (0=위 1=오른쪽 2=아래 3=왼쪽) */
+const ROUTE = [1, 0, 3, 2];
 
 type Spot = { x: number; y: number; angle: number; frame: number };
 type Vector = { x: number; y: number };
@@ -81,7 +79,10 @@ function inward(side: number): Vector {
 
 /** 그 거리에서 **걸어가고 있을 때**의 자리와 각도. */
 function standing(distance: number, lengths: number[], w: number, h: number) {
-  let walked = Math.max(0, distance);
+  // 한 바퀴가 이어지므로 거리도 감싼다 — 마지막 모서리의 도약이 총 둘레를 넘어선
+  // 지점을 묻기 때문이다.
+  const total = lengths.reduce((sum, n) => sum + n, 0);
+  let walked = (((distance % total) + total) % total);
   let index = 0;
   while (index < lengths.length - 1 && walked >= lengths[index]) {
     walked -= lengths[index];
@@ -111,10 +112,14 @@ function turning(
   const span = Math.min(TURN_SPAN, Math.min(...lengths));
   if (span <= 0) return null;
 
+  const total = lengths.reduce((sum, n) => sum + n, 0);
   let corner = 0;
-  for (let i = 0; i < lengths.length - 1; i++) {
+  for (let i = 0; i < lengths.length; i++) {
     corner += lengths[i];
-    const entered = distance - (corner - span / 2);
+    // 마지막 모서리는 출발선과 같은 자리다. 갓 출발한 지점(거리가 0 근처)도 그 도약의
+    // 뒷부분이므로 한 바퀴를 더해 함께 본다 — 이걸 빼면 거기서만 각도가 툭 꺾인다.
+    let entered = distance - (corner - span / 2);
+    if (entered < 0 && i === lengths.length - 1) entered = distance + total - (corner - span / 2);
     if (entered < 0 || entered > span) continue;
 
     const p = entered / span;
@@ -122,7 +127,7 @@ function turning(
     const after = standing(corner + span / 2, lengths, w, h);
     // 두 벽의 안쪽 방향을 합치면 코너에서 상자 안을 향하는 대각선이 된다.
     const a = inward(ROUTE[i]);
-    const b = inward(ROUTE[i + 1]);
+    const b = inward(ROUTE[(i + 1) % ROUTE.length]);
     const len = Math.hypot(a.x + b.x, a.y + b.y) || 1;
     const height = Math.sin(p * Math.PI) * JUMP;
     return {
