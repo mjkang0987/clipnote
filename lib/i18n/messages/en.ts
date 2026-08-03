@@ -69,10 +69,18 @@ const en: PartialMessages = {
     migrateConfirm: "Move {count}",
     migrating: "Moving…",
 
-    discardTitle: "Delete the clips in this browser?",
-    discardBody:
-      "If you don't move them, all {count} saved in this browser will be deleted. They exist only in this browser, so {irreversible}",
-    discardIrreversible: "this can't be undone.",
+    localEntry: "{count} left in this browser",
+
+    localTitle: "Clips in this browser",
+    localBack: "← Back to My Clips",
+    localIntro:
+      "These clips exist only in this browser. Move them to your account to see them anywhere and create share links.",
+    localMove: "Move to account",
+    localDeleteAll: "Delete all",
+    localEmpty: "No clips left in this browser.",
+    localDeleteAllTitle: "Delete the clips in this browser?",
+    localDeleteAllBody:
+      "All {count} saved in this browser will be deleted. They exist only in this browser, so this can't be undone.",
 
     editTitle: "Edit clip",
     editTitleLabel: "Title",

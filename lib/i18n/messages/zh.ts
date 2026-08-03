@@ -65,10 +65,18 @@ const zh: PartialMessages = {
     migrateConfirm: "迁移{count}",
     migrating: "迁移中…",
 
-    discardTitle: "要删除此浏览器中的剪藏吗?",
-    discardBody:
-      "如果不迁移，此浏览器中保存的{count}将全部删除。这些剪藏只存在于此浏览器，所以{irreversible}",
-    discardIrreversible: "无法撤销。",
+    localEntry: "此浏览器中还有剪藏 {count}",
+
+    localTitle: "此浏览器中的剪藏",
+    localBack: "← 返回我的剪藏",
+    localIntro:
+      "这些剪藏只存在于此浏览器。迁移到账号后可在其他设备查看，也能创建共享链接。",
+    localMove: "迁移到账号",
+    localDeleteAll: "全部删除",
+    localEmpty: "此浏览器中没有剩余的剪藏。",
+    localDeleteAllTitle: "要删除此浏览器中的剪藏吗?",
+    localDeleteAllBody:
+      "将删除此浏览器中保存的{count}。这些剪藏只存在于此浏览器，因此无法撤销。",
 
     editTitle: "编辑剪藏",
     editTitleLabel: "标题",
