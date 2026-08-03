@@ -732,7 +732,9 @@ function LocalClipsPanel({
       <p className="mt-1 text-sm leading-relaxed text-fg-muted">{t.localIntro}</p>
 
       {count > 0 && (
-        <div className="mt-5 flex gap-2">
+        // 넓은 화면에서 폭을 묶는다. 그냥 늘리면 `모두 삭제` 가 728px 을 차지해 주 동작과
+        // 같은 무게로 보인다 — 되돌릴 수 없는 쪽이 그렇게 커지면 안 된다.
+        <div className="mt-5 flex gap-2 sm:max-w-md">
           <button
             type="button"
             onClick={onMove}
