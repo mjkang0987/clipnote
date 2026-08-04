@@ -10,6 +10,7 @@ type SettingsMessages = Pick<Messages, "common" | "settings">;
 import { interpolate } from "@/lib/i18n/interpolate";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import Header from "@/app/_components/Header";
+import RunningDino from "@/app/_components/RunningDino";
 
 // 계정 설정 페이지: 로그인 정보 확인 · 로그아웃 · 회원 탈퇴.
 // 사전은 서버(`SettingsPage`)에서 골라 받는다.
@@ -62,7 +63,11 @@ export default function SettingsClient({ messages }: { messages: SettingsMessage
       <div className="flex flex-1 flex-col">
         <Header messages={messages} />
         <main className="mx-auto w-full max-w-lg flex-1 px-5 py-12">
-          <p className="mt-10 text-center text-sm text-fg-muted">{t.loading}</p>
+          {/* 인증 왕복을 기다리는 구간 — 라우트 대기(`loading.tsx`)가 끝난 뒤에도 여기서 한 번 더 기다린다. */}
+          <RunningDino />
+          <p role="status" className="mt-10 text-center text-sm text-fg-muted">
+            {t.loading}
+          </p>
         </main>
       </div>
     );
