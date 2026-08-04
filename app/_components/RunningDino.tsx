@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 
 /**
  * 링크 정보를 읽는 동안 **테두리를 따라 걸어 다니는** 공룡.
@@ -25,6 +25,16 @@ import { useEffect, useRef } from "react";
  * **창(뷰포트)을 상자로 삼는다.** `fixed` 라 부모가 무엇이든 상관없다. 위쪽만 헤더 높이만큼
  * 내려 시작한다 — 헤더는 `sticky` 라 늘 그 자리에 있어서, 그냥 두면 윗면을 걷는 동안
  * 통째로 가린다. 아래·양옆은 창 끝까지 쓴다. 클릭은 통과시킨다.
+ *
+ * ## JS 없이도 보여야 한다
+ *
+ * 대기 화면(`loading.tsx`)은 **Suspense fallback 이라 하이드레이션되지 않는다** — 곧 버려질
+ * 화면이라 React 가 붙지 않는다. 전에는 `visibility: hidden` 으로 시작해 아래 effect 가
+ * 보여 주는 구조였는데, 그 effect 가 거기서는 영영 돌지 않아 **기다림이 가장 긴 자리에서
+ * 공룡이 한 번도 안 보였다**(프로덕션 빌드에서 `computedVisibility: hidden` 로 확인).
+ *
+ * 그래서 기본 동작은 CSS 로 둔다(`globals.css` 의 `.dino-sprite` — 바닥 왕복). 하이드레이션된
+ * 화면에서는 아래 effect 가 그 애니메이션을 끄고 네 면을 도는 원래 동작을 이어받는다.
  */
 
 const FRAME_COUNT = 4;
@@ -166,6 +176,10 @@ export default function RunningDino() {
     const sprite = dino.current;
     if (!frame || !sprite) return;
 
+    // CSS 기본 동작(바닥 왕복)을 끄고 좌표를 직접 잡는다. 끄지 않으면 소용이 없다 —
+    // 실행 중인 CSS 애니메이션이 인라인 스타일보다 우선해서 아래 transform 을 계속 덮는다.
+    sprite.style.animation = "none";
+
     // **React 상태로 그리지 않는다.** 좌표가 초당 60번 바뀌는데 그때마다 리렌더하면
     // 장식 하나 때문에 화면 전체가 다시 그려진다. DOM 을 직접 만진다.
     const draw = (elapsed: number) => {
@@ -175,7 +189,6 @@ export default function RunningDino() {
       sprite.style.backgroundPosition = `-${spot.frame * WIDTH}px 0`;
       sprite.style.transform =
         `translate(${spot.x - WIDTH / 2}px, ${spot.y - HEIGHT / 2}px) rotate(${spot.angle}deg)`;
-      sprite.style.visibility = "visible";
     };
 
     // 출발점은 마운트 때 한 번만 뽑는다. 매 프레임 뽑으면 순간이동한다.
@@ -207,18 +220,23 @@ export default function RunningDino() {
     >
       <span
         ref={dino}
-        className="absolute left-0 top-0 block"
-        style={{
-          width: WIDTH,
-          height: HEIGHT,
-          // 첫 좌표를 계산하기 전에는 왼쪽 위에 붙어 한 번 깜빡인다. 그리고 나서 보여 준다.
-          visibility: "hidden",
-          // 스프라이트를 가로 4칸으로 늘려 두고 한 칸씩 민다.
-          backgroundImage: "url(/dino-run.png)",
-          backgroundSize: `${WIDTH * FRAME_COUNT}px ${HEIGHT}px`,
-          // 없으면 47px 도트를 34px 로 줄일 때 브라우저가 뭉갠다.
-          imageRendering: "pixelated",
-        }}
+        className="dino-sprite absolute left-0 top-0 block"
+        style={
+          {
+            width: WIDTH,
+            height: HEIGHT,
+            // `.dino-sprite` 의 CSS 왕복이 쓰는 값. 상자를 실측할 수 없는 자리(하이드레이션
+            // 전)라 창 단위로 적는다 — `dvh` 는 모바일 주소창이 접혔다 펴져도 바닥을 지킨다.
+            "--dino-floor": `calc(100dvh - ${HEADER_H}px - ${HEIGHT}px)`,
+            "--dino-track": `calc(100vw - ${WIDTH}px)`,
+            "--dino-strip-end": `-${WIDTH * FRAME_COUNT}px`,
+            // 스프라이트를 가로 4칸으로 늘려 두고 한 칸씩 민다.
+            backgroundImage: "url(/dino-run.png)",
+            backgroundSize: `${WIDTH * FRAME_COUNT}px ${HEIGHT}px`,
+            // 없으면 47px 도트를 34px 로 줄일 때 브라우저가 뭉갠다.
+            imageRendering: "pixelated",
+          } as CSSProperties
+        }
       />
     </div>
   );

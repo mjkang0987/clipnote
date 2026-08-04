@@ -69,3 +69,50 @@ button:not(:disabled),
 [role="button"]:not(:disabled) {
   cursor: pointer;
 }
+
+/* ── 걸어 다니는 공룡(RunningDino)의 JS 없는 기본 동작 ──────────────────
+   대기 화면(`loading.tsx`)은 **Suspense fallback 이라 하이드레이션되지 않는다.**
+   그래서 거기서는 컴포넌트의 `useEffect` 가 끝내 돌지 않고, JS 로만 그리면 공룡이
+   `visibility: hidden` 인 채 한 번도 안 보인다 — 정작 기다림이 가장 긴 자리에서.
+   그래서 바닥 왕복만이라도 CSS 로 돌려 두고, 하이드레이션된 화면에서는 컴포넌트가
+   이 애니메이션을 끄고 네 면을 도는 원래 동작을 이어받는다.
+   좌표에 쓰는 값(--dino-*)은 컴포넌트가 인라인으로 넣는다. */
+.dino-sprite {
+  animation:
+    dino-patrol 14s linear infinite,
+    dino-step 0.48s steps(4) infinite;
+}
+
+@keyframes dino-patrol {
+  0% {
+    transform: translate(0, var(--dino-floor)) scaleX(1);
+  }
+  48% {
+    transform: translate(var(--dino-track), var(--dino-floor)) scaleX(1);
+  }
+  /* 끝에서 몸을 돌린다. 안 돌리면 뒤로 미끄러지는 것처럼 보인다. */
+  50% {
+    transform: translate(var(--dino-track), var(--dino-floor)) scaleX(-1);
+  }
+  98% {
+    transform: translate(0, var(--dino-floor)) scaleX(-1);
+  }
+  100% {
+    transform: translate(0, var(--dino-floor)) scaleX(1);
+  }
+}
+
+@keyframes dino-step {
+  to {
+    background-position-x: var(--dino-strip-end);
+  }
+}
+
+/* 전정기관 장애가 있는 사용자에게 화면을 가로지르는 반복 운동은 불편을 준다.
+   세워는 두되 걷지 않는다(컴포넌트의 JS 경로도 같은 판단을 한다). */
+@media (prefers-reduced-motion: reduce) {
+  .dino-sprite {
+    animation: none;
+    transform: translate(0, var(--dino-floor));
+  }
+}
