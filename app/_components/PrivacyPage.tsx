@@ -69,11 +69,13 @@ export default function PrivacyPage({ locale }: { locale: Locale }) {
             않고 이용자의 기기 내 저장소에만 보관됩니다.
           </p>
           <p className="mt-3">
-            서비스는 무료로 제공하기 위해 웹(Google AdSense)과 모바일 앱(Google
-            AdMob)에 광고를 게재하며, 이 과정에서 Google LLC 가 위 광고 관련
-            정보를 자동으로 수집합니다. 서비스는 이 정보를 자체 서버에 저장하지
-            않습니다. 모바일 앱은 이용자 추적 권한(App Tracking Transparency)을
-            요청하지 않으므로 광고 식별자(IDFA)는 수집하지 않습니다.
+            서비스는 무료로 제공하기 위해 광고를 게재합니다(모바일 앱 Google
+            AdMob, 웹 Google AdSense). <strong>광고 모듈이 동작하는 시점부터</strong>{" "}
+            Google LLC 가 위 광고 관련 정보를 자동으로 수집하며, 실제 광고가
+            표시되지 않더라도 수집이 일어날 수 있습니다. 서비스는 이 정보를 자체
+            서버에 저장하지 않습니다. 모바일 앱은 이용자 추적 권한(App Tracking
+            Transparency)을 요청하지 않으므로 광고 식별자(IDFA)는 수집하지
+            않습니다.
           </p>
         </Section>
 
