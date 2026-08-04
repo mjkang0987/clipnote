@@ -48,7 +48,7 @@ clipnote/
 │   ├── manifest.ts      # PWA (단일 파일이라 한국어 고정)
 │   ├── page.tsx         # 한국어 홈 — 라우트는 로케일만 지정하고 본문은 _components 에
 │   ├── {clips,settings,login,privacy}/page.tsx   # 한국어 라우트
-│   ├── clips/loading.tsx   # 서버가 인증·DB 를 기다리는 동안 보여 줄 화면 (로케일마다 하나)
+│   ├── loading.tsx      # 서버가 기다리는 동안 보여 줄 화면 — 하위 전 라우트에 걸린다
 │   ├── en/ · ja/ · zh/  # 로케일 라우트 (각 5개, 같은 본문 컴포넌트에 locale 전달)
 │   ├── [slug]/          # 공유 페이지 — OG 주입 + 스마트 리다이렉트 (로케일 무관 단일 URL)
 │   ├── auth/{callback,signout}/
@@ -59,7 +59,7 @@ clipnote/
 │       ├── HomePage·ClipsPage·SettingsPage·LoginPage·PrivacyPage   # 서버: 로케일→사전 선택
 │       ├── HomeClient·ClipsClient·SettingsClient·LoginClient        # 클라이언트: 화면 본문
 │       ├── Header·Footer·AuthNav·Brand·CompareBoxes·LanguageSwitcher
-│       ├── ClipsLoading·RunningDino    # 내 클립 로딩 화면 + 테두리를 걷는 공룡
+│       ├── ScreenLoading·RunningDino  # 로딩 화면 + 테두리를 걷는 공룡
 │       └── ServiceWorkerRegister
 ├── lib/
 │   ├── i18n/
@@ -87,7 +87,7 @@ clipnote/
 
 ## 변경 이력
 
-- 2026-08-04: 내 클립 로딩 화면(`loading.tsx` × 4 로케일 + `ClipsLoading`). 서버가 인증·DB 를 끝낼 때까지 이전 화면이 그대로 있고 주소도 안 바뀌던 문제. 로딩 화면 도착이 3.10s → 0.05s(3초 지연을 임시로 넣고 측정). 상세는 `plan.md` 15장.
+- 2026-08-04: 로딩 화면(`app/loading.tsx` + `ScreenLoading`). 서버가 인증·DB 를 끝낼 때까지 이전 화면이 그대로 있고 주소도 안 바뀌던 문제. 루트 하나가 하위 전 라우트를 덮고, 빨리 끝나는 화면에는 fallback 이 나가지 않는다. 로딩 화면 도착이 3.10s → 0.03s. 상세는 `plan.md` 15장.
 - 2026-08-03: 로그인 상태에서 이 브라우저에만 남은 클립을 보는 전용 화면 추가. 옮기기를 거절하면 곧바로 삭제를 묻던 단계를 없앴다 — 거절이 곧 삭제를 뜻하면 선택지가 아니다. 앱(clipnote-ios)도 같은 구성.
 - 2026-07-31: **웹 다국어(한국어·영어·일본어·중국어)** — `lib/i18n/` 신설, `app/{en,ja,zh}/**` 로케일 라우트 15개, 전 화면 문자열 사전화 + 번역(189키). 미들웨어가 경로에서 읽은 로케일을 요청 헤더로 넘겨 `layout.tsx` 가 `<html lang>`·metadata·OG 를 맞춘다. 로케일별 canonical·hreflang(`x-default`=한국어)·sitemap, 푸터 언어 선택. 날짜 그룹은 사전 대신 `Intl`, FAQ 는 화면과 JSON-LD 가 같은 배열을 쓴다. 상세·검증 결과는 `plan.md` 14장.
 - 2026-07-30: 홈·내 클립 진입 성능 — 로그인 판정과 클립 목록을 서버에서 채워 내려보내 클라이언트 워터폴과 버튼 깜빡임(CLS) 제거. 썸네일 지연 로드.
