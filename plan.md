@@ -500,12 +500,16 @@ URL을 보존한다. 모든 언어에 prefix를 두려면 공유 링크를 `/s/{
 - 로케일 4개 모두 자기 언어로 뜬다(`불러오는 중…`·`Loading…`·`読み込み中…`·`加载中…`).
 - `tsc --noEmit`·`eslint`(신규 5파일)·`next build` 통과.
 
-### 공룡 검증 메모
+### 공룡 검증 메모 (→ 16장에서 갱신)
 자동화 브라우저 탭이 백그라운드라(`visibilityState: "hidden"`) `requestAnimationFrame` 이
 정지해, 처음엔 공룡이 어떤 경우에도 안 움직여 보였다. `requestAnimationFrame` 을
 `setTimeout` 으로 갈아끼우니 `visibility: visible` + `transform: translate(1458.64px, 1009px)
 rotate(360deg)` 로 정상 작동을 확인했다. **로그인과 무관한 문제였다** — 홈 공룡도 같은 이유로
 안 보였을 뿐이다.
+
+**여기서 확인한 건 하이드레이션된 화면의 공룡이다.** 대기 화면(`loading.tsx`)의 공룡은
+그 뒤에도 계속 안 보였고, 원인은 rAF 가 아니라 **fallback 이 하이드레이션되지 않는다**는
+것이었다 — effect 를 무엇으로 바꿔도 돌지 않는다. 16장에서 고쳤다.
 
 ### 후속 후보 (이번 범위 밖)
 - `ClipsPage` 의 auth→DB 직렬 대기를 줄이거나, 목록만 Suspense 로 감싸 헤더·제목을 먼저
@@ -513,6 +517,64 @@ rotate(360deg)` 로 정상 작동을 확인했다. **로그인과 무관한 문�
 - 저장소가 내부 이동에 `next/link` 를 쓰지 않는다(`Footer` 만 예외). 통짜 이동이라 매번
   문서·번들을 다시 받는다. 로케일 전환은 통짜 이동이어야 하지만(같은 로케일 안 이동은
   해당 없음) 그 외에는 재검토 여지가 있다. **별도 이슈로 판단할 것.**
+
+## 16. 계획: 대기 화면의 공룡이 안 보이던 결함 수정 (2026-08-04)
+
+### 배경/문제
+15장·#32 로 "기다리는 모든 화면에 공룡"을 깔았는데, **정작 그 화면에서 공룡이 한 번도 보이지
+않았다.**
+
+`RunningDino` 는 `visibility: hidden` 으로 시작해 `useEffect` 의 첫 `draw()` 가 자신을 보여
+주는 구조다. 그런데 **Suspense fallback 은 하이드레이션되지 않는다** — 곧 버려질 화면이라
+React 가 붙지 않는다. 그래서 `loading.tsx` 안의 공룡은 effect 가 영영 안 돌고 `hidden` 인
+채로 남는다. **기다림이 가장 긴 자리에 두려고 만든 장치가 정확히 거기서만 죽어 있었다.**
+
+15장의 "공룡 검증 메모"가 확인한 건 홈·내 클립처럼 **이미 하이드레이션된 화면**의 공룡이다.
+거기서는 정상이고, 지금도 정상이다. 두 경로를 구분하지 않아 결함이 가려져 있었다.
+
+### 설계
+**공룡의 기본 동작을 CSS 로 내린다.** `globals.css` 의 `.dino-sprite` — 바닥을 좌우로 왕복
+(끝에서 `scaleX(-1)` 로 몸을 돌린다. 안 돌리면 뒤로 미끄러져 보인다) + 스프라이트 4프레임
+`steps()`. 좌표에 필요한 값은 상자를 실측할 수 없는 자리라 창 단위로 넘긴다
+(`--dino-floor: calc(100dvh - 헤더 - 높이)` 등, 컴포넌트가 인라인으로 주입. `dvh` 라 모바일
+주소창이 접혔다 펴져도 바닥을 지킨다).
+
+하이드레이션된 화면에서는 effect 가 `animation: none` 으로 그 애니메이션을 끄고 네 면을
+도는 원래 동작을 이어받는다. **끄는 게 핵심이다** — 실행 중인 CSS 애니메이션은 인라인
+스타일보다 우선해서, 끄지 않으면 JS 가 쓰는 `transform` 이 계속 덮인다.
+
+`prefers-reduced-motion` 은 CSS·JS 양쪽에서 같이 존중한다(세워는 두되 걷지 않는다).
+
+**대기가 클라이언트에 있는 화면도 채운다.** 루트 `loading.tsx` 는 페이지가 실제로 `await`
+할 때만 뜬다. `SettingsPage`·`LoginPage` 는 사전만 고르는 동기 컴포넌트라 대기가 서버가
+아니라 클라이언트에 있다 — `SettingsClient` 의 `!ready`(인증 왕복), `LoginClient` 의
+`loading !== null`(OAuth 리다이렉트 대기). 두 자리에 공룡을 붙이고, 설정의 로딩 문구에
+`role="status"` 를 준다.
+
+### 영향 파일
+`app/_components/RunningDino.tsx`, `app/globals.css`,
+`app/_components/SettingsClient.tsx`, `app/_components/LoginClient.tsx`. 신규 파일 없음.
+
+### 검증 (2026-08-04, 프로덕션 빌드 + Playwright 실측)
+`HomePage` 에 지연을 임시로 넣어 대기 화면을 붙잡아 두고 측정(측정 후 원복).
+
+| | 결과 |
+|---|---|
+| 수정 전, 대기 화면의 공룡 | `computedVisibility: hidden` — **8초 내내 안 보임**, `transform` 빈 값 |
+| 수정 후, 대기 화면(하이드레이션 없음) | `visible`, x 8→235px 이동, 스프라이트 4프레임 순환, y=바닥 |
+| 수정 후, 하이드레이션된 화면 | `animationName: none`(CSS 해제됨) + JS 가 인라인 transform 으로 구동 |
+
+- 대기 화면 스크린샷으로 눈으로도 확인(ko·zh). 스트리밍 도착은 대기 화면 0.5s / 본문 3.3s.
+- 라우트 스모크 전부 200.
+- `tsc --noEmit`·`eslint`(변경 파일)·`next build` 통과. eslint 선재 오류 1건
+  (`LoginClient` 의 `react-hooks/set-state-in-effect`)은 이번 변경과 무관하다.
+
+### 남는 한계
+- **대기 화면의 공룡은 바닥만 왕복한다.** 네 면을 도는 건 JS 동작이고 그 자리에는 JS 가 없다.
+- 하이드레이션되는 화면에서는 CSS 바닥 자세가 한 프레임 그려진 뒤 JS 가 제 위치로 옮긴다
+  (`useEffect` 는 페인트 뒤에 돈다). 16ms 남짓이라 눈에 띄지 않는다.
+- dev 서버가 캐시된 CSS 청크를 내주면 `.dino-sprite` 가 빠져 공룡이 안 움직이는 것처럼 보인다.
+  프로덕션 번들에는 정상 포함된다(`grep dino-patrol .next/static/chunks/*.css`).
 
 ## 8. 메타데이터 추출 전략 (단계별 폴백)
 

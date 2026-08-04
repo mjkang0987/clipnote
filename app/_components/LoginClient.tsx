@@ -11,6 +11,7 @@ import { useLocalizedPath } from "@/lib/i18n/useLocale";
 import Header from "@/app/_components/Header";
 import Brand from "@/app/_components/Brand";
 import CompareBoxes from "@/app/_components/CompareBoxes";
+import RunningDino from "@/app/_components/RunningDino";
 
 type Provider = "google" | "kakao" | "naver";
 
@@ -82,6 +83,8 @@ export default function LoginClient({ messages }: { messages: LoginMessages }) {
   return (
     <div className="flex flex-1 flex-col">
       <Header messages={messages} showClipsLink={false} />
+      {/* 인증 제공자로 넘어가기를 기다리는 구간. 버튼 라벨만 바뀌던 자리라 화면이 멈춘 것처럼 보였다. */}
+      {loading !== null && <RunningDino />}
       <main className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 py-12">
         {/* ── 로그인 화면(실제 동작 영역) ── */}
         <h1 className="flex items-center justify-center gap-2 text-2xl font-bold tracking-tight text-fg">
