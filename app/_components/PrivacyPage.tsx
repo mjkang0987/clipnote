@@ -4,7 +4,7 @@ import { DEFAULT_LOCALE, LOCALE_TAGS, getMessages, type Locale } from "@/lib/i18
 // ── 운영자 정보 ──────────────────────────────────
 const CONTACT_EMAIL = "pikaworks.help@gmail.com";
 const PRIVACY_OFFICER = "pikaworks 운영자";
-const EFFECTIVE_DATE = "2026년 7월 10일";
+const EFFECTIVE_DATE = "2026년 8월 4일";
 
 /**
  * 개인정보처리방침 — 로케일별 라우트(`/privacy`, `/en/privacy`, …)가 공유한다.
@@ -59,10 +59,21 @@ export default function PrivacyPage({ locale }: { locale: Locale }) {
               자동 생성: 서비스 이용 과정에서 만들어지는 클립 정보(저장한 URL,
               제목, 태그 등)와 로그인 유지를 위한 세션 정보
             </li>
+            <li>
+              광고 게재 과정에서 자동 수집: 기기·브라우저 정보, IP 주소, 광고
+              조회·클릭 기록
+            </li>
           </ul>
           <p className="mt-3">
             비로그인 상태로 이용하는 경우, 저장한 클립과 태그는 서버로 전송되지
             않고 이용자의 기기 내 저장소에만 보관됩니다.
+          </p>
+          <p className="mt-3">
+            서비스는 무료로 제공하기 위해 웹(Google AdSense)과 모바일 앱(Google
+            AdMob)에 광고를 게재하며, 이 과정에서 Google LLC 가 위 광고 관련
+            정보를 자동으로 수집합니다. 서비스는 이 정보를 자체 서버에 저장하지
+            않습니다. 모바일 앱은 이용자 추적 권한(App Tracking Transparency)을
+            요청하지 않으므로 광고 식별자(IDFA)는 수집하지 않습니다.
           </p>
         </Section>
 
@@ -71,6 +82,7 @@ export default function PrivacyPage({ locale }: { locale: Locale }) {
             <li>회원 식별 및 로그인 상태 유지</li>
             <li>이용자가 만든 클립(공유 링크·내 클립)의 저장·조회·관리</li>
             <li>서비스 운영 및 문의 대응</li>
+            <li>무료 서비스 운영을 위한 광고 게재 및 성과 측정</li>
           </ul>
         </Section>
 
@@ -107,6 +119,13 @@ export default function PrivacyPage({ locale }: { locale: Locale }) {
                   </td>
                   <td className="py-2">대한민국 (서울 리전)</td>
                 </tr>
+                <tr className="border-b border-border">
+                  <td className="py-2 pr-4">Google LLC</td>
+                  <td className="py-2 pr-4">
+                    광고 게재 및 성과 측정 (AdSense·AdMob)
+                  </td>
+                  <td className="py-2">국외 (미국 등)</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -119,8 +138,11 @@ export default function PrivacyPage({ locale }: { locale: Locale }) {
 
         <Section title="5. 개인정보의 제3자 제공">
           <p>
-            서비스는 이용자의 개인정보를 외부에 판매하거나 제3자에게 제공하지
-            않습니다. 다만 법령에 따라 요구되는 경우는 예외로 합니다.
+            서비스는 이용자의 개인정보를 외부에 판매하지 않으며, 법령에 따라
+            요구되는 경우를 제외하고 제3자에게 제공하지 않습니다. 다만 광고
+            게재를 위해 위 4항의 광고 사업자에게 기기·브라우저 정보와 IP 주소가
+            전달됩니다. 이용자는 Google 광고 설정
+            (adssettings.google.com)에서 맞춤 광고를 제한할 수 있습니다.
           </p>
         </Section>
 
