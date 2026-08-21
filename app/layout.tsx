@@ -114,13 +114,16 @@ export default async function RootLayout({
   return (
     <html lang={LOCALE_TAGS[locale]} className="h-full antialiased">
       <body className="min-h-full flex flex-col">
-        {/* 구글 애드센스 로더 */}
+        {/* 구글 애드센스 로더.
+            `lazyOnload` 인 이유: `afterInteractive` 는 하이드레이션 직후 — 즉 LCP 가 아직
+            확정되지 않은 구간에 스크립트를 밀어 넣는다. 애드센스는 자기 하위 요청을 줄줄이
+            달고 오므로 그 시점의 대역폭·메인스레드를 본문과 나눠 쓰게 된다. `lazyOnload` 는
+            window load 이후로 미뤄 LCP 구간을 비켜 간다. 광고는 어차피 첫 화면 밖이다. */}
         <Script
           id="adsbygoogle-init"
-          async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
           crossOrigin="anonymous"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
         <script
           type="application/ld+json"
