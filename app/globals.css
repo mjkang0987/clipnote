@@ -1,4 +1,4 @@
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+@import "./fonts.css";
 @import "tailwindcss";
 
 /* ── Design tokens (see design-guide.md) ─────────────────────────── */
@@ -47,6 +47,8 @@
   --color-danger: var(--danger);
   --color-warning: var(--warning);
 
+  /* `Pretendard Variable` 은 app/fonts.css 가 정의한다. 그 다음 `Pretendard` 는 기기에
+     설치돼 있을 때만 잡히는 폴백이고, 없으면 system-ui 로 내려간다. */
   --font-sans: "Pretendard Variable", Pretendard, system-ui, sans-serif;
 
   --radius-md: 12px;
