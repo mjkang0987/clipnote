@@ -17,6 +17,9 @@ import { getRequestLocale } from "@/lib/i18n/server";
 // 구글 애드센스 퍼블리셔 ID(ca-pub-...). 공개값이라 코드에 둔다.
 const ADSENSE_CLIENT = "ca-pub-5655041057903258";
 
+// 네이버 서치어드바이저 사이트 소유 확인 값. 애드센스와 같은 이유로 공개값이라 코드에 둔다.
+const NAVER_SITE_VERIFICATION = "6ff90a3cd2a4a591e05beec958db1beb653ae0fc";
+
 // 한국어 검색용 키워드. 다른 언어에서는 붙이지 않는다 — 한국어 키워드가 영어 결과에
 // 섞이면 도움이 되지 않고, 언어별 키워드 목록을 관리할 가치도 크지 않다.
 const KO_KEYWORDS = [
@@ -58,8 +61,11 @@ export async function generateMetadata(): Promise<Metadata> {
       googleBot: { index: true, follow: true, "max-image-preview": "large" },
     },
     icons: { icon: "/icon-192.png", apple: "/apple-icon-180.png" },
-    // 애드센스 사이트 소유 확인용 메타태그
-    other: { "google-adsense-account": ADSENSE_CLIENT },
+    // 애드센스·네이버 서치어드바이저 사이트 소유 확인용 메타태그
+    other: {
+      "google-adsense-account": ADSENSE_CLIENT,
+      "naver-site-verification": NAVER_SITE_VERIFICATION,
+    },
     appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "default" },
   };
 }
