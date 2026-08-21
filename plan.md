@@ -514,6 +514,83 @@ rotate(360deg)` 로 정상 작동을 확인했다. **로그인과 무관한 문�
   문서·번들을 다시 받는다. 로케일 전환은 통짜 이동이어야 하지만(같은 로케일 안 이동은
   해당 없음) 그 외에는 재검토 여지가 있다. **별도 이슈로 판단할 것.**
 
+## 16. 계획: FCP·LCP 개선 (2026-08-21)
+
+### 배경/문제
+"FCP·LCP 가 너무 오래 걸린다"는 보고. 코드를 읽어 원인을 셋으로 좁혔다.
+
+1. **서드파티 CSS `@import`.** `app/globals.css` 1행이 `cdn.jsdelivr.net` 의 CSS 를 가져왔다.
+   브라우저는 `HTML → 앱 CSS → 파싱 → 그제야 jsdelivr 발견 → 새 연결(DNS+TCP+TLS) → 다운로드`
+   를 **직렬로** 기다린 뒤에야 첫 픽셀을 그린다. 렌더 블로킹 CSS 를 한 단계 더 쌓은 형태다.
+2. **폰트가 풀셋 × 4웨이트.** 그 URL 은 `dist/web/static/` 풀셋이었고 화면은 400·500·600·700
+   네 웨이트를 쓴다 → 웨이트마다 ~750KB, **첫 방문에 폰트만 3,048KB**.
+   덤으로 `--font-sans` 첫 후보 `"Pretendard Variable"` 은 static 빌드가 정의하지 않는
+   이름이라 늘 헛돌고 있었다.
+3. **함수 리전 미지정.** `vercel.json` 이 없어 프로젝트 기본 리전을 그대로 썼다. 사용자도
+   Supabase(서울)도 한국인데 렌더링이 미국에서 돌면 요청마다 태평양을 건넌다.
+
+첫 화면에 큰 이미지가 없어 **LCP 요소가 텍스트**(`HomeClient.tsx` 의 `<h1>`)다. 즉 LCP 는
+TTFB + 위 CSS·폰트 체인에 그대로 묶여 있다.
+
+### 오진했다가 접은 것 (기록)
+처음엔 "인증 왕복이 요청당 2번, 직렬"이라고 진단했으나 `@supabase/auth-js` 소스를 확인해
+철회했다. `_getUser()` 는 세션 쿠키가 없으면 네트워크 없이 `AuthSessionMissingError` 를
+즉시 반환하고, `getSession()` 은 만료 전이면 스토리지에서 읽는다. 즉 **비로그인 첫 방문의
+Supabase 왕복은 0회** — FCP/LCP 와 무관하다. 진짜 중복은 로그인 `/clips` 의 2회뿐인데
+(미들웨어 `getUser` + `ClipsPage` `getCurrentUser`), 리전을 서울로 고정하면 회당 수십 ms 라
+보안 근거가 분명한 `getCurrentUser()` 를 건드릴 값이 없다. **하지 않는다.**
+
+### 설계
+- **폰트를 self-host + variable dynamic subset 으로.** `app/fonts.css`(자동 생성)가
+  `@font-face` 92개를 들고, `globals.css` 가 로컬 `@import` 로 부른다. Tailwind v4 가 로컬
+  `@import` 를 번들에 인라인하므로 **추가 요청이 0**이다(빌드 CSS 에 `@font-face` 92개 확인).
+  - **왜 static subset(웨이트당 ~262KB) 이 아니라 variable dynamic subset 인가.** 한국어 화면
+    기준 static subset ×4웨이트 = 1,050KB 인데, variable 은 한 파일이 전 웨이트를 덮고
+    `unicode-range` 로 쪼개져 실제 쓰는 조각만 내려간다 → **387KB**. 바이트가 1/3 인데
+    글자 커버리지는 풀셋과 같다(static subset 은 KS X 1001 2,780자로 좁다 — 사용자가 붙여넣는
+    임의 제목에 빈 글자가 생길 수 있다).
+  - **경로에 버전을 박았다**(`/fonts/pretendard-1.3.9/`). 파일명에 버전이 없어 그냥 두면
+    `immutable` 캐시가 업그레이드 후에도 옛 조각을 1년 물고 있는다.
+  - `pretendard` 는 결과물을 커밋하므로 **의존성으로 남기지 않는다**(Vercel 설치 시간).
+- **`next.config.ts` 에 `/fonts/:path*` → `max-age=31536000, immutable`.** `public/` 기본값은
+  `max-age=0, must-revalidate` 라 재방문마다 조각 십수 개를 재검증한다.
+- **`vercel.json` 에 `regions: ["icn1"]`.**
+- **애드센스를 `afterInteractive` → `lazyOnload`.** `afterInteractive` 는 LCP 가 아직 확정되지
+  않은 구간에 스크립트를 밀어 넣는다. 광고 슬롯(`ins.adsbygoogle`)이 따로 없는 자동광고
+  방식이라 미뤄도 배치가 달라지지 않는다.
+
+### 영향 파일
+신규: `app/fonts.css`, `vercel.json`, `public/fonts/pretendard-1.3.9/*.woff2`(92개).
+수정: `app/globals.css`, `app/layout.tsx`, `next.config.ts`.
+
+### 검증 (2026-08-21)
+`pnpm build` 후 `next start` 에 헤드리스 크롬(모바일 뷰포트)을 붙여 실측.
+
+| | 폰트 요청 | 폰트 바이트 | 서드파티 출처 | 스타일시트 |
+|---|---|---|---|---|
+| 이전 (jsdelivr 풀셋 ×4웨이트) | 4 | **3,048 KB** | 1 | 2 (직렬) |
+| 이후 · 한국어 `/` | 15 | **387 KB** | **0** | **1** |
+| 이후 · 영어 `/en` | 8 | **206 KB** | 0 | 1 |
+
+- 응답 HTML 의 `<link rel="stylesheet">` 는 자기 출처 하나뿐, `jsdelivr` 언급 0건.
+- 폰트 응답 헤더 `Cache-Control: public, max-age=31536000, immutable` 확인.
+- `h1` 의 computed font 가 `Pretendard Variable` 로 잡히고 `document.fonts.check` = true —
+  전에는 이 이름이 정의되지 않아 늘 헛돌았다.
+- `tsc --noEmit` 통과, `eslint` 0 errors(선재 경고 1건은 `react/no-danger` 지시어, 무관).
+- FCP/LCP 절대값은 localhost 측정이라 의미가 없다(네트워크 지연 0). **운영 수치는 배포 후
+  PageSpeed Insights 로 확인해야 한다.**
+
+### 남은 것 / 확인 필요
+- **Vercel 대시보드에서 기존 리전을 확인할 것.** 이미 `icn1` 이었다면 `vercel.json` 은 고정
+  효과만 있고 개선폭은 없다. `iad1` 이었다면 TTFB 개선이 가장 클 항목이다.
+- 모든 페이지 라우트가 여전히 `ƒ`(Dynamic)다 — `layout.tsx` 가 `<html lang>` 때문에
+  `headers()` 를 읽어서다. 다만 홈·내 클립은 세션 쿠키를 읽어 원래도 동적이라, 이걸 풀어도
+  **정적이 되는 건 `/login`·`/privacy` 뿐**이라 LCP 관점의 이득이 작다. 14장의 라우팅 결정을
+  뒤집을 값은 아니라고 본다.
+- `HomeClient.tsx` 가 1242줄 통짜 `"use client"` — 소개·FAQ 같은 정적 문단까지 번들로 나가
+  하이드레이션한다. FCP 보다 TBT/INP 쪽이므로 **별도 이슈**로 둔다.
+- 저장소가 내부 이동에 `next/link` 를 쓰지 않는 건 15장에 이미 적어 둔 별도 건이다.
+
 ## 8. 메타데이터 추출 전략 (단계별 폴백)
 
 URL마다 메타 품질이 천차만별. 아래 순서로 시도해 첫 성공값 사용:
@@ -533,6 +610,7 @@ URL마다 메타 품질이 천차만별. 아래 순서로 시도해 첫 성공�
 
 ## 9. 변경 이력
 
+- 2026-08-21: **FCP·LCP 개선(16장)** — `globals.css` 1행의 cdn.jsdelivr.net `@import` 를 걷어내고 Pretendard 를 self-host(variable dynamic subset, `app/fonts.css` + `public/fonts/pretendard-1.3.9/`). 렌더 블로킹 CSS 체인이 2단계→1단계, 서드파티 연결 0. 폰트는 풀셋 ×4웨이트 3,048KB → 한국어 화면 387KB. `vercel.json` 로 함수 리전을 `icn1`(서울) 고정, `/fonts/*` 를 `immutable` 캐시, 애드센스를 `lazyOnload` 로. 인증 왕복 축소는 측정 결과 비로그인 첫 방문 왕복이 0회라 접었다(16장 기록).
 - 2026-08-21: 네이버 서치어드바이저 소유 확인 메타태그 추가 — `app/layout.tsx` 의 전역 `metadata.other` 에 `naver-site-verification` 을 넣었다. 애드센스 확인값과 같은 자리에 두면 로케일별로 나뉜 `<head>` 전부에 자동으로 붙는다(별도 파일·라우트가 필요 없다). 빌드 통과, `/`·`/en` 응답 HTML 에서 태그 출력 확인.
 - 2026-08-04: 로딩 화면(15장, #28·#32) — `loading.tsx` 가 없어 서버가 인증·DB 를 끝낼 때까지
   이전 화면이 그대로 있었다. `app/loading.tsx` 하나가 하위 전 라우트를 덮고 내용은
