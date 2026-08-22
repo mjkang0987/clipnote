@@ -33,7 +33,9 @@
   - eslint 오류 4건(`react-hooks/set-state-in-effect`) — 선재. `AuthNav`·`HomeClient`·`LoginClient`.
   - `middleware.ts` 가 Next 16 에서 deprecated(`proxy.ts` 로 이름 변경 권고).
   - `headers()` 사용으로 모든 페이지가 요청마다 렌더된다(`<html lang>` 을 로케일에 맞추기 위한
-    선택). 홈·내 클립은 세션 쿠키를 읽어 원래도 동적이었다.
+    선택). 홈·내 클립은 세션 쿠키를 읽어 원래도 동적이었다. → 풀어도 정적이 되는 건
+    `/login`·`/privacy` 뿐이라 성능 이득이 작다고 판단(`plan.md` 16장).
+  - `HomeClient.tsx` 가 1242줄 통짜 `"use client"` — 정적 문단까지 번들로 나간다. TBT/INP 건.
 
 ## 디렉터리 구조
 
@@ -41,9 +43,12 @@
 clipnote/
 ├── plan.md · index.md · design-guide.md · CLAUDE.md · REVIEW.md
 ├── middleware.ts        # Supabase 세션 갱신 + 경로에서 읽은 로케일을 요청 헤더로 전달
+├── next.config.ts       # /ko 리다이렉트 + /fonts/* immutable 캐시
+├── vercel.json          # 함수 리전 icn1(서울) — 사용자·Supabase 와 같은 리전
 ├── app/
 │   ├── layout.tsx       # 루트 레이아웃. generateMetadata 가 로케일별 title·OG·JSON-LD 생성
-│   ├── globals.css      # 디자인 토큰 + Tailwind 테마
+│   ├── globals.css      # 디자인 토큰 + Tailwind 테마 (fonts.css 를 로컬 import)
+│   ├── fonts.css        # **자동 생성** Pretendard Variable dynamic subset @font-face 92개
 │   ├── robots.ts · sitemap.ts   # SEO (sitemap 은 로케일별 URL + hreflang)
 │   ├── manifest.ts      # PWA (단일 파일이라 한국어 고정)
 │   ├── page.tsx         # 한국어 홈 — 라우트는 로케일만 지정하고 본문은 _components 에
@@ -77,7 +82,7 @@ clipnote/
 │   ├── local-clips.ts · store.ts · store-supabase.ts · slug.ts · gradients.ts
 │   ├── shareText.ts     # 공유 텍스트 제목 80자 제한·말줄임 (iOS 와 같은 규칙)
 │   └── site.ts
-├── public/  fonts/ · app-ads.txt · ads.txt · llms.txt · sw.js · 아이콘
+├── public/  fonts/pretendard-1.3.9/(92개 woff2, self-host) · fonts/*.woff(OG용) · app-ads.txt · ads.txt · llms.txt · sw.js · 아이콘
 └── supabase/schema.sql
 ```
 
@@ -87,6 +92,7 @@ clipnote/
 
 ## 변경 이력
 
+- 2026-08-21: **FCP·LCP 개선(16장)** — `globals.css` 1행의 cdn.jsdelivr.net `@import` 를 걷어내고 Pretendard 를 self-host(variable dynamic subset, `app/fonts.css` + `public/fonts/pretendard-1.3.9/`). 렌더 블로킹 CSS 체인이 2단계→1단계, 서드파티 연결 0. 폰트는 풀셋 ×4웨이트 3,048KB → 한국어 화면 387KB. `vercel.json` 로 함수 리전을 `icn1`(서울) 고정, `/fonts/*` 를 `immutable` 캐시, 애드센스를 `lazyOnload` 로. 인증 왕복 축소는 측정 결과 비로그인 첫 방문 왕복이 0회라 접었다(16장 기록).
 - 2026-08-21: 네이버 서치어드바이저 사이트 소유 확인 메타태그(`naver-site-verification`)를 `app/layout.tsx` 전역 metadata 에 추가. 애드센스 확인값과 같은 자리(`other`)라 전 로케일 `<head>` 에 함께 나간다.
 - 2026-08-04: 로딩 화면(`app/loading.tsx` + `ScreenLoading`). 서버가 인증·DB 를 끝낼 때까지 이전 화면이 그대로 있고 주소도 안 바뀌던 문제. 루트 하나가 하위 전 라우트를 덮고, 빨리 끝나는 화면에는 fallback 이 나가지 않는다. 로딩 화면 도착이 3.10s → 0.03s. 상세는 `plan.md` 15장.
 - 2026-08-03: 로그인 상태에서 이 브라우저에만 남은 클립을 보는 전용 화면 추가. 옮기기를 거절하면 곧바로 삭제를 묻던 단계를 없앴다 — 거절이 곧 삭제를 뜻하면 선택지가 아니다. 앱(clipnote-ios)도 같은 구성.
