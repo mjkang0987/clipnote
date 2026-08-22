@@ -18,6 +18,7 @@ import Header from "@/app/_components/Header";
 import RunningDino from "@/app/_components/RunningDino";
 import Brand from "@/app/_components/Brand";
 import CompareBoxes from "@/app/_components/CompareBoxes";
+import ExternalImage from "@/app/_components/ExternalImage";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { addLocalClip, getKnownTags, recordTags } from "@/lib/local-clips";
 
@@ -795,18 +796,9 @@ export default function HomeClient({
                 >
                   {/* 원본 대표 이미지가 있으면 배경으로 깔고, 로드 실패 시 숨겨 그라디언트가 보이게 함 */}
                   {proxiedImage && (
-                    // lazy/async — 임의의 외부 호스트라 `window.load` 를 붙들지 않게.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <ExternalImage
                       src={proxiedImage}
-                      alt=""
-                      aria-hidden
-                      loading="lazy"
-                      decoding="async"
                       className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
                     />
                   )}
                   {/* 원본 이미지가 있으면 실제 공유 시 그 이미지가 그대로 뜬다(ClipNote 텍스트 오버레이 없음).
@@ -896,17 +888,9 @@ export default function HomeClient({
                   aria-hidden
                 >
                   {proxiedImage && (
-                    // 원본 대표 이미지 = 목록 썸네일. 로드 실패 시 그라디언트가 보임.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <ExternalImage
                       src={proxiedImage}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
                       className="h-full w-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
                     />
                   )}
                 </div>

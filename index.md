@@ -64,6 +64,7 @@ clipnote/
 │       ├── HomePage·ClipsPage·SettingsPage·LoginPage·PrivacyPage   # 서버: 로케일→사전 선택
 │       ├── HomeClient·ClipsClient·SettingsClient·LoginClient        # 클라이언트: 화면 본문
 │       ├── Header·Footer·AuthNav·Brand·CompareBoxes·LanguageSwitcher
+│       ├── ExternalImage  # 외부 호스트 장식 이미지(lazy/async·실패 시 자기 숨김) 3곳 공용
 │       ├── ScreenLoading·RunningDino  # 로딩 화면 + 테두리를 걷는 공룡
 │       └── ServiceWorkerRegister
 ├── lib/
@@ -92,6 +93,7 @@ clipnote/
 
 ## 변경 이력
 
+- 2026-08-22: FCP·LCP 변경분 `/simplify` — 폰트 업그레이드 절차를 CSS 주석에서 `scripts/update-pretendard.sh` 로 꺼내고, `fonts.css` 헤더의 폰트 수치를 예측치(16개/406KB)에서 실측치(15개/387KB)로 바로잡았다. 세 곳에 복사돼 있던 외부 이미지 `<img>`(lazy/async·onError 자기 숨김·eslint-disable)를 `ExternalImage` 로 묶었다 — `d657e70` 에서 목록만 lazy/async 를 받고 홈 두 곳은 뒤늦게 손으로 따라붙은 드리프트가 이미 있었다.
 - 2026-08-21: **FCP·LCP 개선(16장)** — `globals.css` 1행의 cdn.jsdelivr.net `@import` 를 걷어내고 Pretendard 를 self-host(variable dynamic subset, `app/fonts.css` + `public/fonts/pretendard-1.3.9/`). 렌더 블로킹 CSS 체인이 2단계→1단계, 서드파티 연결 0. 폰트는 풀셋 ×4웨이트 3,048KB → 한국어 화면 387KB. `vercel.json` 로 함수 리전을 `icn1`(서울) 고정, `/fonts/*` 를 `immutable` 캐시, 애드센스를 `lazyOnload` 로. 인증 왕복 축소는 측정 결과 비로그인 첫 방문 왕복이 0회라 접었다(16장 기록).
 - 2026-08-21: 네이버 서치어드바이저 사이트 소유 확인 메타태그(`naver-site-verification`)를 `app/layout.tsx` 전역 metadata 에 추가. 애드센스 확인값과 같은 자리(`other`)라 전 로케일 `<head>` 에 함께 나간다.
 - 2026-08-04: 로딩 화면(`app/loading.tsx` + `ScreenLoading`). 서버가 인증·DB 를 끝낼 때까지 이전 화면이 그대로 있고 주소도 안 바뀌던 문제. 루트 하나가 하위 전 라우트를 덮고, 빨리 끝나는 화면에는 fallback 이 나가지 않는다. 로딩 화면 도착이 3.10s → 0.03s. 상세는 `plan.md` 15장.
