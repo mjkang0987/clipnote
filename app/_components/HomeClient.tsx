@@ -795,9 +795,7 @@ export default function HomeClient({
                 >
                   {/* 원본 대표 이미지가 있으면 배경으로 깔고, 로드 실패 시 숨겨 그라디언트가 보이게 함 */}
                   {proxiedImage && (
-                    // lazy/async — `proxiedImage` 는 임의의 외부 호스트다(`/api/image` 경유).
-                    // 즉시·동기로 물리면 느리거나 hotlink 를 막는 원본 하나가 `window.load`
-                    // 를 붙들어, 거기에 묶인 애드센스(`lazyOnload`)까지 밀린다.
+                    // lazy/async — 임의의 외부 호스트라 `window.load` 를 붙들지 않게.
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={proxiedImage}
