@@ -47,8 +47,9 @@
   --color-danger: var(--danger);
   --color-warning: var(--warning);
 
-  /* `Pretendard Variable` 은 app/fonts.css 가 정의한다. 그 다음 `Pretendard` 는 기기에
-     설치돼 있을 때만 잡히는 폴백이고, 없으면 system-ui 로 내려간다. */
+  /* `Pretendard Variable` 은 app/fonts.css 가 정의한다. 뒤의 `Pretendard` 를 남겨 두는 건
+     `font-display: swap` 때문이다 — 스왑을 기다리는 동안 브라우저는 스택의 다음 폰트를 쓰므로,
+     기기에 Pretendard 가 깔려 있으면 메트릭이 같은 그것이 나와 FOUT 가 덜 튄다. */
   --font-sans: "Pretendard Variable", Pretendard, system-ui, sans-serif;
 
   --radius-md: 12px;

@@ -610,6 +610,7 @@ URL마다 메타 품질이 천차만별. 아래 순서로 시도해 첫 성공�
 
 ## 9. 변경 이력
 
+- 2026-08-22: FCP·LCP 변경분 `/simplify` — 폰트 업그레이드 절차를 CSS 주석에서 `scripts/update-pretendard.sh` 로 꺼내고, `fonts.css` 헤더의 폰트 수치를 예측치(16개/406KB)에서 실측치(15개/387KB)로 바로잡았다. 세 곳에 복사돼 있던 외부 이미지 `<img>`(lazy/async·onError 자기 숨김·eslint-disable)를 `ExternalImage` 로 묶었다 — `d657e70` 에서 목록만 lazy/async 를 받고 홈 두 곳은 뒤늦게 손으로 따라붙은 드리프트가 이미 있었다.
 - 2026-08-21: **FCP·LCP 개선(16장)** — `globals.css` 1행의 cdn.jsdelivr.net `@import` 를 걷어내고 Pretendard 를 self-host(variable dynamic subset, `app/fonts.css` + `public/fonts/pretendard-1.3.9/`). 렌더 블로킹 CSS 체인이 2단계→1단계, 서드파티 연결 0. 폰트는 풀셋 ×4웨이트 3,048KB → 한국어 화면 387KB. `vercel.json` 로 함수 리전을 `icn1`(서울) 고정, `/fonts/*` 를 `immutable` 캐시, 애드센스를 `lazyOnload` 로. 인증 왕복 축소는 측정 결과 비로그인 첫 방문 왕복이 0회라 접었다(16장 기록).
 - 2026-08-21: 네이버 서치어드바이저 소유 확인 메타태그 추가 — `app/layout.tsx` 의 전역 `metadata.other` 에 `naver-site-verification` 을 넣었다. 애드센스 확인값과 같은 자리에 두면 로케일별로 나뉜 `<head>` 전부에 자동으로 붙는다(별도 파일·라우트가 필요 없다). 빌드 통과, `/`·`/en` 응답 HTML 에서 태그 출력 확인.
 - 2026-08-04: 로딩 화면(15장, #28·#32) — `loading.tsx` 가 없어 서버가 인증·DB 를 끝낼 때까지

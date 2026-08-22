@@ -12,16 +12,13 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // `public/` 은 기본이 `max-age=0, must-revalidate` 라 재방문마다 폰트를 재검증한다.
-        // 조각이 십수 개라 그 왕복이 그대로 쌓인다. 경로에 버전이 박혀 있어(`pretendard-1.3.9`)
-        // 업그레이드하면 URL 이 통째로 바뀌므로 immutable 로 둬도 옛 파일을 물고 있을 수 없다.
+        // `public/` 기본값은 `max-age=0` 이라 재방문마다 폰트 조각 십수 개를 재검증한다.
+        // immutable 이 안전한 근거는 경로의 버전에 있다 — `app/fonts.css` 헤더 참고.
         //
-        // **버전 디렉터리에만 건다.** `/fonts/:path*` 로 넓히면 `/api/og` 가 쓰는 버전 없는
-        // `Pretendard-{Bold,Regular}.woff` 까지 1년 immutable 이 된다 — 그 둘은 파일명이
-        // 안 바뀌므로 교체해도 캐시가 옛것을 물고 있게 되고, 위 근거가 성립하지 않는다.
-        // `:path+` 는 **1개 이상** — `:path*` 로 두면 0개도 허용되고 경로 매칭이
-        // 대소문자를 안 가려서 `/fonts/Pretendard-Bold.woff` 가
-        // `pretendard-` + `:version=Bold.woff` + 빈 `:path` 로 매치돼 버린다.
+        // 버전 디렉터리에만 건다. `/api/og` 가 읽는 `Pretendard-{Bold,Regular}.woff` 는
+        // 버전이 없어 교체해도 URL 이 그대로라 immutable 이면 안 된다.
+        // `:path*` 가 아니라 `:path+` 인 이유: `*` 는 0개도 허용하고 경로 매칭이 대소문자를
+        // 안 가려서 `/fonts/Pretendard-Bold.woff` 가 `:version=Bold.woff` + 빈 `:path` 로 샌다.
         source: "/fonts/pretendard-:version/:path+",
         headers: [
           {
