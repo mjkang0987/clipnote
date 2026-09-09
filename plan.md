@@ -829,15 +829,24 @@ description : 300 자 · 유효: false   ← 반쪽 이모지
 ### 설계
 19장에서 만든 `lib/i18n/date.ts` 로 옮긴다 — 날짜를 사람이 읽는 문자열로 바꾸는 일을 한곳에 모은다.
 
-**로케일은 prop drilling 하지 않는다.** `ClipCard` 는 `locale` 을 받지 않고, 넘기려면
-`LocalClipsPanel` 을 거쳐야 한다(호출 경로가 둘). 대신 이미 있는 `useLocale()` 을 쓴다 —
-이 저장소는 "로케일은 URL 이 곧 진실"을 원칙으로 두고(`lib/i18n/useLocale.ts` 머리말),
-`ClipsClient` 는 이미 같은 모듈의 `useLocalizedPath` 를 쓴다. `usePathname()` 은 서버·클라이언트가
-같은 값을 보므로 hydration 문제도 없다.
+**로케일 출처를 훅 하나로 통일한다.** 처음엔 "prop drilling 을 피한다"를 근거로 들었는데
+리뷰에서 **비용 논거가 과장**이라는 지적을 받았다 — `locale` 은 이미 `ClipsClient` 의 prop
+이었고 주 호출부에선 스코프 안에 있었다(새 prop 이 필요한 건 `LocalClipsPanel` 경로뿐이다).
+
+진짜 문제는 비용이 아니라 **한 트리 안에 같은 사실의 출처가 둘**이 된다는 것이다. 그것도
+하필 이번 버그의 그 조합 — 그룹 헤더는 prop, 바로 아래 카드 날짜는 훅. 그래서 `ClipsClient`
+의 `locale` prop 자체를 없애고 `useLocale()` 로 모은다. 이 저장소는 "로케일은 URL 이 곧
+진실"을 원칙으로 두고(`lib/i18n/useLocale.ts` 머리말), 같은 트리가 이미 `useLocalizedPath` 로
+링크를 URL 기준으로 만든다. `usePathname()` 은 서버·클라이언트가 같은 값을 보므로 hydration
+문제도 없다. (카드마다 훅을 부르는 비용은 측정 결과 8.3ms 렌더 중 0.2~0.7ms 로 노이즈였다.)
 
 ### 영향 파일
 `lib/i18n/date.ts`(`formatCardDate` 추가) · `app/_components/ClipsClient.tsx`(`formatDate` 제거,
-`ClipCard` 가 `useLocale()` 사용) · `index.md`.
+`locale` prop → `useLocale()`) · `app/_components/ClipsPage.tsx`(prop 전달 제거) · `index.md`.
+
+카드 포맷터는 로케일별로 캐시한다 — 카드마다 부르는 함수라 200개면 체크박스 한 번에
+200개를 새로 만든다(측정 17.4ms → 0.34ms). 그룹 라벨 쪽 `createDateGrouper` 가 목록당 한 번
+만드는 것과는 상황이 달라 캐시 전략도 다르다.
 
 ### 함께 처리 — index.md 갱신
 19장(#42)의 변경이 `index.md` 에 반영되지 않았다. 변경 이력에도 없고 `lib/i18n/date.ts` 도

@@ -23,10 +23,8 @@ function dayNumber({ year, month, day }: CalendarDate): number {
   return Date.UTC(year, month - 1, day) / 86_400_000;
 }
 
-// 카드 날짜용 포맷터. 카드마다 부르는 함수라 로케일별로 한 번만 만든다 — 목록이
-// 200개면 체크박스 한 번 누를 때마다 200개를 새로 만들게 된다. 로케일은 4개뿐이라
-// 이 맵은 그 이상 커지지 않는다.
-const CARD_FORMATTERS = new Map<Locale, Intl.DateTimeFormat>();
+/** 로케일은 4개뿐이라 이 맵은 그 이상 커지지 않는다. */
+const CARD_FORMATTERS: Partial<Record<Locale, Intl.DateTimeFormat>> = {};
 
 /**
  * 클립 카드에 찍는 절대 날짜(`2026년 7월 3일` / `Jul 3, 2026`).
@@ -35,18 +33,11 @@ const CARD_FORMATTERS = new Map<Locale, Intl.DateTimeFormat>();
  * 시작하므로 SSR 을 타지 않는다. 실행 환경(= 보는 사람)의 타임존이 곧 정답이다.
  */
 export function formatCardDate(iso: string, locale: Locale): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  let formatter = CARD_FORMATTERS.get(locale);
-  if (!formatter) {
-    formatter = new Intl.DateTimeFormat(LOCALE_TAGS[locale], {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-    CARD_FORMATTERS.set(locale, formatter);
-  }
-  return formatter.format(d);
+  const formatter = (CARD_FORMATTERS[locale] ??= new Intl.DateTimeFormat(
+    LOCALE_TAGS[locale],
+    { year: "numeric", month: "short", day: "numeric" },
+  ));
+  return formatter.format(new Date(iso));
 }
 
 /**

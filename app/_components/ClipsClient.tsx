@@ -55,7 +55,6 @@ type Item = {
  */
 export default function ClipsClient({
   messages,
-  locale,
   initialLoggedIn,
   initialClips,
   initialLoadFailed,
@@ -67,8 +66,6 @@ export default function ClipsClient({
    * RSC 페이로드가 커진다(요청마다 새로 오므로 캐시되지도 않는다).
    */
   messages: ClipsMessages;
-  /** 날짜 그룹 라벨을 `Intl` 로 만들 때 쓴다(사전에 넣지 않는다 — 아래 dateGroupLabel 주석). */
-  locale: Locale;
   initialLoggedIn: boolean;
   initialClips: Clip[];
   /** 서버에서 목록 조회가 실패했는지 — 빈 목록과 구분해 재시도를 제안한다. */
@@ -80,6 +77,9 @@ export default function ClipsClient({
   const c = messages.common;
   // 내부 링크는 현재 로케일을 유지한다(`/en/clips` 에서 홈으로 나갈 때 `/en` 으로).
   const path = useLocalizedPath();
+  // 로케일은 URL 이 진실이다 — 서버가 prop 으로도 넘길 수 있지만, 그러면 한 트리 안에
+  // 같은 사실의 출처가 둘이 된다(그룹 헤더는 prop, 카드 날짜는 훅). 훅으로 통일한다.
+  const locale = useLocale();
   // 게스트 목록은 localStorage 라 서버에서 알 수 없다 → 마운트 후 채운다.
   const [items, setItems] = useState<Item[]>(() =>
     initialLoggedIn ? initialClips.map(dbToItem) : [],

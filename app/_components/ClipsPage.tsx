@@ -48,7 +48,6 @@ export default async function ClipsPage({ locale }: { locale: Locale }) {
     // 문구까지 RSC 페이로드에 실려 나간다(예: 내 클립 응답에 FAQ 문구가 들어갔다).
     <ClipsClient
       messages={{ common: m.common, clips: m.clips }}
-      locale={locale}
       initialLoggedIn={initialLoggedIn}
       initialClips={initialClips}
       initialLoadFailed={initialLoadFailed}
