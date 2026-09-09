@@ -22,12 +22,25 @@ function isMissingCanonicalColumn(error: { code?: string; message?: string } | n
 
 // PostgREST 에러는 message 만으론 원인 파악이 안 될 때가 많다 — code/details/hint 를
 // 함께 남겨야 Vercel 로그만으로 Postgres 쪽 근본 원인을 알 수 있다.
-type QueryError = { message: string; code: string; details: string; hint: string };
+//
+// 세 필드는 없거나 null 일 수 있다. supabase-js 는 응답 본문이 JSON 이 아니면
+// `{ message: body }` 만 채우고(PostgrestBuilder), Postgres 를 거치지 않은
+// PostgREST 자체 에러(PGRST102 등)는 details·hint 가 null 이다.
+// 있는 것만 찍어야 "필드가 없음"과 "값이 없음"이 로그에서 구분된다.
+type QueryError = {
+  message: string;
+  code?: string | null;
+  details?: string | null;
+  hint?: string | null;
+};
 
-function withErrorDetail(prefix: string, error: QueryError): Error {
-  return new Error(
-    `${prefix}: ${error.message} | code=${error.code} details=${error.details} hint=${error.hint}`,
-  );
+function withErrorDetail(prefix: string, error: QueryError, extra?: string): Error {
+  const parts = [`${prefix}: ${error.message}`];
+  if (error.code != null) parts.push(`code=${error.code}`);
+  if (error.details != null) parts.push(`details=${error.details}`);
+  if (error.hint != null) parts.push(`hint=${error.hint}`);
+  if (extra) parts.push(extra);
+  return new Error(parts.join(" | "));
 }
 
 // DB(snake_case) ↔ 앱(camelCase) 매핑
@@ -72,6 +85,7 @@ export function createSupabaseStore(): ClipStore {
       const supabase = getSupabaseAdmin();
 
       // 슬러그 충돌 시 재시도(고유 제약 위반 코드 23505)
+      let lastConflict: QueryError | null = null;
       for (let attempt = 0; attempt < 6; attempt += 1) {
         const slug = generateSlug();
         const row: Record<string, unknown> = {
@@ -93,7 +107,7 @@ export function createSupabaseStore(): ClipStore {
           row.canonical_url = canonicalizeUrl(data.url);
         }
 
-        const { data: inserted, error } = await supabase
+        const { data: inserted, error, status } = await supabase
           .from(TABLE)
           .insert(row)
           .select()
@@ -107,11 +121,28 @@ export function createSupabaseStore(): ClipStore {
           continue;
         }
         if (error && error.code !== "23505") {
-          throw withErrorDetail("클립 저장 실패", error);
+          // status 는 PostgREST 가 낸 에러(400)와 앞단이 끊은 것(413·502…)을 가른다.
+          // bodyBytes 는 본문 크기 제한 가설을 확인할 유일한 값이다 — 캡션이 긴
+          // 게시물에서만 저장이 깨지는 현상을 이것 없이는 확정도 기각도 못 한다.
+          const bodyBytes = new TextEncoder().encode(JSON.stringify(row)).length;
+          throw withErrorDetail(
+            "클립 저장 실패",
+            error,
+            `status=${status} bodyBytes=${bodyBytes}`,
+          );
         }
-        // 23505(중복 슬러그)면 새 슬러그로 재시도
+        // 23505(중복 슬러그)면 새 슬러그로 재시도 — 마지막 것을 남겨 두었다가
+        // 재시도가 바닥나면 근거로 쓴다(아래 throw 가 원인을 넘겨짚지 않도록).
+        if (error) lastConflict = error;
       }
-      throw new Error("슬러그 생성 재시도 한도를 초과했습니다.");
+      // 여기까지 오는 길은 둘이다 — 23505 6번, 그리고 error·inserted 가 모두 비어
+      // 재시도로 처리된 경우. 후자는 슬러그와 무관하므로 원인을 단정하지 않는다.
+      if (lastConflict) {
+        throw withErrorDetail("슬러그 생성 재시도 한도 초과", lastConflict);
+      }
+      throw new Error(
+        "클립 저장 실패: insert 가 행도 에러도 돌려주지 않아 재시도 한도를 넘겼습니다.",
+      );
     },
 
     async get(slug: string): Promise<Clip | null> {
