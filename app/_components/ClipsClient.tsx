@@ -16,6 +16,7 @@ import { useLocalizedPath } from "@/lib/i18n/useLocale";
 // 4개 언어 사전을 로드·병합하므로, 클라이언트 컴포넌트가 값을 가져오면 사전 전체가
 // 클라이언트 번들에 실린다. 타입은 지워지므로 배럴에서 가져와도 무방하다.
 import { LOCALE_TAGS, type Locale } from "@/lib/i18n/locales";
+import type { Messages } from "@/lib/i18n";
 
 // 1차 렌더(서버 + hydration)에서만 쓰는 타임존. 보는 사람의 실제 타임존은 하이드레이션
 // 뒤에 적용되므로 이 값은 첫 페인트용 추측일 뿐, 최종 표시에는 영향을 주지 않는다.
@@ -23,7 +24,6 @@ const SSR_TIME_ZONE = "Asia/Seoul";
 
 /** 값이 바뀌지 않으므로 구독할 것이 없다. 재구독을 막으려 모듈 스코프에 둔다. */
 const subscribeNothing = () => () => {};
-import type { Messages } from "@/lib/i18n";
 
 /** 내 클립 화면이 쓰는 사전 조각 */
 type ClipsMessages = Pick<Messages, "common" | "clips">;
@@ -57,6 +57,7 @@ export default function ClipsClient({
   initialLoggedIn,
   initialClips,
   initialLoadFailed,
+  serverNow,
 }: {
   /**
    * 서버에서 고른 사전 — **이 화면이 쓰는 namespace 만** 받는다.
@@ -70,6 +71,8 @@ export default function ClipsClient({
   initialClips: Clip[];
   /** 서버에서 목록 조회가 실패했는지 — 빈 목록과 구분해 재시도를 제안한다. */
   initialLoadFailed: boolean;
+  /** 서버가 렌더한 시각. 1차 렌더를 서버와 같은 시점으로 맞추는 데만 쓴다. */
+  serverNow: number;
 }) {
   const t = messages.clips;
   const c = messages.common;
@@ -155,13 +158,20 @@ export default function ClipsClient({
   );
 
   const groups = useMemo(
-    () => groupByDate(filtered, locale, hydrated ? undefined : SSR_TIME_ZONE),
-    [filtered, locale, hydrated],
+    () =>
+      hydrated
+        ? // 하이드레이션 후: 보는 사람의 시각·타임존 기준
+          groupByDate(filtered, locale, new Date())
+        : // 서버와 1차 렌더: 같은 시각·같은 타임존이어야 결과가 일치한다.
+          //   `new Date()` 를 쓰면 서버 렌더 시각과 하이드레이션 시각이 달라
+          //   자정을 사이에 두고 오늘↔어제가 갈린다(plan.md 19장).
+          groupByDate(filtered, locale, new Date(serverNow), SSR_TIME_ZONE),
+    [filtered, locale, hydrated, serverNow],
   );
 
   /** ‘이 브라우저에 남은 클립’ 화면이 그리는 목록 — 계정 목록과 같은 카드·같은 날짜 묶음. */
   const localGroups = useMemo(
-    () => groupByDate(localClips.map(localToItem), locale),
+    () => groupByDate(localClips.map(localToItem), locale, new Date()),
     [localClips, locale],
   );
 
@@ -1370,13 +1380,20 @@ function chipClass(active: boolean): string {
 function groupByDate(
   items: Item[],
   locale: Locale,
+  now: Date,
   timeZone?: string,
 ): { label: string; items: Item[] }[] {
-  const now = new Date();
+  // `now` 쪽 값은 항목마다 같다 — 한 번만 구해 넘긴다(클립 200개면 차이가 크다).
+  const reference: Reference = {
+    day: dayIndex(now, timeZone),
+    parts: calendarParts(now, timeZone),
+    tag: LOCALE_TAGS[locale],
+    timeZone,
+  };
   const groups = new Map<string, Item[]>();
   const order: string[] = [];
   for (const item of items) {
-    const label = dateGroupLabel(new Date(item.date), now, locale, timeZone);
+    const label = dateGroupLabel(new Date(item.date), reference);
     if (!groups.has(label)) {
       groups.set(label, []);
       order.push(label);
@@ -1392,13 +1409,25 @@ function groupByDate(
  * `getFullYear/getMonth/getDate` 를 쓰면 **실행 환경**의 타임존이 섞여 들어가,
  * 서버(UTC)와 브라우저(사용자 로컬)가 같은 클립을 다른 날로 묶는다(19장).
  */
-function calendarParts(d: Date, timeZone?: string): [number, number, number] {
-  const parts = new Intl.DateTimeFormat("en-US", {
+const PART_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
+/** 타임존별 포맷터는 만드는 값이 비싸다(클립 200개면 매번 새로 만들 수 없다). */
+function partFormatter(timeZone?: string): Intl.DateTimeFormat {
+  const key = timeZone ?? "";
+  const cached = PART_FORMATTERS.get(key);
+  if (cached) return cached;
+  const created = new Intl.DateTimeFormat("en-US", {
     timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).formatToParts(d);
+  });
+  PART_FORMATTERS.set(key, created);
+  return created;
+}
+
+function calendarParts(d: Date, timeZone?: string): [number, number, number] {
+  const parts = partFormatter(timeZone).formatToParts(d);
   const value = (type: string) =>
     Number(parts.find((p) => p.type === type)?.value ?? 0);
   return [value("year"), value("month"), value("day")];
@@ -1419,23 +1448,25 @@ function dayIndex(d: Date, timeZone?: string): number {
  * 직접 번역하면 문구 4개 × 언어 3개에 "2026년 7월" 같은 연월 **형식**까지 언어마다
  * 달라서(en "July 2026", ja "2026年7月") 사전으로는 형식을 표현할 수 없다.
  */
-function dateGroupLabel(
-  d: Date,
-  now: Date,
-  locale: Locale,
-  timeZone?: string,
-): string {
-  const tag = LOCALE_TAGS[locale];
-  const diffDays = dayIndex(now, timeZone) - dayIndex(d, timeZone);
-  const relative = new Intl.RelativeTimeFormat(tag, { numeric: "auto" });
+/** 한 목록 안에서 항목마다 바뀌지 않는 값들. 매 항목 재계산을 피하려 미리 담는다. */
+type Reference = {
+  day: number;
+  parts: [number, number, number];
+  tag: string;
+  timeZone?: string;
+};
+
+function dateGroupLabel(d: Date, ref: Reference): string {
+  const diffDays = ref.day - dayIndex(d, ref.timeZone);
+  const relative = new Intl.RelativeTimeFormat(ref.tag, { numeric: "auto" });
   if (diffDays <= 0) return relative.format(0, "day");
   if (diffDays === 1) return relative.format(-1, "day");
   if (diffDays < 7) return relative.format(0, "week");
-  const [year, month] = calendarParts(d, timeZone);
-  const [nowYear, nowMonth] = calendarParts(now, timeZone);
-  if (year === nowYear && month === nowMonth) return relative.format(0, "month");
-  return new Intl.DateTimeFormat(tag, {
-    timeZone,
+  const [year, month] = calendarParts(d, ref.timeZone);
+  if (year === ref.parts[0] && month === ref.parts[1])
+    return relative.format(0, "month");
+  return new Intl.DateTimeFormat(ref.tag, {
+    timeZone: ref.timeZone,
     year: "numeric",
     month: "long",
   }).format(d);
