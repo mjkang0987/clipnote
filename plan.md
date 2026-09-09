@@ -816,6 +816,37 @@ description : 300 자 · 유효: false   ← 반쪽 이모지
 ### 기대 결과
 `/clips` 에서 React #418 이 사라지고, 날짜 그룹이 보는 사람의 로컬 타임존 기준으로 맞다.
 
+## 20. 계획: 클립 카드 날짜 로케일 (2026-09-09, 이슈 #44)
+
+### 배경/문제
+`/en/clips` 에서 그룹 헤더는 `This week` 인데 그 아래 카드 날짜는 `2026. 7. 3.` 이다.
+`formatDate` 가 `toLocaleDateString("ko-KR", …)` 로 로케일을 하드코딩한다.
+같은 화면의 그룹 헤더는 `LOCALE_TAGS[locale]` 을 쓰는데 카드만 안 쓴다.
+
+19장에서 이 함수도 30줄 아래에 있었지만 hydration 버그가 아니라 범위 밖으로 뒀다
+(선택 모드에서만 그려지고 그 상태는 `false` 로 시작해 SSR 되지 않는다). 별도 i18n 버그다.
+
+### 설계
+19장에서 만든 `lib/i18n/date.ts` 로 옮긴다 — 날짜를 사람이 읽는 문자열로 바꾸는 일을 한곳에 모은다.
+
+**로케일은 prop drilling 하지 않는다.** `ClipCard` 는 `locale` 을 받지 않고, 넘기려면
+`LocalClipsPanel` 을 거쳐야 한다(호출 경로가 둘). 대신 이미 있는 `useLocale()` 을 쓴다 —
+이 저장소는 "로케일은 URL 이 곧 진실"을 원칙으로 두고(`lib/i18n/useLocale.ts` 머리말),
+`ClipsClient` 는 이미 같은 모듈의 `useLocalizedPath` 를 쓴다. `usePathname()` 은 서버·클라이언트가
+같은 값을 보므로 hydration 문제도 없다.
+
+### 영향 파일
+`lib/i18n/date.ts`(`formatCardDate` 추가) · `app/_components/ClipsClient.tsx`(`formatDate` 제거,
+`ClipCard` 가 `useLocale()` 사용) · `index.md`.
+
+### 함께 처리 — index.md 갱신
+19장(#42)의 변경이 `index.md` 에 반영되지 않았다. 변경 이력에도 없고 `lib/i18n/date.ts` 도
+디렉터리 구조에 없다. `CLAUDE.md` 9단계가 문서 갱신을 머지 단계에 포함하는데 놓쳤고,
+직전 PR 리뷰에서 **같은 지적을 받고도** 반복했다. 이번에 함께 넣는다.
+
+### 기대 결과
+`/en/clips`·`/ja/clips`·`/zh/clips` 에서 카드 날짜가 해당 언어 형식으로 나온다.
+
 ## 8. 메타데이터 추출 전략 (단계별 폴백)
 
 URL마다 메타 품질이 천차만별. 아래 순서로 시도해 첫 성공값 사용:

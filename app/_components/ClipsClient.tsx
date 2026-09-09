@@ -11,13 +11,13 @@ import {
   updateLocalClip,
   type LocalClip,
 } from "@/lib/local-clips";
-import { useLocalizedPath } from "@/lib/i18n/useLocale";
+import { useLocale, useLocalizedPath } from "@/lib/i18n/useLocale";
 // 값은 배럴이 아니라 하위 모듈에서 직접 가져온다 — 배럴(`@/lib/i18n`)은 4개 언어
 // 사전을 로드·병합하므로, 클라이언트 컴포넌트가 값을 가져오면 사전 전체가 클라이언트
 // 번들에 실린다. `date` 도 `locales` 만 참조해 배럴을 끌고 오지 않는다.
 // 타입은 컴파일 시 지워지므로 배럴에서 가져와도 무방하다.
 import { type Locale } from "@/lib/i18n/locales";
-import { createDateGrouper } from "@/lib/i18n/date";
+import { createDateGrouper, formatCardDate } from "@/lib/i18n/date";
 import type { Messages } from "@/lib/i18n";
 
 // 1차 렌더(서버 + hydration)에서만 쓰는 타임존. 보는 사람의 실제 타임존은 하이드레이션
@@ -843,6 +843,8 @@ function ClipCard({
   onToggleSelect: () => void;
 }) {
   const t = messages.clips;
+  // 로케일은 URL 이 진실이다 — `LocalClipsPanel` 을 거쳐 내려보내는 대신 여기서 직접 읽는다.
+  const locale = useLocale();
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
   // 선택 모드는 공유 슬러그가 있는 로그인 클립만 대상
@@ -999,7 +1001,7 @@ function ClipCard({
 
       {selectMode && (
         <div className="px-4 pb-3 pl-[6.5rem]">
-          <span className="text-xs text-fg-muted">{formatDate(item.date)}</span>
+          <span className="text-xs text-fg-muted">{formatCardDate(item.date, locale)}</span>
         </div>
       )}
     </li>
@@ -1432,18 +1434,6 @@ function localToItem(c: LocalClip): Item {
     date: c.savedAt,
     local: true,
   };
-}
-
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString("ko-KR", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return "";
-  }
 }
 
 function prettyHost(raw: string): string {

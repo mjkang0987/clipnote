@@ -35,6 +35,17 @@ function dayNumber({ year, month, day }: CalendarDate): number {
  * 포맷터와 `now` 쪽 값은 항목마다 같으므로 여기서 한 번만 만든다. 목록이 200개까지
  * 오는데 항목마다 `Intl.*Format` 을 새로 만들면 그 생성 비용이 전체를 지배한다.
  */
+/** 클립 카드에 찍는 절대 날짜(`2026년 7월 3일` / `Jul 3, 2026`). */
+export function formatCardDate(iso: string, locale: Locale): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat(LOCALE_TAGS[locale], {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(d);
+}
+
 export function createDateGrouper(
   locale: Locale,
   now: Date,
