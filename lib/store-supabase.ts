@@ -12,12 +12,43 @@ const TABLE = "clips";
 // null=미확인. 한 번 감지하면 기억해 매 호출 재시도/추가왕복을 피한다.
 let hasCanonicalColumn: boolean | null = null;
 
+// supabase-js 가 돌려주는 에러 중 로그에 쓰는 부분만.
+//
+// 세 필드는 없거나 null 일 수 있다. 응답 본문이 JSON 이 아니면 supabase-js 는
+// `{ message: body }` 만 채우고(PostgrestBuilder), Postgres 를 거치지 않은
+// PostgREST 자체 에러(PGRST102 등)는 details·hint 가 null 이다.
+// 라이브러리의 `PostgrestError` 는 셋을 필수 string 으로 선언해 이 현실과 다르다.
+// (`QueryError` 라는 이름은 supabase-js 가 이미 export 하므로 쓰지 않는다.)
+type LoggableError = {
+  message: string;
+  code?: string | null;
+  details?: string | null;
+  hint?: string | null;
+};
+
 // PostgREST/Postgres 가 canonical_url 컬럼 부재로 내는 에러인지 판별.
 // 42703=undefined_column(select/eq), PGRST204=schema cache 미발견(insert).
-function isMissingCanonicalColumn(error: { code?: string; message?: string } | null): boolean {
+function isMissingCanonicalColumn(error: LoggableError | null): boolean {
   if (!error) return false;
   const byCode = error.code === "42703" || error.code === "PGRST204";
   return byCode && /canonical_url/i.test(error.message ?? "");
+}
+
+// message 만으론 원인 파악이 안 될 때가 많다 — code/details/hint 를 함께 남겨야
+// Vercel 로그만으로 Postgres 쪽 근본 원인을 알 수 있다. 있는 것만 찍어야
+// "필드가 없음"과 "값이 null"이 로그에서 구분된다.
+// 원본 객체는 cause 로 매단다 — 문자열로 납작하게 만들면 구조가 영영 사라진다.
+function withErrorDetail(
+  prefix: string,
+  error: LoggableError,
+  ...extra: string[]
+): Error {
+  const parts = [`${prefix}: ${error.message}`];
+  if (error.code != null) parts.push(`code=${error.code}`);
+  if (error.details != null) parts.push(`details=${error.details}`);
+  if (error.hint != null) parts.push(`hint=${error.hint}`);
+  parts.push(...extra);
+  return new Error(parts.join(" | "), { cause: error });
 }
 
 // DB(snake_case) ↔ 앱(camelCase) 매핑
@@ -62,6 +93,7 @@ export function createSupabaseStore(): ClipStore {
       const supabase = getSupabaseAdmin();
 
       // 슬러그 충돌 시 재시도(고유 제약 위반 코드 23505)
+      let lastConflict: LoggableError | null = null;
       for (let attempt = 0; attempt < 6; attempt += 1) {
         const slug = generateSlug();
         const row: Record<string, unknown> = {
@@ -83,7 +115,7 @@ export function createSupabaseStore(): ClipStore {
           row.canonical_url = canonicalizeUrl(data.url);
         }
 
-        const { data: inserted, error } = await supabase
+        const { data: inserted, error, status } = await supabase
           .from(TABLE)
           .insert(row)
           .select()
@@ -97,11 +129,28 @@ export function createSupabaseStore(): ClipStore {
           continue;
         }
         if (error && error.code !== "23505") {
-          throw new Error(`클립 저장 실패: ${error.message}`);
+          // status 는 PostgREST 가 낸 에러(400)와 앞단이 끊은 것(413·502…)을 가른다.
+          // bodyBytes 는 본문 크기 제한 가설을 확인할 유일한 값이다 — 캡션이 긴
+          // 게시물에서만 저장이 깨지는 현상을 이것 없이는 확정도 기각도 못 한다.
+          const bodyBytes = new TextEncoder().encode(JSON.stringify(row)).length;
+          throw withErrorDetail(
+            "클립 저장 실패",
+            error,
+            `status=${status}`,
+            `bodyBytes=${bodyBytes}`,
+          );
         }
-        // 23505(중복 슬러그)면 새 슬러그로 재시도
+        // 23505(중복 슬러그)면 새 슬러그로 재시도. 마지막 것은 아래에서 근거로 쓴다.
+        if (error) lastConflict = error;
       }
-      throw new Error("슬러그 생성 재시도 한도를 초과했습니다.");
+      // 여기까지 오는 길은 둘이다 — 23505 6번, 그리고 error·inserted 가 모두 비어
+      // 재시도로 처리된 경우. 후자는 슬러그와 무관하므로 원인을 단정하지 않는다.
+      if (lastConflict) {
+        throw withErrorDetail("슬러그 생성 재시도 한도 초과", lastConflict);
+      }
+      throw new Error(
+        "클립 저장 실패: insert 가 행도 에러도 돌려주지 않아 재시도 한도를 넘겼습니다.",
+      );
     },
 
     async get(slug: string): Promise<Clip | null> {
@@ -111,7 +160,7 @@ export function createSupabaseStore(): ClipStore {
         .select()
         .eq("slug", slug)
         .maybeSingle();
-      if (error) throw new Error(`클립 조회 실패: ${error.message}`);
+      if (error) throw withErrorDetail("클립 조회 실패", error);
       return data ? rowToClip(data as Row) : null;
     },
 
@@ -132,7 +181,7 @@ export function createSupabaseStore(): ClipStore {
         .select()
         .order("created_at", { ascending: false })
         .limit(200);
-      if (error) throw new Error(`목록 조회 실패: ${error.message}`);
+      if (error) throw withErrorDetail("전체 목록 조회 실패", error);
       return (data as Row[]).map(rowToClip);
     },
 
@@ -145,7 +194,7 @@ export function createSupabaseStore(): ClipStore {
         .eq("saved", true)
         .order("created_at", { ascending: false })
         .limit(200);
-      if (error) throw new Error(`목록 조회 실패: ${error.message}`);
+      if (error) throw withErrorDetail("사용자 목록 조회 실패", error);
       return (data as Row[]).map(rowToClip);
     },
 
@@ -169,7 +218,7 @@ export function createSupabaseStore(): ClipStore {
           // 마이그레이션 전 — 아래 레거시 전체 스캔으로 폴백.
           hasCanonicalColumn = false;
         } else if (hitErr) {
-          throw new Error(`클립 조회 실패: ${hitErr.message}`);
+          throw withErrorDetail("중복 검사 실패(canonical)", hitErr);
         } else {
           hasCanonicalColumn = true;
           if (hit && hit.length > 0) return rowToClip(hit[0] as Row);
@@ -183,7 +232,7 @@ export function createSupabaseStore(): ClipStore {
             .is("canonical_url", null)
             .order("saved", { ascending: false })
             .order("created_at", { ascending: false });
-          if (legErr) throw new Error(`클립 조회 실패: ${legErr.message}`);
+          if (legErr) throw withErrorDetail("중복 검사 실패(레거시)", legErr);
           const match = (legacy as Row[] | null)?.find(
             (r) => canonicalizeUrl(r.url) === target,
           );
@@ -199,7 +248,7 @@ export function createSupabaseStore(): ClipStore {
         .order("saved", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(500);
-      if (error) throw new Error(`클립 조회 실패: ${error.message}`);
+      if (error) throw withErrorDetail("중복 검사 실패(전체 스캔)", error);
       const match = (data as Row[]).find(
         (r) => canonicalizeUrl(r.url) === target,
       );
@@ -215,7 +264,7 @@ export function createSupabaseStore(): ClipStore {
         .eq("slug", slug)
         .eq("user_id", userId)
         .select("slug");
-      if (error) throw new Error(`클립 저장 상태 변경 실패: ${error.message}`);
+      if (error) throw withErrorDetail("클립 저장 상태 변경 실패", error);
       return (data?.length ?? 0) > 0;
     },
 
@@ -239,7 +288,7 @@ export function createSupabaseStore(): ClipStore {
         .eq("user_id", userId)
         .select()
         .maybeSingle();
-      if (error) throw new Error(`클립 수정 실패: ${error.message}`);
+      if (error) throw withErrorDetail("클립 수정 실패", error);
       return data ? rowToClip(data as Row) : null;
     },
 
@@ -251,7 +300,7 @@ export function createSupabaseStore(): ClipStore {
         .eq("slug", slug)
         .eq("user_id", userId)
         .select("slug");
-      if (error) throw new Error(`클립 삭제 실패: ${error.message}`);
+      if (error) throw withErrorDetail("클립 삭제 실패", error);
       return (data?.length ?? 0) > 0;
     },
 
@@ -262,7 +311,7 @@ export function createSupabaseStore(): ClipStore {
         .delete()
         .eq("user_id", userId)
         .select("slug");
-      if (error) throw new Error(`클립 일괄 삭제 실패: ${error.message}`);
+      if (error) throw withErrorDetail("클립 일괄 삭제 실패", error);
       return data?.length ?? 0;
     },
   };

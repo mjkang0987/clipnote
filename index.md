@@ -30,6 +30,11 @@
   - `feature/*` = 기능 브랜치, `develop` 최신본에서 분기 → `develop` 으로 머지
   - 릴리스 시 `develop → main` 승격 (**지시자 승인 필요**)
 - **알려진 이슈**
+  - **클립 저장 500 (미해결, 이슈 #38)** — 특정 인스타그램 게시물 하나만 저장이 실패한다
+    (`PGRST102 Empty or invalid json`). 다른 클립·목록 조회는 정상, 쓰기만 깨진다.
+    진단 로그를 넣어 뒀으니 재현 후 `status`·`bodyBytes` 로 원인을 좁힌다(`plan.md` 17장).
+  - `app/api/clip/route.ts` 에 최상위 try/catch 가 없어 store 에러가 나면 클라이언트가
+    **본문 없는 500** 을 받는다(앱이 `clip 500` 만 표시하는 이유). 노출 정책 결정 후 처리.
   - eslint 오류 4건(`react-hooks/set-state-in-effect`) — 선재. `AuthNav`·`HomeClient`·`LoginClient`.
   - `middleware.ts` 가 Next 16 에서 deprecated(`proxy.ts` 로 이름 변경 권고).
   - `headers()` 사용으로 모든 페이지가 요청마다 렌더된다(`<html lang>` 을 로케일에 맞추기 위한
@@ -93,6 +98,14 @@ clipnote/
 
 ## 변경 이력
 
+- 2026-09-09: 클립 저장 실패 진단 로그(17장, #38) — `lib/store-supabase.ts` 의 throw 11곳이
+  `error.message` 만 남겨 PGRST102 의 근본 원인이 로그에 없었다. `withErrorDetail` 로 묶어
+  `code`·`details`·`hint` 를 남기고, `create()` 실패 경로엔 `status` 와 직렬화한 row 의
+  바이트 수를 더 찍는다. 코드리뷰에서 **네 필드만으론 이번 에러를 못 가른다**는 지적이
+  나와 방향을 바꾼 결과다 — PGRST102 는 Postgres 를 안 거쳐 `details`·`hint` 가 null 이라,
+  처음 버전대로 배포했으면 배포·재현을 쓰고 아무것도 못 건질 뻔했다. 필드 타입도
+  필수 `string` 으로 거짓 선언돼 있어(응답이 JSON 이 아니면 supabase-js 는 `message` 만
+  채운다) optional·nullable 로 바로잡았다. **근본 수정 아님 — 원인은 재현 후 확정한다.**
 - 2026-08-22: FCP·LCP 변경분 `/simplify` — 폰트 업그레이드 절차를 CSS 주석에서 `scripts/update-pretendard.sh` 로 꺼내고, `fonts.css` 헤더의 폰트 수치를 예측치(16개/406KB)에서 실측치(15개/387KB)로 바로잡았다. 세 곳에 복사돼 있던 외부 이미지 `<img>`(lazy/async·onError 자기 숨김·eslint-disable)를 `ExternalImage` 로 묶었다 — `d657e70` 에서 목록만 lazy/async 를 받고 홈 두 곳은 뒤늦게 손으로 따라붙은 드리프트가 이미 있었다.
 - 2026-08-21: **FCP·LCP 개선(16장)** — `globals.css` 1행의 cdn.jsdelivr.net `@import` 를 걷어내고 Pretendard 를 self-host(variable dynamic subset, `app/fonts.css` + `public/fonts/pretendard-1.3.9/`). 렌더 블로킹 CSS 체인이 2단계→1단계, 서드파티 연결 0. 폰트는 풀셋 ×4웨이트 3,048KB → 한국어 화면 387KB. `vercel.json` 로 함수 리전을 `icn1`(서울) 고정, `/fonts/*` 를 `immutable` 캐시, 애드센스를 `lazyOnload` 로. 인증 왕복 축소는 측정 결과 비로그인 첫 방문 왕복이 0회라 접었다(16장 기록).
 - 2026-08-21: 네이버 서치어드바이저 사이트 소유 확인 메타태그(`naver-site-verification`)를 `app/layout.tsx` 전역 metadata 에 추가. 애드센스 확인값과 같은 자리(`other`)라 전 로케일 `<head>` 에 함께 나간다.

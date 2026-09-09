@@ -591,6 +591,93 @@ Supabase 왕복은 0회** — FCP/LCP 와 무관하다. 진짜 중복은 로그�
   하이드레이션한다. FCP 보다 TBT/INP 쪽이므로 **별도 이슈**로 둔다.
 - 저장소가 내부 이동에 `next/link` 를 쓰지 않는 건 15장에 이미 적어 둔 별도 건이다.
 
+## 17. 계획: 클립 저장 500 진단 (2026-09-09, 이슈 #38)
+
+### 배경/문제
+인스타그램 게시물 **하나만** 저장/공유 시 앱이 `clip 500` 을 띄운다. 다른 클립(다른 인스타
+게시물 포함)은 전부 정상이고 목록 조회도 정상 — **쓰기만** 실패한다.
+실패 URL: `https://www.instagram.com/p/DdA2RO_E5xJ/?img_index=10&stkn=…`
+
+Vercel 로그의 실제 에러는 `클립 저장 실패: Empty or invalid json` — `create()` 의
+`.insert(row).select().single()` 에서 났고, 이 문구는 PostgREST 표준 에러 **PGRST102**
+(요청 바디 JSON 파싱 실패)다. `/api/clip` 에 최상위 try/catch 가 없어 클라이언트에는
+본문 없는 500 만 가므로 앱은 `clip 500` 밖에 보여줄 게 없다.
+
+**여기서 진단이 막혀 있었다** — `lib/store-supabase.ts` 가 `error.message` 만 남기고
+`code`·`details`·`hint` 를 버렸다. PostgREST 는 실제 원인을 주로 `hint` 에 담고
+안정적인 분기 근거는 `code` 다(`message` 는 사람이 읽는 요약일 뿐).
+
+### 기각된 가설 (재시도 불필요)
+- **인스타 차단** — `/api/clip` 은 인스타에 접속하지 않는다(메타는 이전 단계에서 성공).
+- **Supabase 전역 장애**(8/14~ JWT 401) — 프로젝트 재시작 후에도 동일. 증상도 401 이 아니다.
+- **서로게이트 페어 깨짐** — 실제 캡션 원문(649자)을 title(120자)/description(300자) 절단
+  지점 그대로 넣어 `JSON.stringify`→UTF-8 왕복 검증. 깨끗하게 통과, 메커니즘 자체가 불가능.
+- **캡션의 이상 문자**(제어문자·unpaired surrogate·zero-width·BOM) — 스캔 결과 없음.
+
+### 이번 범위 (1차: 진단만)
+throw 지점 11곳이 같은 형식을 반복하므로 `withErrorDetail(prefix, error, extra?)` 헬퍼로
+묶어 `code`·`details`·`hint` 를 함께 남긴다. **근본 수정은 이 범위가 아니다** — 로그를 본 뒤
+별도 이슈로 판단한다.
+
+**코드리뷰에서 잡힌 것 — 네 필드만으로는 이번 에러를 못 가른다.** PGRST102 는 Postgres 를
+거치지 않은 PostgREST 자체 에러라 `details`·`hint` 가 null 로 온다. 그대로 배포하면
+`code=PGRST102 details=null hint=null` 만 찍히고 **배포 한 번과 재현 한 번을 쓰고 원점**이다.
+그래서 `create()` 실패 경로에 두 값을 더 남긴다.
+
+- **`status`** — supabase-js 가 같은 결과 객체(`{ data, error, status, statusText }`)로
+  주는데 버리고 있었다. PostgREST 가 낸 400 과 앞단이 끊은 413·502 를 가른다.
+- **`bodyBytes`** — 직렬화한 row 의 바이트 수. 캡션이 긴 게시물에서만 저장이 깨지는
+  현상은 본문 크기 제한이 유력 후보인데, 이 값 없이는 확정도 기각도 못 한다.
+
+타입도 고쳤다. `code`·`details`·`hint` 를 필수 `string` 으로 선언했는데 **거짓이다** —
+supabase-js 는 응답 본문이 JSON 이 아니면 `{ message }` 만 채우고(`PostgrestBuilder`),
+PGRST116 합성 에러는 `hint: null` 을 넣는다. 세 필드를 optional·nullable 로 바꾸고
+**있는 것만 찍는다**(그래야 "필드가 없음"과 "값이 null"이 로그에서 구분된다).
+같은 파일의 `isMissingCanonicalColumn` 이 이미 optional 로 맞게 모델링하고 있었다.
+
+`create()` 의 23505 는 아무 기록 없이 삼켜지고 있었다. 마지막 것을 남겨 재시도가 바닥나면
+근거로 쓴다 — 기존 `슬러그 생성 재시도 한도를 초과했습니다` 는 **확인한 적 없는 원인을
+단정하는 문구**였다(`error`·`inserted` 가 모두 비어도 같은 곳에 도착한다).
+
+### 영향 파일
+`lib/store-supabase.ts` 한 곳.
+
+### 검증 (2026-09-09)
+`pnpm build` 통과(타입체크 포함), `eslint lib/store-supabase.ts` 클린.
+에러 문구에 의존하는 코드 0건(문자열 매칭·클라이언트 노출 경로 모두 없음).
+
+### 노출 범위 — 정정
+처음엔 "`details`/`hint` 노출 위험이 없다"고 적었는데 **클라이언트만 보고 내린 결론이었다.**
+클라이언트로 새지 않는 건 맞다(모든 `catch` 가 바인딩 없는 `catch {` 에 고정 문구,
+`error.tsx`·`global-error.tsx` 도 없다). 하지만 **로그 sink 자체는 보지 않았다.**
+
+Postgres 는 `details` 에 실패한 행의 내용을 담는다 — `23502` 면
+`Failing row contains (…, <url>, <title>, <description>, …)`, `23503` 이면
+`Key (user_id)=(<uuid>) …`. 이 값이 Vercel 함수 로그(및 로그 드레인)에 남아 프로젝트
+접근 권한자에게 보인다. 이번 에러(PGRST102)는 `details` 가 null 이라 해당 없지만,
+**다른 에러에서는 클립 URL·제목·설명이 로그에 남는다.** 자기 서비스의 자기 로그라
+기본값으로 두되, 사실을 적어 둔다 — 줄이려면 `details` 를 길이 제한하거나
+디버그 플래그 뒤로 감추는 선택지가 있다.
+
+### 남은 것
+- 배포 후 실패 URL 로 재현 → 로그에서 `status`·`bodyBytes`·`code` 확인 → 근본 원인 확정.
+- `app/api/clip/route.ts` 의 최상위 try/catch 부재(앱이 빈 500 을 받는 원인). 에러 본문을
+  어디까지 클라이언트에 노출할지 정책 결정이 필요해 이번엔 뺐다.
+- **`create()` 의 잠재 버그** — `error`·`inserted` 가 둘 다 비면(빈 2xx 본문) 루프가
+  재시도로 처리해 **같은 클립이 최대 6번 insert 될 수 있다.** 이번 진단 범위 밖이라
+  문구만 정직하게 바꿔 두었다. 동작 수정은 별도 건.
+- 에러를 통째로 버리는 `catch` 두 곳 — `ClipsPage.tsx:33`(내 클립 SSR),
+  `app/api/account/route.ts:34`(계정 삭제). 여기서 나는 에러는 로그에 **한 줄도** 안 남는다.
+  이번 실패 경로가 아니라 손대지 않았다.
+- `incrementView` 의 `console.warn` 은 `message` 만 남긴다. 유일하게 throw 하지 않는
+  경로라 놓치면 복구 불가인데(예: `42501` 의 `GRANT` SQL 이 `hint` 에 온다) 이번 범위 밖.
+- 이 게시물의 실제 `og:image` URL 은 아직 따로 테스트하지 않았다.
+
+### 규약 이탈 (기록)
+브랜치명이 `claude/happy-rubin-y41bh1` 로 `CLAUDE.md` 의 `claude/issue-<번호>-<슬러그>`
+규칙과 다르다. 세션 실행 환경이 브랜치를 지정해 내려주고 다른 브랜치로의 푸시를 막는다.
+이름만으로 이슈 #38 을 못 찾는다는 비용이 있어 적어 둔다.
+
 ## 8. 메타데이터 추출 전략 (단계별 폴백)
 
 URL마다 메타 품질이 천차만별. 아래 순서로 시도해 첫 성공값 사용:
