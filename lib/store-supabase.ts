@@ -20,6 +20,16 @@ function isMissingCanonicalColumn(error: { code?: string; message?: string } | n
   return byCode && /canonical_url/i.test(error.message ?? "");
 }
 
+// PostgREST 에러는 message 만으론 원인 파악이 안 될 때가 많다 — code/details/hint 를
+// 함께 남겨야 Vercel 로그만으로 Postgres 쪽 근본 원인을 알 수 있다.
+type QueryError = { message: string; code: string; details: string; hint: string };
+
+function withErrorDetail(prefix: string, error: QueryError): Error {
+  return new Error(
+    `${prefix}: ${error.message} | code=${error.code} details=${error.details} hint=${error.hint}`,
+  );
+}
+
 // DB(snake_case) ↔ 앱(camelCase) 매핑
 type Row = {
   slug: string;
@@ -97,7 +107,7 @@ export function createSupabaseStore(): ClipStore {
           continue;
         }
         if (error && error.code !== "23505") {
-          throw new Error(`클립 저장 실패: ${error.message}`);
+          throw withErrorDetail("클립 저장 실패", error);
         }
         // 23505(중복 슬러그)면 새 슬러그로 재시도
       }
@@ -111,7 +121,7 @@ export function createSupabaseStore(): ClipStore {
         .select()
         .eq("slug", slug)
         .maybeSingle();
-      if (error) throw new Error(`클립 조회 실패: ${error.message}`);
+      if (error) throw withErrorDetail("클립 조회 실패", error);
       return data ? rowToClip(data as Row) : null;
     },
 
@@ -132,7 +142,7 @@ export function createSupabaseStore(): ClipStore {
         .select()
         .order("created_at", { ascending: false })
         .limit(200);
-      if (error) throw new Error(`목록 조회 실패: ${error.message}`);
+      if (error) throw withErrorDetail("목록 조회 실패", error);
       return (data as Row[]).map(rowToClip);
     },
 
@@ -145,7 +155,7 @@ export function createSupabaseStore(): ClipStore {
         .eq("saved", true)
         .order("created_at", { ascending: false })
         .limit(200);
-      if (error) throw new Error(`목록 조회 실패: ${error.message}`);
+      if (error) throw withErrorDetail("목록 조회 실패", error);
       return (data as Row[]).map(rowToClip);
     },
 
@@ -169,7 +179,7 @@ export function createSupabaseStore(): ClipStore {
           // 마이그레이션 전 — 아래 레거시 전체 스캔으로 폴백.
           hasCanonicalColumn = false;
         } else if (hitErr) {
-          throw new Error(`클립 조회 실패: ${hitErr.message}`);
+          throw withErrorDetail("클립 조회 실패", hitErr);
         } else {
           hasCanonicalColumn = true;
           if (hit && hit.length > 0) return rowToClip(hit[0] as Row);
@@ -183,7 +193,7 @@ export function createSupabaseStore(): ClipStore {
             .is("canonical_url", null)
             .order("saved", { ascending: false })
             .order("created_at", { ascending: false });
-          if (legErr) throw new Error(`클립 조회 실패: ${legErr.message}`);
+          if (legErr) throw withErrorDetail("클립 조회 실패", legErr);
           const match = (legacy as Row[] | null)?.find(
             (r) => canonicalizeUrl(r.url) === target,
           );
@@ -199,7 +209,7 @@ export function createSupabaseStore(): ClipStore {
         .order("saved", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(500);
-      if (error) throw new Error(`클립 조회 실패: ${error.message}`);
+      if (error) throw withErrorDetail("클립 조회 실패", error);
       const match = (data as Row[]).find(
         (r) => canonicalizeUrl(r.url) === target,
       );
@@ -215,7 +225,7 @@ export function createSupabaseStore(): ClipStore {
         .eq("slug", slug)
         .eq("user_id", userId)
         .select("slug");
-      if (error) throw new Error(`클립 저장 상태 변경 실패: ${error.message}`);
+      if (error) throw withErrorDetail("클립 저장 상태 변경 실패", error);
       return (data?.length ?? 0) > 0;
     },
 
@@ -239,7 +249,7 @@ export function createSupabaseStore(): ClipStore {
         .eq("user_id", userId)
         .select()
         .maybeSingle();
-      if (error) throw new Error(`클립 수정 실패: ${error.message}`);
+      if (error) throw withErrorDetail("클립 수정 실패", error);
       return data ? rowToClip(data as Row) : null;
     },
 
@@ -251,7 +261,7 @@ export function createSupabaseStore(): ClipStore {
         .eq("slug", slug)
         .eq("user_id", userId)
         .select("slug");
-      if (error) throw new Error(`클립 삭제 실패: ${error.message}`);
+      if (error) throw withErrorDetail("클립 삭제 실패", error);
       return (data?.length ?? 0) > 0;
     },
 
@@ -262,7 +272,7 @@ export function createSupabaseStore(): ClipStore {
         .delete()
         .eq("user_id", userId)
         .select("slug");
-      if (error) throw new Error(`클립 일괄 삭제 실패: ${error.message}`);
+      if (error) throw withErrorDetail("클립 일괄 삭제 실패", error);
       return data?.length ?? 0;
     },
   };
