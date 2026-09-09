@@ -16,6 +16,7 @@ import {
   parseNaverBlog,
   resolveNaverShortLink,
 } from "./adapters/naver";
+import { truncateGraphemes } from "./text";
 
 export type ClipMetadata = {
   url: string; // 정규화된 최종 URL
@@ -736,7 +737,9 @@ function safeJsonParse(s: string): unknown {
 /** 엔티티 디코드 + 공백 정리 + (옵션) 길이 제한. */
 function clean(s: string, max?: number): string {
   const t = decodeEntities(s).replace(/\s+/g, " ").trim();
-  if (max && t.length > max) return `${t.slice(0, max - 1)}…`;
+  // 코드유닛으로 자르면 이모지가 반쪼가리로 남고, 그 문자열이 `/api/metadata`
+  // 응답으로 앱까지 나간다. 자를 자리는 글자 단위로 고른다.
+  if (max && t.length > max) return `${truncateGraphemes(t, max - 1)}…`;
   return t;
 }
 
