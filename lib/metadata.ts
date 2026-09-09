@@ -16,7 +16,7 @@ import {
   parseNaverBlog,
   resolveNaverShortLink,
 } from "./adapters/naver";
-import { truncateGraphemes } from "./text";
+import { truncateWithEllipsis } from "./text";
 
 export type ClipMetadata = {
   url: string; // 정규화된 최종 URL
@@ -738,9 +738,8 @@ function safeJsonParse(s: string): unknown {
 function clean(s: string, max?: number): string {
   const t = decodeEntities(s).replace(/\s+/g, " ").trim();
   // 코드유닛으로 자르면 이모지가 반쪼가리로 남고, 그 문자열이 `/api/metadata`
-  // 응답으로 앱까지 나간다. 자를 자리는 글자 단위로 고른다.
-  if (max && t.length > max) return `${truncateGraphemes(t, max - 1)}…`;
-  return t;
+  // 응답으로 앱까지 나간다. 판정도 절단도 글자 단위로 한다.
+  return max ? truncateWithEllipsis(t, max) : t;
 }
 
 /** 상대 경로 이미지 URL 을 절대 경로로. */

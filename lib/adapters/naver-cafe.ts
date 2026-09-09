@@ -6,7 +6,7 @@
 //    실패하면 null 을 반환해 상위(fetchMetadata)에서 일반 OG/수동 입력으로 폴백한다.
 
 import type { ClipMetadata } from "../metadata";
-import { truncateGraphemes } from "../text";
+import { truncateWithEllipsis } from "../text";
 
 const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
@@ -149,7 +149,7 @@ function stripTags(html: string): string {
 function summarize(text: string, max = 160): string | null {
   if (!text) return null;
   // 글자 단위로 자른다 — 코드유닛으로 자르면 반쪼가리 이모지가 남는다.
-  return text.length > max ? `${truncateGraphemes(text, max - 1)}…` : text;
+  return truncateWithEllipsis(text, max);
 }
 
 function firstImage(html: string | null): string | null {

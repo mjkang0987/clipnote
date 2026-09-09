@@ -3,7 +3,7 @@ import { clipStore } from "@/lib/store";
 import { pickGradient } from "@/lib/gradients";
 import { canonicalizeUrl } from "@/lib/metadata";
 import { getCurrentUser } from "@/lib/supabase/server";
-import { truncateGraphemes } from "@/lib/text";
+import { truncateForStorage } from "@/lib/text";
 
 export const runtime = "nodejs";
 
@@ -80,10 +80,10 @@ export async function POST(request: Request) {
     url: normalizedUrl,
     // 코드유닛(`slice`)으로 자르면 이모지가 반쪼가리로 남아 PostgREST 가 저장을 거부한다
     // (PGRST102 — plan.md 18장). 글자 단위로 자른다.
-    title: truncateGraphemes(title, 120),
+    title: truncateForStorage(title, 120),
     description:
       typeof body.description === "string"
-        ? truncateGraphemes(body.description, 300)
+        ? truncateForStorage(body.description, 300)
         : null,
     image: typeof body.image === "string" ? body.image : null,
     siteName: typeof body.siteName === "string" ? body.siteName : null,

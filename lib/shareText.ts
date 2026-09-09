@@ -1,7 +1,7 @@
 // 공유/복사 텍스트 생성 — 웹·앱 공통 규약(제목 + 링크, 설명 제외).
 // iOS는 `ClipNote/Util/ShareText.swift`가 같은 규칙을 구현한다. 한쪽만 바꾸지 않는다.
 
-import { graphemes } from "./text";
+import { truncateWithEllipsis } from "./text";
 
 /** 공유 텍스트 제목의 최대 길이(말줄임표 `…` 포함). */
 export const SHARE_TITLE_MAX = 80;
@@ -25,12 +25,7 @@ export function truncateShareTitle(
   value: string,
   max = SHARE_TITLE_MAX,
 ): string {
-  const title = collapseWhitespace(value);
-  if (max < 1) return title;
-  const chars = graphemes(title);
-  if (chars.length <= max) return title;
-  // 말줄임표가 한 자를 차지하므로 본문은 max-1자까지. 잘린 끝의 공백은 떼낸다.
-  return `${chars.slice(0, max - 1).join("").trimEnd()}…`;
+  return truncateWithEllipsis(collapseWhitespace(value), max);
 }
 
 /** 공유/복사 텍스트: `제목\nURL`. 빈 값은 줄에서 제외하고, 설명은 길어서 넣지 않는다. */
