@@ -1,8 +1,13 @@
+import { cache } from "react";
 import ClipsClient from "@/app/_components/ClipsClient";
 import { getMessages, type Locale } from "@/lib/i18n";
 import type { Clip } from "@/lib/store";
 import { clipStore } from "@/lib/store";
 import { getCurrentUser } from "@/lib/supabase/server";
+
+// 요청 단위로 고정된 "지금". `cache` 로 감싸 같은 요청 안의 렌더가 모두 같은 시각을 본다
+// (렌더 중 `Date.now()` 직접 호출은 순수하지 않다 — react-hooks/purity).
+const requestNow = cache(() => Date.now());
 
 /**
  * 내 클립 화면의 서버 부분 — 로케일별 라우트(`/clips`, `/en/clips`, …)가 공유한다.
@@ -47,6 +52,7 @@ export default async function ClipsPage({ locale }: { locale: Locale }) {
       initialLoggedIn={initialLoggedIn}
       initialClips={initialClips}
       initialLoadFailed={initialLoadFailed}
+      serverNow={requestNow()}
     />
   );
 }

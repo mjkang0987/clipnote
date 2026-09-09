@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { Clip } from "@/lib/store";
 import { gradientCss, pickGradient } from "@/lib/gradients";
 import { buildShareText } from "@/lib/shareText";
@@ -12,11 +12,20 @@ import {
   type LocalClip,
 } from "@/lib/local-clips";
 import { useLocalizedPath } from "@/lib/i18n/useLocale";
-// 값(LOCALE_TAGS)은 배럴이 아니라 `locales` 에서 직접 가져온다 — 배럴(`@/lib/i18n`)은
-// 4개 언어 사전을 로드·병합하므로, 클라이언트 컴포넌트가 값을 가져오면 사전 전체가
-// 클라이언트 번들에 실린다. 타입은 지워지므로 배럴에서 가져와도 무방하다.
-import { LOCALE_TAGS, type Locale } from "@/lib/i18n/locales";
+// 값은 배럴이 아니라 하위 모듈에서 직접 가져온다 — 배럴(`@/lib/i18n`)은 4개 언어
+// 사전을 로드·병합하므로, 클라이언트 컴포넌트가 값을 가져오면 사전 전체가 클라이언트
+// 번들에 실린다. `date` 도 `locales` 만 참조해 배럴을 끌고 오지 않는다.
+// 타입은 컴파일 시 지워지므로 배럴에서 가져와도 무방하다.
+import { type Locale } from "@/lib/i18n/locales";
+import { createDateGrouper } from "@/lib/i18n/date";
 import type { Messages } from "@/lib/i18n";
+
+// 1차 렌더(서버 + hydration)에서만 쓰는 타임존. 보는 사람의 실제 타임존은 하이드레이션
+// 뒤에 적용되므로 이 값은 첫 페인트용 추측일 뿐, 최종 표시에는 영향을 주지 않는다.
+const SSR_TIME_ZONE = "Asia/Seoul";
+
+/** 값이 바뀌지 않으므로 구독할 것이 없다. 재구독을 막으려 모듈 스코프에 둔다. */
+const subscribeNothing = () => () => {};
 
 /** 내 클립 화면이 쓰는 사전 조각 */
 type ClipsMessages = Pick<Messages, "common" | "clips">;
@@ -50,6 +59,7 @@ export default function ClipsClient({
   initialLoggedIn,
   initialClips,
   initialLoadFailed,
+  serverNow,
 }: {
   /**
    * 서버에서 고른 사전 — **이 화면이 쓰는 namespace 만** 받는다.
@@ -63,6 +73,8 @@ export default function ClipsClient({
   initialClips: Clip[];
   /** 서버에서 목록 조회가 실패했는지 — 빈 목록과 구분해 재시도를 제안한다. */
   initialLoadFailed: boolean;
+  /** 서버가 렌더한 시각. 1차 렌더를 서버와 같은 시점으로 맞추는 데만 쓴다. */
+  serverNow: number;
 }) {
   const t = messages.clips;
   const c = messages.common;
@@ -133,11 +145,30 @@ export default function ClipsClient({
     [items, activeTag],
   );
 
-  const groups = useMemo(() => groupByDate(filtered, locale), [filtered, locale]);
+  // 서버는 보는 사람의 타임존을 알 수 없다. 1차 렌더는 서버와 **같은** 고정 타임존으로
+  // 맞춰 hydration 을 일치시키고, 그 뒤 보는 사람의 실제 타임존으로 다시 묶는다.
+  // (그룹 개수·항목 분배가 달라지는 구조적 불일치라 suppressHydrationWarning 으로는
+  //  못 덮는다 — plan.md 19장.)
+  //
+  // `useSyncExternalStore` 의 세 번째 인자가 서버·hydration 1차용 스냅샷이다.
+  // `useEffect` + `setState` 로도 되지만 그건 `react-hooks/set-state-in-effect` 위반이고,
+  // 이 훅이 하이드레이션 경계를 읽으라고 React 가 준 API 다.
+  const hydrated = useSyncExternalStore(
+    subscribeNothing,
+    () => true,
+    () => false,
+  );
+
+  const groups = useMemo(() => {
+    if (hydrated) return groupByDate(filtered, locale, new Date());
+    // 1차 렌더는 시각도 서버와 같아야 한다. 여기서 `new Date()` 를 쓰면 서버 렌더와
+    // 하이드레이션 사이에 자정이 끼었을 때 오늘↔어제가 갈린다.
+    return groupByDate(filtered, locale, new Date(serverNow), SSR_TIME_ZONE);
+  }, [filtered, locale, hydrated, serverNow]);
 
   /** ‘이 브라우저에 남은 클립’ 화면이 그리는 목록 — 계정 목록과 같은 카드·같은 날짜 묶음. */
   const localGroups = useMemo(
-    () => groupByDate(localClips.map(localToItem), locale),
+    () => groupByDate(localClips.map(localToItem), locale, new Date()),
     [localClips, locale],
   );
 
@@ -1346,12 +1377,14 @@ function chipClass(active: boolean): string {
 function groupByDate(
   items: Item[],
   locale: Locale,
+  now: Date,
+  timeZone?: string,
 ): { label: string; items: Item[] }[] {
-  const now = new Date();
+  const labelFor = createDateGrouper(locale, now, timeZone);
   const groups = new Map<string, Item[]>();
   const order: string[] = [];
   for (const item of items) {
-    const label = dateGroupLabel(new Date(item.date), now, locale);
+    const label = labelFor(new Date(item.date));
     if (!groups.has(label)) {
       groups.set(label, []);
       order.push(label);
@@ -1361,31 +1394,12 @@ function groupByDate(
   return order.map((label) => ({ label, items: groups.get(label)! }));
 }
 
-function startOfDay(d: Date): number {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-}
-
 /**
- * 날짜 그룹 라벨. **사전에 넣지 않는다** — `Intl` 이 4개 언어를 다 만들어 준다.
+ * `timeZone` 기준 달력 날짜(연·월·일). 생략하면 실행 환경의 로컬 타임존.
  *
- *   오늘 / 어제 / 이번 주 / 이번 달  → RelativeTimeFormat(numeric: "auto")
- *   2026년 7월                      → DateTimeFormat(year, month: "long")
- *
- * 직접 번역하면 문구 4개 × 언어 3개에 "2026년 7월" 같은 연월 **형식**까지 언어마다
- * 달라서(en "July 2026", ja "2026年7月") 사전으로는 형식을 표현할 수 없다.
+ * `getFullYear/getMonth/getDate` 를 쓰면 **실행 환경**의 타임존이 섞여 들어가,
+ * 서버(UTC)와 브라우저(사용자 로컬)가 같은 클립을 다른 날로 묶는다(19장).
  */
-function dateGroupLabel(d: Date, now: Date, locale: Locale): string {
-  const tag = LOCALE_TAGS[locale];
-  const diffDays = Math.floor((startOfDay(now) - startOfDay(d)) / 86400000);
-  const relative = new Intl.RelativeTimeFormat(tag, { numeric: "auto" });
-  if (diffDays <= 0) return relative.format(0, "day");
-  if (diffDays === 1) return relative.format(-1, "day");
-  if (diffDays < 7) return relative.format(0, "week");
-  if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth())
-    return relative.format(0, "month");
-  return new Intl.DateTimeFormat(tag, { year: "numeric", month: "long" }).format(d);
-}
-
 /* ── 매핑·유틸 ─────────────────────────────────────────────── */
 
 function dbToItem(c: Clip): Item {
