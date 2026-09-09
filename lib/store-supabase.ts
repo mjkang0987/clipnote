@@ -51,6 +51,27 @@ function withErrorDetail(
   return new Error(parts.join(" | "), { cause: error });
 }
 
+// PostgREST 는 요청 바디에 짝 잃은 서로게이트가 **하나라도** 있으면 바디 전체를
+// 파싱하지 못하고 PGRST102 로 거절한다. 어느 컬럼인지는 상관없다.
+//
+// 그래서 복구는 필드별이 아니라 여기서 한다. 라우트에서 필드를 하나씩 챙기면
+// 새 필드가 생길 때 빠진다 — 실제로 title·description 만 챙기고 siteName·tags 가
+// 빠져 있었고, `&#55357;` 하나 든 페이지면 그대로 저장이 깨졌다(plan.md 18장).
+// 여기가 문자열이 PostgREST 로 나가기 직전의 마지막 지점이다.
+function wellFormedRow(row: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(row)) {
+    if (typeof value === "string") {
+      out[key] = value.toWellFormed();
+    } else if (Array.isArray(value)) {
+      out[key] = value.map((v) => (typeof v === "string" ? v.toWellFormed() : v));
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
 // DB(snake_case) ↔ 앱(camelCase) 매핑
 type Row = {
   slug: string;
@@ -117,7 +138,7 @@ export function createSupabaseStore(): ClipStore {
 
         const { data: inserted, error, status } = await supabase
           .from(TABLE)
-          .insert(row)
+          .insert(wellFormedRow(row))
           .select()
           .single();
 
@@ -283,7 +304,7 @@ export function createSupabaseStore(): ClipStore {
       }
       const { data, error } = await supabase
         .from(TABLE)
-        .update(row)
+        .update(wellFormedRow(row))
         .eq("slug", slug)
         .eq("user_id", userId)
         .select()

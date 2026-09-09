@@ -24,6 +24,7 @@ import { interpolate, interpolateNode } from "@/lib/i18n/interpolate";
 import Header from "@/app/_components/Header";
 import ExternalImage from "@/app/_components/ExternalImage";
 import RunningDino from "@/app/_components/RunningDino";
+import { truncateGraphemes } from "@/lib/text";
 
 type Item = {
   key: string;
@@ -1188,7 +1189,9 @@ function EditClipLayer({
         <button
           type="button"
           disabled={!canSave}
-          onClick={() => onSave(title.trim().slice(0, 80), parseTags(tagInput))}
+          onClick={() =>
+            onSave(truncateGraphemes(title.trim(), 80), parseTags(tagInput))
+          }
           className="h-12 flex-1 rounded-xl bg-brand text-base font-semibold text-white transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-brand/50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? messages.clips.savingEdit : messages.common.save}

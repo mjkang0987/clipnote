@@ -678,6 +678,100 @@ Postgres 는 `details` 에 실패한 행의 내용을 담는다 — `23502` 면
 규칙과 다르다. 세션 실행 환경이 브랜치를 지정해 내려주고 다른 브랜치로의 푸시를 막는다.
 이름만으로 이슈 #38 을 못 찾는다는 비용이 있어 적어 둔다.
 
+## 18. 계획: 클립 저장 500 근본 수정 — 절단이 이모지를 반으로 자른다 (2026-09-09, 이슈 #40)
+
+### 확정된 원인
+17장에서 넣은 진단 로그가 답을 줬다.
+
+```
+클립 저장 실패: Empty or invalid json | code=PGRST102 | status=400 | bodyBytes=1678
+[cause]: { code: "PGRST102", details: null, hint: null, message: "Empty or invalid json" }
+```
+
+- `bodyBytes=1678` → **크기 아니다.**
+- `status=400` → 앞단 프록시·WAF 아니다. 요청은 온전히 도착했다.
+- `details=null hint=null` → **Postgres 는 이 요청을 본 적도 없다.** 제약조건·권한·컬럼 전부 무관.
+
+남는 건 바디 안의 문자열뿐이고, 실패 URL 의 실제 메타로 절단을 재현하니 나왔다.
+
+```
+title       : 120 자 · 유효: true
+description : 300 자 · 유효: false   ← 반쪽 이모지
+```
+
+인과 사슬: `description.slice(0, 300)` 이 UTF-16 **코드유닛** 단위라 이모지를 반으로 자른다
+→ 짝 잃은 서로게이트가 남는다 → `JSON.stringify` 가 `\udXXX` 이스케이프로 출력한다
+(**문법상 유효한 JSON**) → PostgREST 파서가 디코딩 못 한다 → PGRST102 → `create()` throw
+→ `route.ts` 에 최상위 try/catch 가 없다 → 본문 없는 500 → 앱이 `clip 500` 을 띄운다.
+
+### 왜 이전에 기각됐었나 (재발 방지)
+`JSON.stringify` 는 짝 잃은 서로게이트를 `\ud83c` 같은 **순수 ASCII 이스케이프**로 바꿔 내놓는다.
+그래서 그 뒤의 UTF-8 인코딩·디코딩·왕복 비교는 **문자열이 망가졌든 아니든 똑같이 통과한다.**
+검출력이 0인 테스트였는데 그걸 근거로 "메커니즘 자체가 원천적으로 불가능"이라 결론내고 폐기했다.
+봤어야 할 것은 `isWellFormed()` 거나 수신측 파서였다.
+**교훈: 통과한 테스트가 무엇을 배제하는지 확인하지 않으면 통과는 정보가 아니다.**
+
+### 설계 — 저장소에 이미 답이 있었다
+`lib/shareText.ts` 의 `graphemes()` 가 `Intl.Segmenter` 로 그래핌 단위 분할을 한다.
+주석에 `Array.from` 은 코드포인트라 `☕️`(VS16)·ZWJ 이모지가 쪼개진다고까지 적혀 있다.
+**공유 텍스트 경로만 그걸 쓰고 DB 저장 경로가 안 쓰고 있었다.**
+
+`graphemes()` 는 공유와 무관한 일반 텍스트 메커니즘이고 이제 소비자가 둘이다.
+`lib/shareText.ts` 는 헤더에 스스로 범위를 "공유/복사 텍스트 생성"이라 못박아 놨으므로,
+거기에 DB 저장용 절단을 넣으면 파일이 자기 계약을 어긴다. `lib/text.ts` 로 옮기고
+`shareText.ts` 가 거기서 import 한다(동작 불변).
+
+`truncateGraphemes(value, max)` 는 `value.length <= max` 면 그대로 돌려준다 —
+그래핌 수는 코드유닛 수를 넘을 수 없으므로 이 경우 자를 필요가 없고, Segmenter 를 안 만든다.
+
+### 영향 파일 (검증 중 확대됨)
+- 신규: `lib/text.ts` — `truncateGraphemes`(자르기) · `truncateWithEllipsis`(자르기+`…`)
+- 수정: `lib/shareText.ts` · `lib/metadata.ts`(`clean`) · `lib/adapters/naver-cafe.ts`(`summarize`)
+  · `app/_components/ClipsClient.tsx`(편집 저장) · `app/api/clip/route.ts` · `app/api/clip/[slug]/route.ts`
+  · `lib/store-supabase.ts`(`wellFormedRow`)
+
+### 범위 (검증 중 3곳 → 7곳으로 확대)
+처음엔 절단 지점 3곳으로 잡았는데, 코드리뷰에서 **그걸로는 버그 클래스가 안 닫힌다**는 게 드러났다.
+
+1. 상류 절단기가 더 있었다 — `metadata.ts clean()`, `naver-cafe summarize()`,
+   `ClipsClient` 편집 모달. 전부 코드유닛 단위였고, 앞의 둘은 **깨진 문자열을
+   `/api/metadata` 응답으로 앱까지 내보내고** 있었다.
+2. **더 중요한 것** — 안전한 절단 위치를 고르는 것만으로는 부족하다. PostgREST 는
+   바디에 짝 잃은 서로게이트가 **하나라도** 있으면 바디 전체를 파싱하지 못한다.
+   어느 컬럼인지는 상관없는데 라우트는 `title`·`description` 만 챙기고 있었다.
+   `siteName`·`tags`·`image`·`url` 은 그대로 나갔고, 페이지에 `&#55357;` 하나만 있어도
+   (`String.fromCodePoint(55357)` = 짝 잃은 서로게이트) 같은 500 이 재현된다.
+
+그래서 **복구는 필드별이 아니라 `store-supabase.ts` 의 row 생성 지점**에서 한다.
+컬럼 종류와 무관하게 한 번에 막히고, 새 필드가 생겨도 빠지지 않는다.
+`lib/text.ts` 는 자르기만 맡는다 — `toWellFormed` 는 Safari 17+ 라 브라우저에서
+쓰는 `ClipsClient` 경로가 깨진다(`Intl.Segmenter` 는 기능 감지가 되지만 이건 안 된다).
+
+### iOS 는 수정 대상이 아니다 (확인함)
+- `HomeViewModel.swift:130` 이 `description` 을 **절단 없이** 보낸다. 반쪽 이모지를 만드는 건 서버다.
+- `ShareText.swift` 의 `String.prefix` 는 Swift 특성상 이미 그래핌 단위다(주석·이모지 테스트 있음).
+- 나머지 `prefix()` 는 배열(태그)이나 ASCII(nonce). `Theme.swift` 의 `seed.utf16` 은 읽기 전용 순회.
+- `APIClient.swift:44` 는 `decoded?.error ?? "clip \(statusCode)"` — 서버가 본문을 주면 그걸 띄운다.
+  `clip 500` 은 **서버가 본문 없는 500 을 준 결과**이지 앱 결함이 아니다.
+
+### 기대 결과
+절단 결과가 항상 유효한 유니코드다. 실패 URL 저장이 성공한다.
+
+### 범위 밖 (후속)
+- `route.ts`·`[slug]/route.ts` 최상위 try/catch — 앱이 본문 없는 500 을 받는 원인.
+  노출 정책 결정 필요. **이게 이번 버그를 안 보이게 만든 장본인이라 오래 미룰 건 아니다.**
+- `create()` 의 빈 응답 시 중복 insert 가능성, `attempt -= 1` + `continue` 로 컬럼 부재
+  재시도가 사실상 무한이 될 수 있는 점(17장 기록·이번 PR 범위 밖).
+- `incrementView` 의 `console.warn` 은 `message` 만 남긴다 — 유일하게 throw 하지 않는
+  경로라 `hint` 를 놓치면 복구 불가다.
+- **OG 쿼리 길이** — 그래핌 절단은 코드유닛 상한을 없앤다. `app/[slug]/page.tsx` 가
+  저장값을 그대로 `/api/og` 쿼리에 싣는데 `route.tsx` 는 90·140자만 렌더하므로
+  원본을 다 실을 이유가 없다. 현실적인 캡션(300글자 → 약 360유닛)에서는 문제가 안 되지만
+  ZWJ 가족 이모지처럼 극단적인 입력에서는 URL 이 커진다.
+- **편집 제목 상한이 클라이언트 80 / 서버 120 으로 다르다**(선재). `EditClipLayer` 가
+  120자 제목을 그대로 상태에 넣고 저장 시 80자로 자르므로, 태그만 고치려고 저장해도
+  제목이 조용히 40자 잘린다. 제품 결정이 필요해 임의로 맞추지 않았다.
+
 ## 8. 메타데이터 추출 전략 (단계별 폴백)
 
 URL마다 메타 품질이 천차만별. 아래 순서로 시도해 첫 성공값 사용:
