@@ -23,20 +23,33 @@ function dayNumber({ year, month, day }: CalendarDate): number {
   return Date.UTC(year, month - 1, day) / 86_400_000;
 }
 
-/** 로케일은 4개뿐이라 이 맵은 그 이상 커지지 않는다. */
-const CARD_FORMATTERS: Partial<Record<Locale, Intl.DateTimeFormat>> = {};
+// 키는 `로케일|타임존`. 로케일 4개 × 실제로 쓰는 타임존 몇 개라 더 커지지 않는다.
+const CARD_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
 
 /**
  * 클립 카드에 찍는 절대 날짜(`2026년 7월 3일` / `Jul 3, 2026`).
  *
- * 타임존을 받지 않는다 — 이 값은 선택 모드에서만 그려지고 그 상태는 `false` 로
- * 시작하므로 SSR 을 타지 않는다. 실행 환경(= 보는 사람)의 타임존이 곧 정답이다.
+ * `timeZone` 을 생략하면 실행 환경의 로컬 타임존을 쓴다 — 하이드레이션 뒤에는 그게
+ * 곧 보는 사람의 타임존이라 정답이다. 다만 **서버에서 렌더할 값에는 반드시 넘겨야
+ * 한다.** 안 넘기면 서버(UTC)와 브라우저가 다른 날짜를 그려 19장의 그 불일치가
+ * 그대로 재현된다. 현재 호출부는 선택 모드에서만 그려져 SSR 을 타지 않는다.
  */
-export function formatCardDate(iso: string, locale: Locale): string {
-  const formatter = (CARD_FORMATTERS[locale] ??= new Intl.DateTimeFormat(
-    LOCALE_TAGS[locale],
-    { year: "numeric", month: "short", day: "numeric" },
-  ));
+export function formatCardDate(
+  iso: string,
+  locale: Locale,
+  timeZone?: string,
+): string {
+  const key = `${locale}|${timeZone ?? ""}`;
+  let formatter = CARD_FORMATTERS.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(LOCALE_TAGS[locale], {
+      timeZone,
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+    CARD_FORMATTERS.set(key, formatter);
+  }
   return formatter.format(new Date(iso));
 }
 
@@ -52,7 +65,6 @@ export function formatCardDate(iso: string, locale: Locale): string {
  * 포맷터와 `now` 쪽 값은 항목마다 같으므로 여기서 한 번만 만든다. 목록이 200개까지
  * 오는데 항목마다 `Intl.*Format` 을 새로 만들면 그 생성 비용이 전체를 지배한다.
  */
-
 export function createDateGrouper(
   locale: Locale,
   now: Date,

@@ -77,7 +77,7 @@ clipnote/
 │   │   ├── messages/{ko,en,ja,zh}.ts
 │   │   ├── server.ts         # getRequestLocale() — 미들웨어 헤더 읽기
 │   │   ├── useLocale.ts      # 클라이언트: usePathname 기반 로케일·경로
-│   │   ├── date.ts           # 날짜→문자열: 그룹 라벨·카드 날짜 (타임존·로케일 인자)
+│   │   ├── date.ts           # 날짜→문자열: 그룹 라벨·카드 날짜 (로케일 필수, 타임존 선택)
 │   │   ├── interpolate.tsx   # `{token}` → 문자열/React 노드
 │   │   ├── pageMetadata.ts   # canonical · hreflang · OG
 │   │   ├── ogLocale.ts · localeHeader.ts
@@ -98,9 +98,10 @@ clipnote/
 ## 변경 이력
 
 - 2026-09-09: 클립 카드 날짜 로케일(20장, #44) — `formatDate` 가 `toLocaleDateString("ko-KR")`
-  로 하드코딩돼 있어 `/en/clips` 에서 `This week` 헤더 아래 카드가 `2026. 7. 3.` 로 나왔다.
-  `lib/i18n/date.ts` 의 `formatCardDate` 로 옮기고 `ClipCard` 가 `useLocale()` 로 읽는다
-  (`LocalClipsPanel` 을 거치는 prop drilling 대신 — 로케일은 URL 이 진실이다).
+  로 하드코딩돼 있어 **비한국어 화면에 한국어 날짜**가 나왔다(`/en/clips` 에서 `This week`
+  헤더 아래 카드가 `2026년 7월 3일`). 한국어 출력은 전후가 같다 — 깨진 건 en·ja·zh 뿐이다.
+  `lib/i18n/date.ts` 의 `formatCardDate` 로 옮기고 로케일 출처를 `useLocale()` 하나로 모았다
+  (`ClipsClient` 의 `locale` prop 제거 — 그룹 헤더는 prop, 카드는 훅으로 갈려 있었다).
 - 2026-09-09: **날짜 그룹 hydration 수정(19장, #42)** — `/clips` 의 React #418.
   `groupByDate` 가 실행 환경의 로컬 타임존으로 날짜를 묶어, 서버(UTC)와 브라우저(대개 KST)가
   같은 클립을 다른 날로 분류했다. **한국 새벽(UTC 15~24시)에 저장한 클립은 전부** 해당한다.

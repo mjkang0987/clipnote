@@ -843,7 +843,8 @@ function ClipCard({
   onToggleSelect: () => void;
 }) {
   const t = messages.clips;
-  // 로케일은 URL 이 진실이다 — `LocalClipsPanel` 을 거쳐 내려보내는 대신 여기서 직접 읽는다.
+  // 로케일은 URL 이 진실이다(`lib/i18n/useLocale.ts` 머리말). 부모도 같은 훅을 쓰므로
+  // 값이 갈릴 수 없고, 카드마다 부르는 비용은 측정상 노이즈였다(plan.md 20장).
   const locale = useLocale();
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -1001,7 +1002,9 @@ function ClipCard({
 
       {selectMode && (
         <div className="px-4 pb-3 pl-[6.5rem]">
-          <span className="text-xs text-fg-muted">{formatCardDate(item.date, locale)}</span>
+          <time dateTime={item.date} className="text-xs text-fg-muted">
+            {formatCardDate(item.date, locale)}
+          </time>
         </div>
       )}
     </li>
@@ -1396,12 +1399,6 @@ function groupByDate(
   return order.map((label) => ({ label, items: groups.get(label)! }));
 }
 
-/**
- * `timeZone` 기준 달력 날짜(연·월·일). 생략하면 실행 환경의 로컬 타임존.
- *
- * `getFullYear/getMonth/getDate` 를 쓰면 **실행 환경**의 타임존이 섞여 들어가,
- * 서버(UTC)와 브라우저(사용자 로컬)가 같은 클립을 다른 날로 묶는다(19장).
- */
 /* ── 매핑·유틸 ─────────────────────────────────────────────── */
 
 function dbToItem(c: Clip): Item {
