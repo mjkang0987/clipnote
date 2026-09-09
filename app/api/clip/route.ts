@@ -3,7 +3,7 @@ import { clipStore } from "@/lib/store";
 import { pickGradient } from "@/lib/gradients";
 import { canonicalizeUrl } from "@/lib/metadata";
 import { getCurrentUser } from "@/lib/supabase/server";
-import { truncateForStorage } from "@/lib/text";
+import { truncateGraphemes } from "@/lib/text";
 
 export const runtime = "nodejs";
 
@@ -78,12 +78,12 @@ export async function POST(request: Request) {
 
   const clip = await clipStore.create({
     url: normalizedUrl,
-    // 코드유닛(`slice`)으로 자르면 이모지가 반쪼가리로 남아 PostgREST 가 저장을 거부한다
-    // (PGRST102 — plan.md 18장). 글자 단위로 자른다.
-    title: truncateForStorage(title, 120),
+    // 코드유닛(`slice`)으로 자르면 이모지가 반쪼가리로 남는다(PGRST102 — plan.md 18장).
+    // 글자 단위로 자른다. 깨진 채 들어온 값의 복구는 store 가 컬럼 구분 없이 한다.
+    title: truncateGraphemes(title, 120),
     description:
       typeof body.description === "string"
-        ? truncateForStorage(body.description, 300)
+        ? truncateGraphemes(body.description, 300)
         : null,
     image: typeof body.image === "string" ? body.image : null,
     siteName: typeof body.siteName === "string" ? body.siteName : null,

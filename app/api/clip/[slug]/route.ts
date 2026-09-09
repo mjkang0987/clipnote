@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { clipStore } from "@/lib/store";
 import { getCurrentUser } from "@/lib/supabase/server";
-import { truncateForStorage } from "@/lib/text";
+import { truncateGraphemes } from "@/lib/text";
 
 export const runtime = "nodejs";
 
@@ -39,8 +39,8 @@ export async function PATCH(
     if (!t) {
       return NextResponse.json({ error: "제목은 비울 수 없어요." }, { status: 400 });
     }
-    // 저장 경로와 같은 규칙 — 코드유닛으로 자르면 반쪼가리 이모지가 남아 저장이 깨진다.
-    patch.title = truncateForStorage(t, 120);
+    // 저장 경로와 같은 규칙 — 코드유닛으로 자르면 반쪼가리 이모지가 남는다.
+    patch.title = truncateGraphemes(t, 120);
   }
 
   if (Array.isArray(body.tags)) {
