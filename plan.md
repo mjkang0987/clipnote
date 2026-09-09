@@ -591,6 +591,50 @@ Supabase 왕복은 0회** — FCP/LCP 와 무관하다. 진짜 중복은 로그�
   하이드레이션한다. FCP 보다 TBT/INP 쪽이므로 **별도 이슈**로 둔다.
 - 저장소가 내부 이동에 `next/link` 를 쓰지 않는 건 15장에 이미 적어 둔 별도 건이다.
 
+## 17. 계획: 클립 저장 500 진단 (2026-09-09, 이슈 #38)
+
+### 배경/문제
+인스타그램 게시물 **하나만** 저장/공유 시 앱이 `clip 500` 을 띄운다. 다른 클립(다른 인스타
+게시물 포함)은 전부 정상이고 목록 조회도 정상 — **쓰기만** 실패한다.
+실패 URL: `https://www.instagram.com/p/DdA2RO_E5xJ/?img_index=10&stkn=…`
+
+Vercel 로그의 실제 에러는 `클립 저장 실패: Empty or invalid json` — `create()` 의
+`.insert(row).select().single()` 에서 났고, 이 문구는 PostgREST 표준 에러 **PGRST102**
+(요청 바디 JSON 파싱 실패)다. `/api/clip` 에 최상위 try/catch 가 없어 클라이언트에는
+본문 없는 500 만 가므로 앱은 `clip 500` 밖에 보여줄 게 없다.
+
+**여기서 진단이 막혀 있었다** — `lib/store-supabase.ts` 가 `error.message` 만 남기고
+`code`·`details`·`hint` 를 버렸다. PostgREST 는 실제 원인을 주로 `hint` 에 담고
+안정적인 분기 근거는 `code` 다(`message` 는 사람이 읽는 요약일 뿐).
+
+### 기각된 가설 (재시도 불필요)
+- **인스타 차단** — `/api/clip` 은 인스타에 접속하지 않는다(메타는 이전 단계에서 성공).
+- **Supabase 전역 장애**(8/14~ JWT 401) — 프로젝트 재시작 후에도 동일. 증상도 401 이 아니다.
+- **서로게이트 페어 깨짐** — 실제 캡션 원문(649자)을 title(120자)/description(300자) 절단
+  지점 그대로 넣어 `JSON.stringify`→UTF-8 왕복 검증. 깨끗하게 통과, 메커니즘 자체가 불가능.
+- **캡션의 이상 문자**(제어문자·unpaired surrogate·zero-width·BOM) — 스캔 결과 없음.
+
+### 이번 범위 (1차: 진단만)
+throw 지점 11곳이 같은 형식을 반복하므로 `withErrorDetail(prefix, error)` 헬퍼로 묶어
+`code`·`details`·`hint` 를 함께 남긴다. **근본 수정은 이 범위가 아니다** — 로그를 본 뒤
+별도 이슈로 판단한다.
+
+에러 메시지를 클라이언트로 내보내는 경로는 없다(모든 `catch` 가 바인딩 없이 고정 문구를
+쓴다) — 추가 정보는 서버 로그에만 남는다. 그래서 `details`/`hint` 노출 위험이 없다.
+
+### 영향 파일
+`lib/store-supabase.ts` 한 곳.
+
+### 검증 (2026-09-09)
+`pnpm build` 통과(타입체크 포함), `eslint lib/store-supabase.ts` 클린.
+에러 문구에 의존하는 코드 0건(문자열 매칭·클라이언트 노출 경로 모두 없음).
+
+### 남은 것
+- 배포 후 실패 URL 로 재현 → Vercel 로그에서 `code`/`details`/`hint` 확인 → 근본 원인 확정.
+- `app/api/clip/route.ts` 의 최상위 try/catch 부재(앱이 빈 500 을 받는 원인). 에러 본문을
+  어디까지 클라이언트에 노출할지 정책 결정이 필요해 이번엔 뺐다.
+- 이 게시물의 실제 `og:image` URL 은 아직 따로 테스트하지 않았다.
+
 ## 8. 메타데이터 추출 전략 (단계별 폴백)
 
 URL마다 메타 품질이 천차만별. 아래 순서로 시도해 첫 성공값 사용:
