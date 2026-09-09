@@ -30,9 +30,6 @@
   - `feature/*` = 기능 브랜치, `develop` 최신본에서 분기 → `develop` 으로 머지
   - 릴리스 시 `develop → main` 승격 (**지시자 승인 필요**)
 - **알려진 이슈**
-  - **클립 저장 500 (미해결, 이슈 #38)** — 특정 인스타그램 게시물 하나만 저장이 실패한다
-    (`PGRST102 Empty or invalid json`). 다른 클립·목록 조회는 정상, 쓰기만 깨진다.
-    진단 로그를 넣어 뒀으니 재현 후 `status`·`bodyBytes` 로 원인을 좁힌다(`plan.md` 17장).
   - `app/api/clip/route.ts` 에 최상위 try/catch 가 없어 store 에러가 나면 클라이언트가
     **본문 없는 500** 을 받는다(앱이 `clip 500` 만 표시하는 이유). 노출 정책 결정 후 처리.
   - eslint 오류 4건(`react-hooks/set-state-in-effect`) — 선재. `AuthNav`·`HomeClient`·`LoginClient`.
@@ -85,6 +82,7 @@ clipnote/
 │   │   ├── ogLocale.ts · localeHeader.ts
 │   ├── supabase/{client,server}.ts
 │   ├── metadata.ts · adapters/{naver,naver-cafe,instagram}.ts   # 메타 추출 + 사이트별 어댑터
+│   ├── text.ts          # 그래핌 단위 절단 (자르기만 — 복구는 store-supabase 가 한다)
 │   ├── local-clips.ts · store.ts · store-supabase.ts · slug.ts · gradients.ts
 │   ├── shareText.ts     # 공유 텍스트 제목 80자 제한·말줄임 (iOS 와 같은 규칙)
 │   └── site.ts
@@ -98,6 +96,13 @@ clipnote/
 
 ## 변경 이력
 
+- 2026-09-09: **클립 저장 500 근본 수정(18장, #40)** — 원인은 `description.slice(0, 300)` 이었다.
+  UTF-16 코드유닛 단위라 경계에 이모지가 걸리면 반으로 자르고, 남은 짝 잃은 서로게이트를
+  `JSON.stringify` 가 `\udXXX` 이스케이프로 내보낸다(문법상 유효한 JSON 이라 JS 는 통과).
+  PostgREST 가 그걸 디코딩하지 못해 PGRST102 로 요청 **전체**를 거절했다.
+  `lib/text.ts` 를 신설해 코드유닛으로 자르던 6곳을 글자 단위로 바꾸고, 이미 깨져 들어온
+  문자열의 복구는 `store-supabase.ts` 의 `wellFormedRow` 가 **컬럼 구분 없이** 한다 —
+  라우트에서 필드별로 챙기면 새 필드가 빠진다(실제로 `siteName`·`tags` 가 빠져 있었다).
 - 2026-09-09: 클립 저장 실패 진단 로그(17장, #38) — `lib/store-supabase.ts` 의 throw 11곳이
   `error.message` 만 남겨 PGRST102 의 근본 원인이 로그에 없었다. `withErrorDetail` 로 묶어
   `code`·`details`·`hint` 를 남기고, `create()` 실패 경로엔 `status` 와 직렬화한 row 의
