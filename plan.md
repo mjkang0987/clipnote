@@ -887,10 +887,25 @@ description : 300 자 · 유효: false   ← 반쪽 이모지
 즉 실익은 **원인 노출이 아니라 사용자에게 읽을 수 있는 문구를 주는 것**이다(원인은 로그에만).
 앱은 수정 없이 바로 그 문구를 띄운다.
 
-네 곳이 같은 형태를 반복하므로 작은 헬퍼로 묶는다 — 문구가 네 군데 흩어지면 바꿀 때 빠진다.
+네 곳이 같은 형태를 반복하므로 `lib/apiError.ts` 로 묶는다 — 문구가 흩어지면 바꿀 때 빠진다.
+
+**핸들러를 감싸는 형태로 만든다.** 처음엔 라우트마다 try/catch 를 손으로 둘렀는데,
+본문이 통째로 한 칸 들어가 **diff 의 86% 가 들여쓰기**가 됐다(183+/144- 인데 `git diff -w`
+로는 47+/8-). 실제 변경이 파묻히고 이 핸들러를 동시에 고치는 작업과 충돌한다.
+`withErrors(handler)` 로 바꾸니 38+/36- 로 줄었고, **로그에 적을 경로도 요청에서 직접
+읽으므로** 손으로 적은 문자열이 폴더 이름 변경에 어긋날 일이 없다.
+
+본문 읽기(`readJsonObject`)도 같은 파일에 둔다. `null`·배열도 JSON 으로는 유효해서
+그대로 두면 필드 접근에서 TypeError 가 나고, 클라이언트 잘못인데 500 으로 기록된다.
+두 라우트에 글자까지 같은 14줄이 복사돼 있었다.
+
+**로그는 `cause` 를 따로 펼치지 않는다.** `withErrorDetail`(17장)이 `code`·`details`·`hint`
+를 이미 `message` 에 넣고 원본을 `cause` 로도 매다므로, 객체를 통째로 넘기면 실패한 행이
+한 줄에 두 번 찍힌다(측정: 2,213바이트 행 → 5,004바이트 로그). 로그 한 줄이 길어지면
+플랫폼이 뒤를 자르는데 하필 잘리는 쪽이 `cause` 다.
 
 ### 영향 파일
-신규 헬퍼 · `app/api/clip/route.ts` · `app/api/clip/[slug]/route.ts` ·
+`lib/apiError.ts`(신규) · `app/api/clip/route.ts` · `app/api/clip/[slug]/route.ts` ·
 `app/api/clips/route.ts` · `app/api/account/route.ts`.
 
 ### 기대 결과
@@ -902,6 +917,11 @@ store 가 throw 해도 클라이언트가 `{ error: … }` 를 받고, 서버 �
   4개 언어를 지원하는데 영어 사용자도 한국어 에러를 받는다. 이번 변경이 만든 문제가 아니라
   기존 규약을 따르는 것이고, 고치려면 API 응답 i18n 전략이 필요하다 — 별도 이슈.
 - `create()` 의 빈 응답 시 중복 insert 가능성(17장 기록).
+- **`app/api/` 밖의 store 호출은 여전히 무방비**다 — `app/[slug]/page.tsx`,
+  `app/_components/ClipsPage.tsx` 가 `clipStore` 를 부르는데 `error.tsx` 가 하나도 없어
+  거기서 나는 에러는 로그에 아무것도 안 남는다. `instrumentation.ts` 의 `onRequestError`
+  가 본문을 줄 수는 없지만 "throw 가 로그 없이 사라지지 않는다"는 건 구조적으로 만든다.
+- `app/api/auth/naver/callback/route.ts` 도 `catch {}` 로 에러를 삼킨다(OAuth 경로, 별건).
 
 ## 8. 메타데이터 추출 전략 (단계별 폴백)
 
