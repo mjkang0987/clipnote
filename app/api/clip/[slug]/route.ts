@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { clipStore } from "@/lib/store";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { truncateGraphemes } from "@/lib/text";
+import { serverError } from "@/lib/apiError";
 
 export const runtime = "nodejs";
 
@@ -13,76 +14,84 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
-  }
-
-  const { slug } = await params;
-
-  let body: Record<string, unknown>;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
-  }
-
-  const patch: {
-    title?: string;
-    tags?: string[];
-    saved?: boolean;
-    shared?: boolean;
-  } = {};
-
-  if (typeof body.title === "string") {
-    const t = body.title.trim();
-    if (!t) {
-      return NextResponse.json({ error: "제목은 비울 수 없어요." }, { status: 400 });
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
     }
-    // 저장 경로와 같은 규칙 — 코드유닛으로 자르면 반쪼가리 이모지가 남는다.
-    patch.title = truncateGraphemes(t, 120);
-  }
 
-  if (Array.isArray(body.tags)) {
-    patch.tags = body.tags
-      .filter((t): t is string => typeof t === "string")
-      .map((t) => t.trim())
-      .filter(Boolean)
-      .slice(0, 6);
-  }
+    const { slug } = await params;
 
-  if (typeof body.saved === "boolean") {
-    patch.saved = body.saved;
-  }
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    }
 
-  if (typeof body.shared === "boolean") {
-    patch.shared = body.shared;
-  }
+    const patch: {
+      title?: string;
+      tags?: string[];
+      saved?: boolean;
+      shared?: boolean;
+    } = {};
 
-  if (Object.keys(patch).length === 0) {
-    return NextResponse.json({ error: "수정할 내용이 없어요." }, { status: 400 });
-  }
+    if (typeof body.title === "string") {
+      const t = body.title.trim();
+      if (!t) {
+        return NextResponse.json({ error: "제목은 비울 수 없어요." }, { status: 400 });
+      }
+      // 저장 경로와 같은 규칙 — 코드유닛으로 자르면 반쪼가리 이모지가 남는다.
+      patch.title = truncateGraphemes(t, 120);
+    }
 
-  const updated = await clipStore.update(slug, user.id, patch);
-  if (!updated) {
-    return NextResponse.json({ error: "클립을 찾을 수 없어요." }, { status: 404 });
+    if (Array.isArray(body.tags)) {
+      patch.tags = body.tags
+        .filter((t): t is string => typeof t === "string")
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .slice(0, 6);
+    }
+
+    if (typeof body.saved === "boolean") {
+      patch.saved = body.saved;
+    }
+
+    if (typeof body.shared === "boolean") {
+      patch.shared = body.shared;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return NextResponse.json({ error: "수정할 내용이 없어요." }, { status: 400 });
+    }
+
+    const updated = await clipStore.update(slug, user.id, patch);
+    if (!updated) {
+      return NextResponse.json({ error: "클립을 찾을 수 없어요." }, { status: 404 });
+    }
+    return NextResponse.json({ clip: updated });
+  } catch (error) {
+    return serverError("PATCH /api/clip/[slug]", error);
   }
-  return NextResponse.json({ clip: updated });
 }
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
-  }
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
+    }
 
-  const { slug } = await params;
-  const ok = await clipStore.remove(slug, user.id);
-  if (!ok) {
-    return NextResponse.json({ error: "클립을 찾을 수 없어요." }, { status: 404 });
+    const { slug } = await params;
+    const ok = await clipStore.remove(slug, user.id);
+    if (!ok) {
+      return NextResponse.json({ error: "클립을 찾을 수 없어요." }, { status: 404 });
+    }
+    return NextResponse.json({ slug, deleted: true });
+  } catch (error) {
+    return serverError("DELETE /api/clip/[slug]", error);
   }
-  return NextResponse.json({ slug, deleted: true });
 }

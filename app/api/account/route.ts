@@ -31,7 +31,10 @@ export async function DELETE() {
         );
       }
     }
-  } catch {
+  } catch (error) {
+    // 이 경로는 auth 사용자만 지워지고 클립이 남는(또는 그 반대) 부분 실패가 가능하다.
+    // 로그가 없으면 어느 단계에서 멈췄는지 판단할 방법이 없다.
+    console.error("DELETE /api/account 실패:", error);
     return NextResponse.json(
       { error: "계정 삭제 중 문제가 발생했어요." },
       { status: 500 },
