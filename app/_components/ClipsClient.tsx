@@ -11,13 +11,13 @@ import {
   updateLocalClip,
   type LocalClip,
 } from "@/lib/local-clips";
-import { useLocalizedPath } from "@/lib/i18n/useLocale";
+import { useLocale, useLocalizedPath } from "@/lib/i18n/useLocale";
 // 값은 배럴이 아니라 하위 모듈에서 직접 가져온다 — 배럴(`@/lib/i18n`)은 4개 언어
 // 사전을 로드·병합하므로, 클라이언트 컴포넌트가 값을 가져오면 사전 전체가 클라이언트
 // 번들에 실린다. `date` 도 `locales` 만 참조해 배럴을 끌고 오지 않는다.
 // 타입은 컴파일 시 지워지므로 배럴에서 가져와도 무방하다.
 import { type Locale } from "@/lib/i18n/locales";
-import { createDateGrouper } from "@/lib/i18n/date";
+import { createDateGrouper, formatCardDate } from "@/lib/i18n/date";
 import type { Messages } from "@/lib/i18n";
 
 // 1차 렌더(서버 + hydration)에서만 쓰는 타임존. 보는 사람의 실제 타임존은 하이드레이션
@@ -55,7 +55,6 @@ type Item = {
  */
 export default function ClipsClient({
   messages,
-  locale,
   initialLoggedIn,
   initialClips,
   initialLoadFailed,
@@ -67,8 +66,6 @@ export default function ClipsClient({
    * RSC 페이로드가 커진다(요청마다 새로 오므로 캐시되지도 않는다).
    */
   messages: ClipsMessages;
-  /** 날짜 그룹 라벨을 `Intl` 로 만들 때 쓴다(사전에 넣지 않는다 — 아래 dateGroupLabel 주석). */
-  locale: Locale;
   initialLoggedIn: boolean;
   initialClips: Clip[];
   /** 서버에서 목록 조회가 실패했는지 — 빈 목록과 구분해 재시도를 제안한다. */
@@ -80,6 +77,9 @@ export default function ClipsClient({
   const c = messages.common;
   // 내부 링크는 현재 로케일을 유지한다(`/en/clips` 에서 홈으로 나갈 때 `/en` 으로).
   const path = useLocalizedPath();
+  // 로케일은 URL 이 진실이다 — 서버가 prop 으로도 넘길 수 있지만, 그러면 한 트리 안에
+  // 같은 사실의 출처가 둘이 된다(그룹 헤더는 prop, 카드 날짜는 훅). 훅으로 통일한다.
+  const locale = useLocale();
   // 게스트 목록은 localStorage 라 서버에서 알 수 없다 → 마운트 후 채운다.
   const [items, setItems] = useState<Item[]>(() =>
     initialLoggedIn ? initialClips.map(dbToItem) : [],
@@ -843,6 +843,9 @@ function ClipCard({
   onToggleSelect: () => void;
 }) {
   const t = messages.clips;
+  // 로케일은 URL 이 진실이다(`lib/i18n/useLocale.ts` 머리말). 부모도 같은 훅을 쓰므로
+  // 값이 갈릴 수 없고, 카드마다 부르는 비용은 측정상 노이즈였다(plan.md 20장).
+  const locale = useLocale();
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
   // 선택 모드는 공유 슬러그가 있는 로그인 클립만 대상
@@ -999,7 +1002,9 @@ function ClipCard({
 
       {selectMode && (
         <div className="px-4 pb-3 pl-[6.5rem]">
-          <span className="text-xs text-fg-muted">{formatDate(item.date)}</span>
+          <time dateTime={item.date} className="text-xs text-fg-muted">
+            {formatCardDate(item.date, locale)}
+          </time>
         </div>
       )}
     </li>
@@ -1394,12 +1399,6 @@ function groupByDate(
   return order.map((label) => ({ label, items: groups.get(label)! }));
 }
 
-/**
- * `timeZone` 기준 달력 날짜(연·월·일). 생략하면 실행 환경의 로컬 타임존.
- *
- * `getFullYear/getMonth/getDate` 를 쓰면 **실행 환경**의 타임존이 섞여 들어가,
- * 서버(UTC)와 브라우저(사용자 로컬)가 같은 클립을 다른 날로 묶는다(19장).
- */
 /* ── 매핑·유틸 ─────────────────────────────────────────────── */
 
 function dbToItem(c: Clip): Item {
@@ -1432,18 +1431,6 @@ function localToItem(c: LocalClip): Item {
     date: c.savedAt,
     local: true,
   };
-}
-
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString("ko-KR", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return "";
-  }
 }
 
 function prettyHost(raw: string): string {
