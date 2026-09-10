@@ -22,12 +22,19 @@ export async function PATCH(
 
     const { slug } = await params;
 
-    let body: Record<string, unknown>;
+    let parsed: unknown;
     try {
-      body = await request.json();
+      parsed = await request.json();
     } catch {
       return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
     }
+
+    // `null` 과 배열도 JSON 으로는 유효하다. 객체가 아니면 아래 필드 접근에서 TypeError 가
+    // 나고, 클라이언트 잘못인데 서버 오류(500)로 기록된다.
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    }
+    const body = parsed as Record<string, unknown>;
 
     const patch: {
       title?: string;

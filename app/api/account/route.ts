@@ -11,12 +11,12 @@ export const runtime = "nodejs";
 //  3) 쿠키 세션 정리(로그아웃)
 // 삭제 후 클라이언트가 홈으로 이동한다.
 export async function DELETE() {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
-  }
-
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
+    }
+
     // 1) 클립 먼저 제거(계정 삭제의 cascade 와 별개로 명시적으로 정리).
     await clipStore.removeAllByUser(user.id);
 
@@ -45,8 +45,11 @@ export async function DELETE() {
   try {
     const supabase = await createSupabaseServerClient();
     await supabase.auth.signOut();
-  } catch {
-    // 세션 정리 실패는 무시 — 계정은 이미 삭제됨, 클라이언트가 로그아웃 처리.
+  } catch (error) {
+    // 세션 정리 실패는 요청을 실패시키지 않는다 — 계정은 이미 삭제됐고 클라이언트가
+    // 로그아웃을 처리한다. 다만 조용히 넘기면 "지워졌는데 로그인 상태"가 반복돼도
+    // 아무 흔적이 없으므로 한 줄은 남긴다.
+    console.warn("DELETE /api/account 세션 정리 실패:", error);
   }
 
   return NextResponse.json({ deleted: true });
