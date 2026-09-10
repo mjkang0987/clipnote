@@ -861,6 +861,48 @@ description : 300 자 · 유효: false   ← 반쪽 이모지
 ### 기대 결과
 `/en/clips`·`/ja/clips`·`/zh/clips` 에서 카드 날짜가 해당 언어 형식으로 나온다.
 
+## 21. 계획: store 에러가 본문 없는 500 으로 나가는 문제 (2026-09-10, 이슈 #46)
+
+### 배경/문제
+18장의 클립 저장 500 을 진단할 때 앱 화면에 뜬 정보는 `clip 500` 이 전부였다.
+서버가 **본문 없는 500** 을 돌려주기 때문이다.
+
+앱은 잘못이 없다 — `APIClient.swift:44` 가 `decoded?.error ?? "clip \(statusCode)"` 라,
+**서버가 `{ error: … }` 를 주면 그걸 그대로 띄운다.** `clip 500` 은 줄 게 없을 때의 폴백이다.
+
+`clipStore` 를 부르는 핸들러 4곳에 최상위 try/catch 가 없다:
+`POST /api/clip`(findByUserUrl·setSaved·update·create) · `PATCH`/`DELETE /api/clip/[slug]` ·
+`GET /api/clips`. 별개로 `app/api/account/route.ts:34,45` 는 `catch {}` 로 에러를 통째로
+버린다 — 계정 삭제는 auth 사용자만 지워지고 클립이 남는 부분 실패가 가능한 유일한 경로라
+로그가 없으면 복구 판단 자체가 안 된다.
+
+### 설계
+**클라이언트에는 내부 에러를 보내지 않는다.** Postgres 는 `details` 에 실패한 행의 내용을
+담는다(18장) — 그대로 내보내면 사용자 데이터가 응답에 실린다.
+
+- **서버**: `console.error` 로 에러 객체 전체. 17장의 `withErrorDetail` 이 `cause` 를
+  매달아 놨으므로 `code`·`details`·`hint` 가 따라온다
+- **클라이언트**: 고정 한국어 문구 + 500
+
+즉 실익은 **원인 노출이 아니라 사용자에게 읽을 수 있는 문구를 주는 것**이다(원인은 로그에만).
+앱은 수정 없이 바로 그 문구를 띄운다.
+
+네 곳이 같은 형태를 반복하므로 작은 헬퍼로 묶는다 — 문구가 네 군데 흩어지면 바꿀 때 빠진다.
+
+### 영향 파일
+신규 헬퍼 · `app/api/clip/route.ts` · `app/api/clip/[slug]/route.ts` ·
+`app/api/clips/route.ts` · `app/api/account/route.ts`.
+
+### 기대 결과
+store 가 throw 해도 클라이언트가 `{ error: … }` 를 받고, 서버 로그에는 `code`/`details`/`hint`
+가 붙은 원본 에러가 남는다.
+
+### 범위 밖
+- **API 에러 문구가 전부 한국어 하드코딩**이다(기존 `"로그인이 필요해요."` 등 포함).
+  4개 언어를 지원하는데 영어 사용자도 한국어 에러를 받는다. 이번 변경이 만든 문제가 아니라
+  기존 규약을 따르는 것이고, 고치려면 API 응답 i18n 전략이 필요하다 — 별도 이슈.
+- `create()` 의 빈 응답 시 중복 insert 가능성(17장 기록).
+
 ## 8. 메타데이터 추출 전략 (단계별 폴백)
 
 URL마다 메타 품질이 천차만별. 아래 순서로 시도해 첫 성공값 사용:
