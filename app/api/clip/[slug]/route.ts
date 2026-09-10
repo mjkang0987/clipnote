@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { clipStore } from "@/lib/store";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { truncateGraphemes } from "@/lib/text";
+import { readJsonObject, withErrors } from "@/lib/apiError";
 
 export const runtime = "nodejs";
 
@@ -9,10 +10,10 @@ export const runtime = "nodejs";
 // PATCH { title?, tags?, saved?, shared? } → 온 필드만 수정(편집/담기·빼기/공유 켜기)
 // DELETE → 클립 삭제
 
-export async function PATCH(
+export const PATCH = withErrors(async (
   request: Request,
   { params }: { params: Promise<{ slug: string }> },
-) {
+) => {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
@@ -20,12 +21,8 @@ export async function PATCH(
 
   const { slug } = await params;
 
-  let body: Record<string, unknown>;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
-  }
+  const body = await readJsonObject(request);
+  if (body instanceof NextResponse) return body;
 
   const patch: {
     title?: string;
@@ -68,12 +65,12 @@ export async function PATCH(
     return NextResponse.json({ error: "클립을 찾을 수 없어요." }, { status: 404 });
   }
   return NextResponse.json({ clip: updated });
-}
+});
 
-export async function DELETE(
+export const DELETE = withErrors(async (
   _request: Request,
   { params }: { params: Promise<{ slug: string }> },
-) {
+) => {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
@@ -85,4 +82,4 @@ export async function DELETE(
     return NextResponse.json({ error: "클립을 찾을 수 없어요." }, { status: 404 });
   }
   return NextResponse.json({ slug, deleted: true });
-}
+});
