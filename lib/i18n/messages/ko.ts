@@ -210,11 +210,12 @@ const ko = {
   login: {
     title: "로그인",
     /** 공급자 이름은 라틴 표기로 고정 — 번역하지 않는다 */
-    subtitleWithKakao: "Google·Kakao 계정으로 간편하게 시작하세요.",
-    subtitleGoogleOnly: "Google 계정으로 간편하게 시작하세요.",
+    subtitleWithKakao: "Google·Kakao·Naver 계정으로 간편하게 시작하세요.",
+    /** 카카오를 끈 경우. 네이버 버튼은 `KAKAO_ENABLED` 와 무관하게 항상 뜬다 */
+    subtitleGoogleOnly: "Google·Naver 계정으로 간편하게 시작하세요.",
     /** `{privacy}` 는 개인정보처리방침 링크 */
     consent:
-      "로그인 시 회원 식별을 위해 소셜 계정 정보(고유 식별자, 이메일, 프로필 닉네임·이미지)가 수집되는 데 동의합니다. {privacy}을 확인했어요.",
+      "로그인 시 회원 식별을 위해 소셜 계정 정보(고유 식별자, 프로필 닉네임·이미지, 공급자가 제공하는 경우 이메일)가 수집되는 데 동의합니다. {privacy}을 확인했어요.",
     /** `{provider}` 는 Google·Kakao·Naver */
     continueWith: "{provider}로 계속하기",
     redirecting: "이동 중…",

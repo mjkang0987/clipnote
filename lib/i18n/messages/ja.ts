@@ -176,10 +176,10 @@ const ja: PartialMessages = {
 
   login: {
     title: "ログイン",
-    subtitleWithKakao: "Google・Kakao アカウントで手軽に始められます。",
-    subtitleGoogleOnly: "Google アカウントで手軽に始められます。",
+    subtitleWithKakao: "Google・Kakao・Naver アカウントで手軽に始められます。",
+    subtitleGoogleOnly: "Google・Naver アカウントで手軽に始められます。",
     consent:
-      "ログイン時に会員識別のためソーシャルアカウント情報(固有識別子、メール、プロフィールのニックネーム・画像)が収集されることに同意します。{privacy}を確認しました。",
+      "ログイン時に会員識別のためソーシャルアカウント情報(固有識別子、プロフィールのニックネーム・画像、提供元が提供する場合はメール)が収集されることに同意します。{privacy}を確認しました。",
     continueWith: "{provider} で続ける",
     redirecting: "移動中…",
     recent: "前回利用",

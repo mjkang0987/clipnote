@@ -166,10 +166,10 @@ const zh: PartialMessages = {
 
   login: {
     title: "登录",
-    subtitleWithKakao: "用 Google 或 Kakao 账号快速开始。",
-    subtitleGoogleOnly: "用 Google 账号快速开始。",
+    subtitleWithKakao: "用 Google、Kakao 或 Naver 账号快速开始。",
+    subtitleGoogleOnly: "用 Google 或 Naver 账号快速开始。",
     consent:
-      "我同意在登录时为识别会员而收集社交账号信息(唯一标识符、邮箱、昵称与头像)。我已阅读{privacy}。",
+      "我同意在登录时为识别会员而收集社交账号信息(唯一标识符、昵称与头像，以及服务商提供时的邮箱)。我已阅读{privacy}。",
     continueWith: "使用 {provider} 继续",
     redirecting: "跳转中…",
     recent: "最近使用",
