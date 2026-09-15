@@ -921,9 +921,11 @@ function ClipCard({
           )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
-          <p className="line-clamp-2 font-semibold text-fg sm:line-clamp-1">
-            {item.title}
-          </p>
+          {/* 제목은 자르지 않는다 — 말줄임만 보고는 무슨 클립인지 알 수 없다.
+              저장할 때 120 그래핌으로 잘리므로(`api/clip/route.ts`) 카드가 무한정
+              길어지지는 않는다. `break-words` 는 공백 없는 긴 제목(URL 등)이 카드를
+              넘지 않게 한다 — 클램프가 가려 주던 자리다. */}
+          <p className="break-words font-semibold text-fg">{item.title}</p>
           <p className="truncate text-sm text-fg-muted">{item.host}</p>
           {item.tags.length > 0 && (
             <ul className="mt-1 flex flex-wrap gap-1">

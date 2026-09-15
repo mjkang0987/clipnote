@@ -895,7 +895,9 @@ export default function HomeClient({
                   )}
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <p className="truncate font-semibold text-fg">
+                  {/* 목록 카드와 같은 규칙 — 미리보기가 목록보다 짧게 자르면
+                      저장한 뒤 다른 걸 보게 된다(`ClipsClient` 의 클립 카드). */}
+                  <p className="break-words font-semibold text-fg">
                     {effectiveTitle}
                   </p>
                   {url && (
