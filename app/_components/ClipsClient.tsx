@@ -363,12 +363,24 @@ export default function ClipsClient({
     setSelected(new Set());
   }
 
+  /**
+   * 일괄 작업의 대상 — **지금 화면에 보이는** 선택 항목만.
+   *
+   * 선택한 뒤 검색어나 태그로 목록을 좁히면 고른 것 중 일부가 화면에서 사라진다. 그때
+   * `items` 를 기준으로 지우면 **보이지 않는 클립까지 지워진다.** 삭제는 되돌릴 수 없다.
+   *
+   * 화면 밖으로 나간 선택을 잊지는 않는다 — `selected` 에 그대로 있고 필터를 풀면 다시
+   * 센다. 지우는 건 보이는 것만, 기억은 그대로. (검색을 넣기 전에도 태그 칩에 같은 구멍이
+   * 있었다 — 이번에 함께 막는다.)
+   */
+  const selectedTargets = useMemo(
+    () => filtered.filter((i) => selected.has(i.key) && i.slug),
+    [filtered, selected],
+  );
+
   const selectedSlugs = useMemo(
-    () =>
-      items
-        .filter((i) => selected.has(i.key) && i.slug)
-        .map((i) => i.slug as string),
-    [items, selected],
+    () => selectedTargets.map((i) => i.slug as string),
+    [selectedTargets],
   );
 
   // B: 선택 일괄 삭제
@@ -393,7 +405,7 @@ export default function ClipsClient({
   // C: 선택 클립에 태그 일괄 적용(추가) 또는 교체
   async function bulkTags(tags: string[], mode: "add" | "replace") {
     setBulkTagOpen(false);
-    const targets = items.filter((i) => selected.has(i.key) && i.slug);
+    const targets = selectedTargets;
     if (targets.length === 0) return;
     setBusy(true);
     try {
@@ -512,10 +524,10 @@ export default function ClipsClient({
             {/* 목록이 좁혀진 걸 눈으로만 알 수 있으면 화면을 못 보는 사람은 모른다
                 (WCAG 2.2 4.1.3 상태 메시지). 영역 자체는 **항상 그려 둔다** — 텍스트가
                 바뀔 때 알려 주는 것이라, 바뀔 때 같이 생기면 읽히지 않는다. */}
-            {/* `countUnit` 을 쓰지 않는다 — en 은 "{count} clips" 라 1건에서
-                "1 clips" 가 된다. 사전에 복수형 규칙이 없어, 이 문구만큼은
-                각 언어가 단위를 직접 들고 있다. */}
             <p role="status" className="sr-only">
+              {/* `countUnit` 을 쓰지 않는다 — en 은 "{count} clips" 라 1건에서
+                  "1 clips" 가 된다. 사전에 복수형 규칙이 없어, 이 문구만큼은
+                  각 언어가 단위를 직접 들고 있다. */}
               {query.trim()
                 ? interpolate(t.searchResultCount, { count: filtered.length })
                 : ""}
@@ -616,12 +628,12 @@ export default function ClipsClient({
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 backdrop-blur-md">
           <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-5 py-3">
             <span className="text-sm font-medium text-fg">
-              {interpolate(t.selectedCount, { count: selected.size })}
+              {interpolate(t.selectedCount, { count: selectedTargets.length })}
             </span>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                disabled={selected.size === 0 || busy}
+                disabled={selectedTargets.length === 0 || busy}
                 onClick={() => setBulkTagOpen(true)}
                 className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-fg transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -629,7 +641,7 @@ export default function ClipsClient({
               </button>
               <button
                 type="button"
-                disabled={selected.size === 0 || busy}
+                disabled={selectedTargets.length === 0 || busy}
                 onClick={() => setPendingBulkDelete(true)}
                 className="rounded-lg border border-danger/40 px-3 py-1.5 text-sm font-semibold text-danger transition hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
