@@ -4,7 +4,10 @@ import { DEFAULT_LOCALE, LOCALE_TAGS, getMessages, type Locale } from "@/lib/i18
 // ── 운영자 정보 ──────────────────────────────────
 const CONTACT_EMAIL = "pikaworks.help@gmail.com";
 const PRIVACY_OFFICER = "pikaworks 운영자";
-const EFFECTIVE_DATE = "2026년 9월 15일";
+// ⚠️ 머지 직전에 다시 확인할 값. 방침은 공개된 날부터 적용되므로 **과거 날짜를 적으면
+// 사실과 다르다** — PR 을 열어 둔 사이 15일이 지나 26일로 고쳤다. 웹·앱(`PrivacyView.swift`)
+// 두 곳에 하드코딩돼 있으니 **한쪽만 바꾸지 않는다**.
+const EFFECTIVE_DATE = "2026년 9월 26일";
 
 /**
  * 개인정보처리방침 — 로케일별 라우트(`/privacy`, `/en/privacy`, …)가 공유한다.
@@ -70,11 +73,10 @@ export default function PrivacyPage({ locale }: { locale: Locale }) {
             </li>
           </ul>
           <p className="mt-3">
-            네이버 로그인은 이메일을 수집하지 않습니다. 네이버로부터 받는 정보는
-            고유 식별자와 프로필 닉네임·프로필 이미지 주소이며, 서비스는 회원을
-            구분하기 위해 이 고유 식별자로 내부 식별값을 만들어 사용합니다. 이
-            값은 메일 주소 형태이지만 실제로 존재하지 않는 주소이며, 서비스는 이
-            주소로 메일을 보내지 않습니다.
+            네이버로부터 받는 정보는 고유 식별자와 프로필 닉네임·프로필 이미지
+            주소입니다. 서비스는 회원을 구분하기 위해 이 고유 식별자로 내부
+            식별값을 만들어 사용합니다. 이 값은 메일 주소 형태이지만 실제로
+            존재하지 않는 주소이며, 서비스는 이 주소로 메일을 보내지 않습니다.
           </p>
           <p className="mt-3">
             비로그인 상태로 이용하는 경우, 저장한 클립과 태그는 서버로 전송되지
