@@ -177,7 +177,7 @@ const en: PartialMessages = {
       "Get started quickly with your Google, Kakao, or Naver account.",
     subtitleGoogleOnly: "Get started quickly with your Google or Naver account.",
     consent:
-      "I agree that my social account details (unique identifier, profile nickname and image, and email where the provider supplies it) are collected to identify me when signing in. I've read the {privacy}.",
+      "I agree that my social account details (unique identifier, profile nickname and image, and email — Google and Kakao only) are collected to identify me when signing in. I've read the {privacy}.",
     continueWith: "Continue with {provider}",
     redirecting: "Redirecting…",
     recent: "Last used",
