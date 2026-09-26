@@ -898,7 +898,10 @@ function ClipCard({
       }`}
     >
       {/* 상단: 썸네일 + 제목·호스트·태그 + (편집/삭제) */}
-      <div className="flex items-center gap-3 p-4">
+      {/* `items-start` — 제목 줄 수 제한을 푼 뒤로는 행 높이를 제목이 정한다.
+          가운데 정렬로 두면 제목이 길 때 썸네일·체크박스가 카드 중간에 뜬다
+          (편집/삭제 묶음이 이미 `self-start` 인 것과 같은 이유). */}
+      <div className="flex items-start gap-3 p-4">
         {selectable && (
           <input
             type="checkbox"

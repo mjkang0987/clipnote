@@ -129,7 +129,29 @@ export function canonicalizeUrl(raw: string): string {
   }
 }
 
+/**
+ * 제목 길이 상한. 저장 라우트(`api/clip`)가 쓰는 값과 같게 둔다.
+ *
+ * **상한이 저장 경계에만 있으면 저장을 거치지 않는 경로가 전부 무제한이 된다** —
+ * `/api/metadata` 응답, 게스트 로컬 클립(`local-clips` 는 받은 값을 그대로 넣는다),
+ * 홈 미리보기가 그랬다. 클립 카드의 제목 줄 수 제한을 푼 뒤에는 이 상한이 유일한 경계다.
+ */
+const TITLE_MAX = 120;
+
+/**
+ * URL 의 메타데이터. 제목 길이는 **여기 한 곳에서** 막는다.
+ *
+ * 제목이 나오는 길이 넷이다 — og 태그 / `<title>` / 스크립트 동봉 데이터 / 사이트별
+ * 어댑터. 소스마다 자르면 새 소스가 생길 때 또 빠진다. `plan.md` 18장이 같은 교훈을
+ * 적어 뒀다(깨진 문자열 복구를 라우트에서 필드별로 챙기다 `siteName`·`tags` 를 빠뜨렸다).
+ */
 export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
+  const meta = await fetchMetadataUncapped(rawUrl);
+  if (!meta.title) return meta;
+  return { ...meta, title: truncateWithEllipsis(meta.title, TITLE_MAX) };
+}
+
+async function fetchMetadataUncapped(rawUrl: string): Promise<ClipMetadata> {
   let url: string;
   try {
     url = new URL(normalizeUrl(rawUrl)).toString();

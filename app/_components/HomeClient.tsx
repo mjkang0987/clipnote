@@ -881,7 +881,10 @@ export default function HomeClient({
                   {h.clipPreview.note}
                 </p>
               </div>
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-soft">
+              {/* `items-start` 는 목록 카드와 같은 이유. `overflow-hidden` 은
+                  `truncate` 가 주던 것 — 없애고 나면 긴 태그 같은 것이 둥근
+                  테두리 밖으로 삐져나온다(목록 카드의 `<li>` 는 갖고 있다). */}
+              <div className="flex items-start gap-3 overflow-hidden rounded-xl border border-border bg-surface p-3 shadow-soft">
                 <div
                   className="h-14 w-14 shrink-0 overflow-hidden rounded-[8px]"
                   style={{ background: gradientCss(gradient) }}
