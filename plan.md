@@ -916,10 +916,35 @@ description : 300 자 · 유효: false   ← 반쪽 이모지
 - **`items-center` → `items-start`.** 행 높이를 제목이 정하게 된 뒤로, 가운데 정렬이면
   제목이 길 때 썸네일·체크박스가 카드 **중간에 떠 버린다**(320px 최악값에서 약 245px 아래).
   편집/삭제 묶음은 이미 `self-start` 였다.
-- **미리보기 카드에 `overflow-hidden`.** `truncate` 가 주던 `overflow: hidden` 이 사라져,
-  긴 태그 같은 것이 둥근 테두리 밖으로 삐져나올 수 있었다(목록 카드의 `<li>` 는 갖고 있다).
+- **미리보기 카드에 `overflow-hidden`.** 처음엔 "`truncate` 가 주던 것을 되돌린다"고 적었는데
+  **그것도 틀렸다**(두 번째 리뷰에서 잡혔다). `truncate` 의 `overflow: hidden` 은 제목 `<p>`
+  에만 걸려 있었고 형제인 태그 목록은 덮지 못한다. 미리보기 카드는 애초에 이 백스톱이
+  **없었고**(목록 카드는 `<li>` 가 갖고 있다) 태그는 개수만 6개로 제한되고 길이 제한이 없다.
+  제목 클램프와 무관하게 필요한 것이라, "보상" 으로 읽고 지우면 다시 뚫린다.
+
+### 두 번째 코드리뷰 반영 (2026-09-26)
+출구 한 곳으로 옮긴 커밋(`3af0a30`)을 다시 리뷰했고 세 건이 나왔다.
+
+- **"한 곳에서 막는다"가 아직 사실이 아니었다.** `TITLE_MAX` 를 export 하지 않아 쓰기 라우트
+  둘(`api/clip/route.ts` · `api/clip/[slug]/route.ts`)이 리터럴 `120` 을 따로 갖고 있었다 —
+  상한이 세 곳에 흩어진 채로 "한 곳" 이라고 주석에 적어 둔 상태였다. export 해서 둘 다
+  그 상수를 쓰게 했다.
+- **og:title 안쪽 공백이 상한을 먹었다.** `extractMetaTags` 는 meta content 에 `trim()` 만
+  하므로 HTML 을 여러 줄로 쓴 페이지의 `og:title` 에는 줄바꿈·들여쓰기가 남는다. 출구에서
+  `\s+ → ' '` 로 먼저 접는다. (실측: 원본 231자 / 보이는 글자 111자인 제목이 접기 전에는
+  120자에서 잘려 조각 14개 중 7개만 남았고, 접은 뒤엔 111자 전체가 말줄임 없이 나온다.)
+  `clean()` 을 쓰지 않은 이유는 그쪽이 엔티티를 한 번 더 디코드해 `&amp;amp;` 가 두 번 풀리기
+  때문이다.
+- **주석 두 개가 사실과 달랐다** — `ClipsClient` 는 경계로 `api/clip/route.ts` 를 가리키고
+  있었고(이 커밋이 부정한 바로 그 문장), `HomeClient` 는 `overflow-hidden` 의 근거를 틀리게
+  적고 있었다(위 항목). 둘 다 고쳤다.
 
 ### 남은 것
+- **80 vs 120 이 어긋난다 — 지시자 판단 필요.** 입력칸 `maxLength={80}` · 편집 모달
+  `truncateGraphemes(..., 80)`(말줄임 없음) · 서버·메타데이터 `TITLE_MAX = 120`. 메타에서
+  81~120자 제목이 자동으로 채워지면 그 입력칸은 **타이핑이 전부 막힌다**(`maxLength` 는
+  이미 들어있는 값을 넘으면 입력을 거부한다). 한쪽으로 맞춰야 하는데 어느 쪽인지는
+  제품 결정이다.
 - **이 수정 전에 저장된 로컬 클립**은 긴 제목을 그대로 갖고 있다. 상한은 새 저장부터 걸린다
   (편집 모달이 80자로 자르므로 고치면 복구된다).
 - **클립 카드 본문이 두 곳에 복제돼 있다**(`ClipsClient.ClipCard` · `HomeClient` 미리보기).
@@ -934,13 +959,30 @@ description : 300 자 · 유효: false   ← 반쪽 이모지
 - 설정 화면 계정 라벨 — 클립이 아니다.
 
 ### 영향 파일
-`app/_components/ClipsClient.tsx` · `app/_components/HomeClient.tsx` · `index.md`.
+`app/_components/ClipsClient.tsx` · `app/_components/HomeClient.tsx` ·
+`lib/metadata.ts`(`TITLE_MAX` export·출구 절단·공백 접기) · `app/api/clip/route.ts` ·
+`app/api/clip/[slug]/route.ts` · `index.md`.
 
-### 검증 (2026-09-15)
+### 검증 (2026-09-26)
 `tsc --noEmit` · `pnpm build` 통과. `eslint` 는 `ClipsClient` 0건, `HomeClient` 는 **선재**
-오류 2건(`react-hooks/set-state-in-effect`, `origin/main` 에도 있다 — `index.md` 알려진 이슈).
-브라우저 실측(Playwright/Chromium) 1280·390 두 폭에서 한국어 장문·공백 없는 장문 각각
-세로 안 잘림·가로 안 넘침·클램프 해제·말줄임 아님, 호스트 줄은 한 줄 유지 확인.
+오류 2건 + 경고 1건(`react-hooks/set-state-in-effect` 등) — `origin/main` 사본을 같은 설정으로
+돌려 **건수·줄번호가 동일함을 대조**했다(`index.md` 알려진 이슈). 새로 생긴 지적은 없다.
+
+브라우저 실측(Playwright/Chromium) 1280·390·320 세 폭에서 한국어 장문·공백 없는 장문 각각
+세로 안 잘림·가로 안 넘침·클램프 해제·말줄임 아님, 호스트 줄은 한 줄 유지, 썸네일-제목
+상단 간격 0px(`items-start`) 확인. 미리보기 카드는
+`div.flex.items-start.overflow-hidden.shadow-soft` 로 5/5 통과.
+
+상한은 **구동으로** 확인했다(로컬 정적 서버에 픽스처를 띄우고 `/api/metadata` 호출):
+
+| 픽스처 | 기대 | 결과 |
+|---|---|---|
+| `<title>` 3,000자 | 120자 + `…` | 120자, 말줄임 O |
+| `og:title` 안에 줄바꿈(원본 231자 / 보이는 111자) | 접어서 111자 통째로 | 111자, 말줄임 X, 조각 14/14 |
+| 그래핌 경계에 가족 이모지(ZWJ 7코드포인트) | 반으로 안 잘림 | 이모지 온전, 고아 서러게이트 0 |
+
+세 경로(og / `<title>` / 동봉 데이터)를 각각 때렸다 — 첫 수정이 한 경로만 막고 통과한 것이
+이 표를 만든 이유다.
 
 ## 8. 메타데이터 추출 전략 (단계별 폴백)
 
