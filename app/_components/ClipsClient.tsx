@@ -925,9 +925,12 @@ function ClipCard({
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
           {/* 제목은 자르지 않는다 — 말줄임만 보고는 무슨 클립인지 알 수 없다.
-              저장할 때 120 그래핌으로 잘리므로(`api/clip/route.ts`) 카드가 무한정
-              길어지지는 않는다. `break-words` 는 공백 없는 긴 제목(URL 등)이 카드를
-              넘지 않게 한다 — 클램프가 가려 주던 자리다. */}
+              길이 경계는 **`lib/metadata.ts` 의 `TITLE_MAX`** 다(쓰기 라우트도 같은 상수를
+              쓴다). 저장 라우트만 가리키면 틀린다 — 게스트 클립은 그 라우트를 안 거치고
+              localStorage 로 간다. 이 수정 **이전에** 저장된 로컬 클립은 상한이 없으니
+              그것만은 여기서 길어질 수 있다(편집하면 복구된다).
+              `break-words` 는 공백 없는 긴 제목(URL 등)이 카드를 넘지 않게 한다 —
+              클램프가 가려 주던 자리다. */}
           <p className="break-words font-semibold text-fg">{item.title}</p>
           <p className="truncate text-sm text-fg-muted">{item.host}</p>
           {item.tags.length > 0 && (
