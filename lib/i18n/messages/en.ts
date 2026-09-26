@@ -263,7 +263,7 @@ const en: PartialMessages = {
     q2: "How do tags work?",
     a2: "When you create a clip, add up to 6 tags in the tag field, separated by commas. Tap a tag on the \u2018{clips}\u2019 screen to see only clips with that tag. Tags you've used before are suggested under \u201cRecent tags\u201d so you can add them in one tap.",
     q3: "Can I use it without signing in?",
-    a3: "Yes. You can save links in this browser without an account. Creating short share links requires signing in with Google or Kakao.",
+    a3: "Yes. You can save links in this browser without an account. Creating short share links requires signing in.",
     q4: "Do Naver Cafe and Instagram links work?",
     a4: "Yes. Dedicated extractors pull Naver Cafe post titles and Instagram reel or post details. Private and members-only posts may be limited.",
     q5: "What happens when someone opens a share link?",
