@@ -136,7 +136,7 @@ export function canonicalizeUrl(raw: string): string {
  * `/api/metadata` 응답, 게스트 로컬 클립(`local-clips` 는 받은 값을 그대로 넣는다),
  * 홈 미리보기가 그랬다. 클립 카드의 제목 줄 수 제한을 푼 뒤에는 이 상한이 유일한 경계다.
  */
-const TITLE_MAX = 120;
+export const TITLE_MAX = 120;
 
 /**
  * URL 의 메타데이터. 제목 길이는 **여기 한 곳에서** 막는다.

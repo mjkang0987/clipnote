@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { clipStore } from "@/lib/store";
 import { pickGradient } from "@/lib/gradients";
-import { canonicalizeUrl } from "@/lib/metadata";
+import { canonicalizeUrl, TITLE_MAX } from "@/lib/metadata";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { truncateGraphemes } from "@/lib/text";
 
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
     url: normalizedUrl,
     // 코드유닛(`slice`)으로 자르면 이모지가 반쪼가리로 남는다(PGRST102 — plan.md 18장).
     // 글자 단위로 자른다. 깨진 채 들어온 값의 복구는 store 가 컬럼 구분 없이 한다.
-    title: truncateGraphemes(title, 120),
+    title: truncateGraphemes(title, TITLE_MAX),
     description:
       typeof body.description === "string"
         ? truncateGraphemes(body.description, 300)
