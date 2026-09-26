@@ -148,7 +148,13 @@ export const TITLE_MAX = 120;
 export async function fetchMetadata(rawUrl: string): Promise<ClipMetadata> {
   const meta = await fetchMetadataUncapped(rawUrl);
   if (!meta.title) return meta;
-  return { ...meta, title: truncateWithEllipsis(meta.title, TITLE_MAX) };
+  // 공백을 먼저 접는다. `extractMetaTags` 는 meta content 에 `trim()` 만 하므로
+  // og:title 안쪽의 줄바꿈·들여쓰기가 그대로 남는다(HTML 을 여러 줄로 쓴 페이지에서 흔하다).
+  // 접지 않고 세면 눈에 보이는 글자는 몇십 자인데 공백이 상한을 먹고 잘린다.
+  // (`clean()` 대신 직접 접는 이유 — 그쪽은 엔티티를 한 번 더 디코드해서
+  //  `&amp;amp;` 같은 값이 두 번 풀린다.)
+  const collapsed = meta.title.replace(/\s+/g, " ").trim();
+  return { ...meta, title: truncateWithEllipsis(collapsed, TITLE_MAX) };
 }
 
 async function fetchMetadataUncapped(rawUrl: string): Promise<ClipMetadata> {
