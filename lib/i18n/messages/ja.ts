@@ -43,6 +43,8 @@ const ja: PartialMessages = {
     newClip: "+ 新しいクリップ",
     select: "選択",
     allTags: "すべて",
+    searchLabel: "クリップを検索",
+    searchPlaceholder: "タイトル・URL・タグで検索",
     loading: "読み込み中…",
     loadFailed:
       "一覧を読み込めませんでした。保存したクリップが消えたわけではありません。",
@@ -50,6 +52,10 @@ const ja: PartialMessages = {
     empty: "まだ保存したクリップがありません。",
     emptyCta: "最初のクリップを作成",
     emptyForTag: "「{tag}」タグのクリップがありません。",
+    emptyForSearch: "「{query}」に一致するクリップがありません。",
+    emptyForTagSearch:
+      "「{tag}」タグに「{query}」と一致するクリップがありません。",
+    searchResultCount: "検索結果 {count}件",
     selectedCount: "{count}件選択中",
     applyTags: "タグを適用",
     selectAria: "{title} を選択",
