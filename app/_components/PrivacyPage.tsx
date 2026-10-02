@@ -5,9 +5,9 @@ import { DEFAULT_LOCALE, LOCALE_TAGS, getMessages, type Locale } from "@/lib/i18
 const CONTACT_EMAIL = "pikaworks.help@gmail.com";
 const PRIVACY_OFFICER = "pikaworks 운영자";
 // ⚠️ 머지 직전에 다시 확인할 값. 방침은 공개된 날부터 적용되므로 **과거 날짜를 적으면
-// 사실과 다르다** — PR 을 열어 둔 사이 15일이 지나 26일로 고쳤다. 웹·앱(`PrivacyView.swift`)
-// 두 곳에 하드코딩돼 있으니 **한쪽만 바꾸지 않는다**.
-const EFFECTIVE_DATE = "2026년 9월 26일";
+// 사실과 다르다** — PR 을 열어 둔 사이 두 번 지나갔다(9/15 → 9/26 → 10/2). 웹·앱
+// (`PrivacyView.swift`) 두 곳에 하드코딩돼 있으니 **한쪽만 바꾸지 않는다**.
+const EFFECTIVE_DATE = "2026년 10월 2일";
 
 /**
  * 개인정보처리방침 — 로케일별 라우트(`/privacy`, `/en/privacy`, …)가 공유한다.
