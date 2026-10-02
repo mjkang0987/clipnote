@@ -881,7 +881,13 @@ export default function HomeClient({
                   {h.clipPreview.note}
                 </p>
               </div>
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-soft">
+              {/* `items-start` 는 목록 카드와 같은 이유.
+                  `overflow-hidden` 은 이 카드에 **원래 없던** 것이다 — `truncate` 의
+                  `overflow: hidden` 은 제목 `<p>` 에만 걸려 있었고 형제인 태그 목록은
+                  덮지 못했다(태그는 개수만 6개로 제한되고 길이 제한이 없다). 목록 카드는
+                  `<li>` 가 갖고 있어 막혔고 여기만 뚫려 있었다. 제목 클램프와 무관하게
+                  필요하다 — `truncate` 를 없앤 보상이라고 읽고 지우면 다시 뚫린다. */}
+              <div className="flex items-start gap-3 overflow-hidden rounded-xl border border-border bg-surface p-3 shadow-soft">
                 <div
                   className="h-14 w-14 shrink-0 overflow-hidden rounded-[8px]"
                   style={{ background: gradientCss(gradient) }}
@@ -895,7 +901,9 @@ export default function HomeClient({
                   )}
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <p className="truncate font-semibold text-fg">
+                  {/* 목록 카드와 같은 규칙 — 미리보기가 목록보다 짧게 자르면
+                      저장한 뒤 다른 걸 보게 된다(`ClipsClient` 의 클립 카드). */}
+                  <p className="break-words font-semibold text-fg">
                     {effectiveTitle}
                   </p>
                   {url && (

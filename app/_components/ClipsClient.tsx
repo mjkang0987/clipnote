@@ -970,7 +970,10 @@ function ClipCard({
       }`}
     >
       {/* 상단: 썸네일 + 제목·호스트·태그 + (편집/삭제) */}
-      <div className="flex items-center gap-3 p-4">
+      {/* `items-start` — 제목 줄 수 제한을 푼 뒤로는 행 높이를 제목이 정한다.
+          가운데 정렬로 두면 제목이 길 때 썸네일·체크박스가 카드 중간에 뜬다
+          (편집/삭제 묶음이 이미 `self-start` 인 것과 같은 이유). */}
+      <div className="flex items-start gap-3 p-4">
         {selectable && (
           <input
             type="checkbox"
@@ -993,9 +996,14 @@ function ClipCard({
           )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
-          <p className="line-clamp-2 font-semibold text-fg sm:line-clamp-1">
-            {item.title}
-          </p>
+          {/* 제목은 자르지 않는다 — 말줄임만 보고는 무슨 클립인지 알 수 없다.
+              길이 경계는 **`lib/metadata.ts` 의 `TITLE_MAX`** 다(쓰기 라우트도 같은 상수를
+              쓴다). 저장 라우트만 가리키면 틀린다 — 게스트 클립은 그 라우트를 안 거치고
+              localStorage 로 간다. 이 수정 **이전에** 저장된 로컬 클립은 상한이 없으니
+              그것만은 여기서 길어질 수 있다(편집하면 복구된다).
+              `break-words` 는 공백 없는 긴 제목(URL 등)이 카드를 넘지 않게 한다 —
+              클램프가 가려 주던 자리다. */}
+          <p className="break-words font-semibold text-fg">{item.title}</p>
           <p className="truncate text-sm text-fg-muted">{item.host}</p>
           {item.tags.length > 0 && (
             <ul className="mt-1 flex flex-wrap gap-1">
