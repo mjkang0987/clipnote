@@ -89,6 +89,8 @@ export default function ClipsClient({
   const [loading, setLoading] = useState(!initialLoggedIn);
   const [loadFailed, setLoadFailed] = useState(initialLoadFailed);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  // 검색어. 태그와 좁히는 축이 달라(태그=분류, 검색어=내용) 서로를 지우지 않는다.
+  const [query, setQuery] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Item | null>(null);
 
   // 편집(A) / 선택·일괄(B·C) — 로그인(DB) 클립만 대상
@@ -140,10 +142,24 @@ export default function ClipsClient({
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([t]) => t);
   }, [items]);
 
-  const filtered = useMemo(
-    () => (activeTag ? items.filter((i) => i.tags.includes(activeTag)) : items),
-    [items, activeTag],
-  );
+  // 태그와 검색어는 **함께** 건다. 한쪽이 다른 쪽을 지우면 태그를 고른 채로는 검색할 수 없다.
+  // 검색 대상은 제목·URL·태그 — 카드에 보이는 것으로 찾을 수 있어야 한다. 카드의 호스트는
+  // `url` 에서 뽑은 것이라 `url` 만 훑으면 함께 걸린다.
+  //
+  // `toLocaleLowerCase()` 가 아니라 `toLowerCase()` 다. 전자는 터키어 로케일에서 `I` 를 `ı` 로
+  // 내려 같은 검색어가 화면 언어마다 다르게 걸린다.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!activeTag && !q) return items;
+    return items.filter(
+      (i) =>
+        (!activeTag || i.tags.includes(activeTag)) &&
+        (!q ||
+          i.title.toLowerCase().includes(q) ||
+          i.url.toLowerCase().includes(q) ||
+          i.tags.some((tag) => tag.toLowerCase().includes(q))),
+    );
+  }, [items, activeTag, query]);
 
   // 서버는 보는 사람의 타임존을 알 수 없다. 1차 렌더는 서버와 **같은** 고정 타임존으로
   // 맞춰 hydration 을 일치시키고, 그 뒤 보는 사람의 실제 타임존으로 다시 묶는다.
@@ -175,6 +191,20 @@ export default function ClipsClient({
   /** 수량 표기(`3개`·`3 clips`) — 언어마다 단위 위치가 달라 문장에서 떼어 만든다. */
   function countUnit(count: number) {
     return interpolate(t.countUnit, { count });
+  }
+
+  /**
+   * 목록이 빈 이유. 좁히는 축이 둘이라 **둘 다 걸렸으면 둘 다 말한다.**
+   *
+   * 검색어만 탓하면 거짓말이 된다 — ‘개발’ 태그 + ‘뉴스’ 검색으로 비었을 때 "‘뉴스’ 검색
+   * 결과가 없어요" 는 사실이 아니다(‘뉴스’ 클립은 있고, 그게 ‘개발’ 태그가 아닐 뿐이다).
+   */
+  function emptyFilterNote() {
+    const q = query.trim();
+    if (q && activeTag)
+      return interpolate(t.emptyForTagSearch, { tag: activeTag, query: q });
+    if (q) return interpolate(t.emptyForSearch, { query: q });
+    return interpolate(t.emptyForTag, { tag: activeTag ?? "" });
   }
 
   async function confirmDelete() {
@@ -333,12 +363,24 @@ export default function ClipsClient({
     setSelected(new Set());
   }
 
+  /**
+   * 일괄 작업의 대상 — **지금 화면에 보이는** 선택 항목만.
+   *
+   * 선택한 뒤 검색어나 태그로 목록을 좁히면 고른 것 중 일부가 화면에서 사라진다. 그때
+   * `items` 를 기준으로 지우면 **보이지 않는 클립까지 지워진다.** 삭제는 되돌릴 수 없다.
+   *
+   * 화면 밖으로 나간 선택을 잊지는 않는다 — `selected` 에 그대로 있고 필터를 풀면 다시
+   * 센다. 지우는 건 보이는 것만, 기억은 그대로. (검색을 넣기 전에도 태그 칩에 같은 구멍이
+   * 있었다 — 이번에 함께 막는다.)
+   */
+  const selectedTargets = useMemo(
+    () => filtered.filter((i) => selected.has(i.key) && i.slug),
+    [filtered, selected],
+  );
+
   const selectedSlugs = useMemo(
-    () =>
-      items
-        .filter((i) => selected.has(i.key) && i.slug)
-        .map((i) => i.slug as string),
-    [items, selected],
+    () => selectedTargets.map((i) => i.slug as string),
+    [selectedTargets],
   );
 
   // B: 선택 일괄 삭제
@@ -363,7 +405,7 @@ export default function ClipsClient({
   // C: 선택 클립에 태그 일괄 적용(추가) 또는 교체
   async function bulkTags(tags: string[], mode: "add" | "replace") {
     setBulkTagOpen(false);
-    const targets = items.filter((i) => selected.has(i.key) && i.slug);
+    const targets = selectedTargets;
     if (targets.length === 0) return;
     setBusy(true);
     try {
@@ -462,6 +504,37 @@ export default function ClipsClient({
           </div>
         )}
 
+        {/* 클립 검색 — 제목·URL·태그. `type="search"` 라 지우기 버튼·Esc 비우기·검색용
+            키보드를 브라우저가 준다(커스텀으로 다시 만들지 않는다).
+            라벨은 눈에는 없지만 있어야 한다 — placeholder 는 접근성 이름이 아니라서
+            빼면 스크린리더에 이름 없는 입력으로 읽힌다. */}
+        {items.length > 0 && (
+          <div role="search" className="mt-5">
+            <label htmlFor="clips-search" className="sr-only">
+              {t.searchLabel}
+            </label>
+            <input
+              id="clips-search"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t.searchPlaceholder}
+              className="h-11 w-full rounded-lg border border-border bg-bg px-3 text-sm text-fg outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/40"
+            />
+            {/* 목록이 좁혀진 걸 눈으로만 알 수 있으면 화면을 못 보는 사람은 모른다
+                (WCAG 2.2 4.1.3 상태 메시지). 영역 자체는 **항상 그려 둔다** — 텍스트가
+                바뀔 때 알려 주는 것이라, 바뀔 때 같이 생기면 읽히지 않는다. */}
+            <p role="status" className="sr-only">
+              {/* `countUnit` 을 쓰지 않는다 — en 은 "{count} clips" 라 1건에서
+                  "1 clips" 가 된다. 사전에 복수형 규칙이 없어, 이 문구만큼은
+                  각 언어가 단위를 직접 들고 있다. */}
+              {query.trim()
+                ? interpolate(t.searchResultCount, { count: filtered.length })
+                : ""}
+            </p>
+          </div>
+        )}
+
         {/* 태그 필터 */}
         {allTags.length > 0 && (
           <div className="mt-5 flex flex-wrap gap-2">
@@ -512,9 +585,8 @@ export default function ClipsClient({
             </a>
           </div>
         ) : filtered.length === 0 ? (
-          <p className="mt-10 text-center text-sm text-fg-muted">
-            {interpolate(t.emptyForTag, { tag: activeTag ?? "" })}
-          </p>
+          // 원인을 잘못 지목하면 사용자는 걸지도 않은 태그를 풀어 보게 된다.
+          <p className="mt-10 text-center text-sm text-fg-muted">{emptyFilterNote()}</p>
         ) : (
           <div className="mt-6 flex flex-col gap-8">
             {groups.map((group) => (
@@ -556,12 +628,12 @@ export default function ClipsClient({
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 backdrop-blur-md">
           <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-5 py-3">
             <span className="text-sm font-medium text-fg">
-              {interpolate(t.selectedCount, { count: selected.size })}
+              {interpolate(t.selectedCount, { count: selectedTargets.length })}
             </span>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                disabled={selected.size === 0 || busy}
+                disabled={selectedTargets.length === 0 || busy}
                 onClick={() => setBulkTagOpen(true)}
                 className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-fg transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -569,7 +641,7 @@ export default function ClipsClient({
               </button>
               <button
                 type="button"
-                disabled={selected.size === 0 || busy}
+                disabled={selectedTargets.length === 0 || busy}
                 onClick={() => setPendingBulkDelete(true)}
                 className="rounded-lg border border-danger/40 px-3 py-1.5 text-sm font-semibold text-danger transition hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
               >

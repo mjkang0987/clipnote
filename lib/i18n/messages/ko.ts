@@ -59,6 +59,9 @@ const ko = {
     newClip: "+ 새 클립",
     select: "선택",
     allTags: "전체",
+    /** 검색 입력의 접근성 이름 — 눈에는 안 보인다. placeholder 는 이름이 아니라서 따로 둔다 */
+    searchLabel: "클립 검색",
+    searchPlaceholder: "제목·주소·태그로 검색",
     loading: "불러오는 중…",
     loadFailed: "목록을 불러오지 못했어요. 저장된 클립이 사라진 건 아니에요.",
     retry: "다시 시도",
@@ -66,6 +69,13 @@ const ko = {
     emptyCta: "첫 클립 만들기",
     /** `{tag}` 는 선택된 태그 이름 */
     emptyForTag: "‘{tag}’ 태그의 클립이 없어요.",
+    /** `{query}` 는 입력한 검색어 */
+    emptyForSearch: "‘{query}’ 검색 결과가 없어요.",
+    /** 태그와 검색어가 함께 걸렸을 때 — 한쪽만 말하면 거짓말이 된다 */
+    emptyForTagSearch: "‘{tag}’ 태그에 ‘{query}’ 검색 결과가 없어요.",
+    /** 검색 결과 수 — 화면에는 안 보이고 스크린리더에만 읽힌다.
+     `countUnit` 을 쓰지 않는다: en 의 "{count} clips" 가 1건에서 "1 clips" 가 된다 */
+    searchResultCount: "검색 결과 {count}개",
     /** `{count}` 는 선택된 클립 수 */
     selectedCount: "{count}개 선택됨",
     applyTags: "태그 적용",
