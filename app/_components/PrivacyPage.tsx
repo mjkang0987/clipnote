@@ -4,7 +4,10 @@ import { DEFAULT_LOCALE, LOCALE_TAGS, getMessages, type Locale } from "@/lib/i18
 // ── 운영자 정보 ──────────────────────────────────
 const CONTACT_EMAIL = "pikaworks.help@gmail.com";
 const PRIVACY_OFFICER = "pikaworks 운영자";
-const EFFECTIVE_DATE = "2026년 8월 4일";
+// ⚠️ 머지 직전에 다시 확인할 값. 방침은 공개된 날부터 적용되므로 **과거 날짜를 적으면
+// 사실과 다르다** — PR 을 열어 둔 사이 두 번 지나갔다(9/15 → 9/26 → 10/2). 웹·앱
+// (`PrivacyView.swift`) 두 곳에 하드코딩돼 있으니 **한쪽만 바꾸지 않는다**.
+const EFFECTIVE_DATE = "2026년 10월 2일";
 
 /**
  * 개인정보처리방침 — 로케일별 라우트(`/privacy`, `/en/privacy`, …)가 공유한다.
@@ -48,12 +51,17 @@ export default function PrivacyPage({ locale }: { locale: Locale }) {
 
         <Section title="1. 수집하는 개인정보 항목">
           <p>
-            서비스는 Google·카카오 소셜 로그인을 통해 회원 식별에 필요한 정보를
-            수집합니다. 서비스의 자체 데이터베이스에는 회원 구분용 고유 식별자만
-            저장하며, 이메일·프로필 정보는 인증 처리(Supabase)에 보관됩니다.
+            서비스는 Google·카카오·네이버 소셜 로그인을 통해 회원 식별에 필요한
+            정보를 수집합니다. 서비스의 자체 데이터베이스에는 회원 구분용 고유
+            식별자만 저장하며, 이메일·프로필 정보는 인증 처리(Supabase)에
+            보관됩니다.
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>필수: 소셜 계정 고유 식별자(고유 ID), 이메일</li>
+            <li>필수: 소셜 계정 고유 식별자(고유 ID)</li>
+            <li>
+              필수(Google·카카오): 이메일 — 네이버 로그인은 이메일을 수집하지
+              않습니다
+            </li>
             <li>선택: 프로필 닉네임, 프로필 이미지(공급자가 제공하는 경우)</li>
             <li>
               자동 생성: 서비스 이용 과정에서 만들어지는 클립 정보(저장한 URL,
@@ -64,6 +72,12 @@ export default function PrivacyPage({ locale }: { locale: Locale }) {
               조회·클릭 기록
             </li>
           </ul>
+          <p className="mt-3">
+            네이버로부터 받는 정보는 고유 식별자와 프로필 닉네임·프로필 이미지
+            주소입니다. 서비스는 회원을 구분하기 위해 이 고유 식별자로 내부
+            식별값을 만들어 사용합니다. 이 값은 메일 주소 형태이지만 실제로
+            존재하지 않는 주소이며, 서비스는 이 주소로 메일을 보내지 않습니다.
+          </p>
           <p className="mt-3">
             비로그인 상태로 이용하는 경우, 저장한 클립과 태그는 서버로 전송되지
             않고 이용자의 기기 내 저장소에만 보관됩니다.
@@ -132,8 +146,8 @@ export default function PrivacyPage({ locale }: { locale: Locale }) {
             </table>
           </div>
           <p className="mt-3">
-            소셜 로그인 과정에서 Google LLC, ㈜카카오가 각 사의 정책에 따라
-            인증을 처리합니다. 각 공급자의 개인정보 처리 기준은 해당 공급자의
+            소셜 로그인 과정에서 Google LLC, ㈜카카오, 네이버 주식회사가 각 사의
+            정책에 따라 인증을 처리합니다. 각 공급자의 개인정보 처리 기준은 해당 공급자의
             방침을 따릅니다.
           </p>
         </Section>

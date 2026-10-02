@@ -171,10 +171,10 @@ const zh: PartialMessages = {
 
   login: {
     title: "登录",
-    subtitleWithKakao: "用 Google 或 Kakao 账号快速开始。",
-    subtitleGoogleOnly: "用 Google 账号快速开始。",
+    subtitleWithKakao: "用 Google、Kakao 或 Naver 账号快速开始。",
+    subtitleGoogleOnly: "用 Google 或 Naver 账号快速开始。",
     consent:
-      "我同意在登录时为识别会员而收集社交账号信息(唯一标识符、邮箱、昵称与头像)。我已阅读{privacy}。",
+      "我同意在登录时为识别会员而收集社交账号信息(唯一标识符、昵称与头像，以及邮箱 — 仅 Google 和 Kakao)。我已阅读{privacy}。",
     continueWith: "使用 {provider} 继续",
     redirecting: "跳转中…",
     recent: "最近使用",
@@ -258,7 +258,7 @@ const zh: PartialMessages = {
     q2: "标签怎么用?",
     a2: "创建剪藏时在标签栏用逗号(,)分隔，最多可加 6 个。在「{clips}」页面点击标签可只看带该标签的剪藏，用过的标签下次会作为「常用标签」推荐，一次就能加上。",
     q3: "不登录也能用吗?",
-    a3: "可以。不登录也能把链接保存到此浏览器。但生成短分享链接需要用 Google 或 Kakao 登录。",
+    a3: "可以。不登录也能把链接保存到此浏览器。但生成短分享链接需要登录。",
     q4: "Naver Cafe 和 Instagram 的链接也支持吗?",
     a4: "支持。专用提取功能可以获取 Naver Cafe 帖子标题以及 Instagram Reels、帖子的信息。非公开和仅成员可见的内容可能受限。",
     q5: "打开分享链接会怎样?",
